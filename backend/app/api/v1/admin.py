@@ -1,0 +1,159 @@
+import uuid
+from datetime import datetime, timezone
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
+
+from app.api.v1.deps import get_current_user
+from app.api.v1.schemas import JobListResponse, JobResponse, JobVerifyRequest
+from app.db.rls import set_tenant_context
+from app.db.session import async_session_factory
+from app.domains.audit.models import AuditLog
+from app.domains.identity.models import User
+from app.domains.jobs.models import Job, JobVerificationStatusEnum
+
+router = APIRouter(prefix="/admin", tags=["Platform Admin"])
+
+def require_platform_admin(user: User = Depends(get_current_user)) -> User:
+    """Dependency enforcing that current user is a Platform Admin."""
+    if not user.is_platform_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform Admin Privilege Required: You do not have permission to access admin verification workflows.",
+        )
+    return user
+
+@router.get("/jobs/pending", response_model=JobListResponse)
+async def list_pending_jobs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    admin: User = Depends(require_platform_admin),
+):
+    """Lists all job requisitions across the platform awaiting admin verification."""
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
+
+        stmt = select(Job).where(Job.verification_status == JobVerificationStatusEnum.PENDING_VERIFICATION)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await session.execute(count_stmt)).scalar_one()
+
+        offset = (page - 1) * page_size
+        stmt = stmt.order_by(Job.created_at.desc()).offset(offset).limit(page_size)
+        jobs = list((await session.execute(stmt)).scalars().all())
+
+        return JobListResponse(
+            items=[JobResponse.model_validate(j) for j in jobs],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+@router.get("/jobs", response_model=JobListResponse)
+async def list_all_platform_jobs(
+    verification_status: Optional[JobVerificationStatusEnum] = Query(None, alias="verification_status"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    admin: User = Depends(require_platform_admin),
+):
+    """Lists all job requisitions across all tenant organizations for platform administration."""
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
+
+        stmt = select(Job)
+        if verification_status:
+            stmt = stmt.where(Job.verification_status == verification_status)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await session.execute(count_stmt)).scalar_one()
+
+        offset = (page - 1) * page_size
+        stmt = stmt.order_by(Job.created_at.desc()).offset(offset).limit(page_size)
+        jobs = list((await session.execute(stmt)).scalars().all())
+
+        return JobListResponse(
+            items=[JobResponse.model_validate(j) for j in jobs],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+@router.get("/jobs/{job_id}", response_model=JobResponse)
+async def get_admin_job_detail(
+    job_id: uuid.UUID,
+    admin: User = Depends(require_platform_admin),
+):
+    """Fetches job detail for platform admin review."""
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
+
+        stmt = select(Job).where(Job.id == job_id)
+        job = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not job:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+        return job
+
+@router.post("/jobs/{job_id}/verify", response_model=JobResponse)
+async def verify_job_posting(
+    job_id: uuid.UUID,
+    payload: JobVerifyRequest,
+    admin: User = Depends(require_platform_admin),
+):
+    """
+    Platform Admin Job Verification Action:
+    Approves or Rejects a job posting. Rejection requires a reason.
+    Records admin identity, timestamp, and audit trail.
+    """
+    action_upper = payload.action.upper()
+    if action_upper not in ["APPROVE", "REJECT"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Action must be APPROVE or REJECT.")
+
+    if action_upper == "REJECT" and not payload.rejection_reason:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rejection Reason Required: Rejection reason must be provided when rejecting a job posting.",
+        )
+
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
+
+        stmt = select(Job).where(Job.id == job_id)
+        job = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not job:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+        # Set tenant context for audit log writing
+        await set_tenant_context(session, organization_id=job.organization_id, is_platform_admin=True)
+
+        if action_upper == "APPROVE":
+            job.verification_status = JobVerificationStatusEnum.APPROVED
+            job.rejection_reason = None
+            audit_action = "job.approved"
+        else:
+            job.verification_status = JobVerificationStatusEnum.REJECTED
+            job.rejection_reason = payload.rejection_reason
+            audit_action = "job.rejected"
+
+        job.verified_by_user_id = admin.id
+        job.verified_at = datetime.now(timezone.utc)
+
+        audit = AuditLog(
+            organization_id=job.organization_id,
+            user_id=admin.id,
+            action=audit_action,
+            resource_type="job",
+            resource_id=str(job.id),
+        )
+        session.add(audit)
+        await session.commit()
+
+        await session.begin()
+        await set_tenant_context(session, organization_id=job.organization_id, is_platform_admin=True)
+        return (await session.execute(stmt)).scalar_one()

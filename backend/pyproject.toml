@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-hiring-backend"
+version = "1.0.0"
+description = "Multi-Tenant AI Hiring Platform Backend Service"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "sqlalchemy>=2.0.28",
+    "asyncpg>=0.29.0",
+    "pgvector>=0.2.5",
+    "alembic>=1.13.1",
+    "redis>=5.0.3",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "argon2-cffi>=23.1.0",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27.0",
+    "azure-storage-blob>=12.19.0",
+    "azure-servicebus>=7.12.0",
+    "pymupdf>=1.24.0",
+    "python-docx>=1.1.0",
+    "scikit-learn>=1.4.1",
+    "opentelemetry-api>=1.23.0",
+    "opentelemetry-sdk>=1.23.0",
+    "opentelemetry-instrumentation-fastapi>=0.44b0",
+    "opentelemetry-exporter-otlp>=1.23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1.0",
+    "pytest-asyncio>=0.23.5",
+    "httpx>=0.27.0",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
