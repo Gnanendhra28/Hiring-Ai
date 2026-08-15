@@ -1,0 +1,76 @@
+services:
+  backend:
+    image: ${ECR_REGISTRY:-681447158789.dkr.ecr.ap-south-2.amazonaws.com}/hiring-ai-backend-prod:${GIT_SHA:-latest}
+    container_name: hiring_backend_production
+    restart: always
+    expose:
+      - "8000"
+    environment:
+      - APP_ENV=production
+      - ENVIRONMENT=production
+      - AWS_REGION=${AWS_REGION:-ap-south-2}
+      - DATABASE_URL=${DATABASE_URL}
+      - S3_BUCKET_NAME=sthiring-documents-prod-ap-south-2
+      - SQS_QUEUE_URL=https://sqs.ap-south-2.amazonaws.com/${AWS_ACCOUNT_ID:-681447158789}/production-application-events
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - AI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: ${ECR_REGISTRY:-681447158789.dkr.ecr.ap-south-2.amazonaws.com}/hiring-ai-frontend-prod:${GIT_SHA:-latest}
+    container_name: hiring_frontend_production
+    restart: always
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${PRODUCTION_URL:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  worker:
+    image: ${ECR_REGISTRY:-681447158789.dkr.ecr.ap-south-2.amazonaws.com}/hiring-ai-worker-prod:${GIT_SHA:-latest}
+    container_name: hiring_worker_production
+    restart: always
+    command: ["python", "-m", "app.worker"]
+    environment:
+      - APP_ENV=production
+      - ENVIRONMENT=production
+      - AWS_REGION=${AWS_REGION:-ap-south-2}
+      - DATABASE_URL=${DATABASE_URL}
+      - S3_BUCKET_NAME=sthiring-documents-prod-ap-south-2
+      - SQS_QUEUE_URL=https://sqs.ap-south-2.amazonaws.com/${AWS_ACCOUNT_ID:-681447158789}/production-application-events
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - AI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  reverse-proxy:
+    image: caddy:2-alpine
+    container_name: hiring_proxy_production
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:

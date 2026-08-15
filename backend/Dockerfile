@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
+COPY alembic.ini .
+COPY alembic/ ./alembic/
 COPY app/ ./app/
 
 EXPOSE 8000

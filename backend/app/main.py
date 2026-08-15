@@ -31,6 +31,7 @@ from app.api.v1.document_intelligence import router as doc_intel_router
 
 import time
 from app.core.metrics import metrics
+from app.core.rate_limiter import rate_limiter
 from app.db.session import engine
 
 setup_logging()
@@ -63,9 +64,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Rate Limiting Middleware
+@app.middleware("http")
+async def rate_limiting_middleware(request: Request, call_next) -> Response:
+    is_limited, max_reqs, retry_after = rate_limiter.is_rate_limited(request)
+    if is_limited:
+        logger.warning(
+            f"[RateLimiter] Rate limit exceeded ({max_reqs} req/min) for path '{request.url.path}'"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "detail": "Rate limit exceeded. Too many requests. Please try again later.",
+                "retry_after_seconds": retry_after,
+            },
+            headers={"Retry-After": str(retry_after)},
+        )
+    return await call_next(request)
+
 # Request Context, Correlation ID & Metrics Middleware
 @app.middleware("http")
 async def request_context_middleware(request: Request, call_next) -> Response:
+
     start_t = time.time()
     correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
@@ -93,6 +113,7 @@ async def request_context_middleware(request: Request, call_next) -> Response:
 
 # Liveness Endpoint
 @app.get("/live", tags=["Health"])
+@app.get("/api/v1/health/liveness", tags=["Health"])
 async def liveness_probe():
     return {
         "status": "alive",
@@ -108,6 +129,7 @@ async def get_metrics():
 
 # Readiness Endpoint
 @app.get("/ready", tags=["Health"])
+@app.get("/api/v1/health/readiness", tags=["Health"])
 async def readiness_probe():
     checks: Dict[str, Any] = {}
     is_ready = True

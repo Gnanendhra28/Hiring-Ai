@@ -5,13 +5,20 @@ from sqlalchemy.orm import selectinload
 from app.api.v1.deps import get_security_context, SecurityContext
 from app.api.v1.schemas import (
     OrganizationMembershipResponse,
+    TokenRefreshRequest,
     TokenResponse,
     UserLoginRequest,
     UserProfileResponse,
     UserRegisterRequest,
     UserResponse,
 )
-from app.core.security import create_access_token, create_refresh_token, hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 from app.db.session import async_session_factory
 from app.domains.audit.models import AuditLog
 from app.domains.identity.models import User
@@ -89,6 +96,66 @@ async def login_user(payload: UserLoginRequest, request: Request):
 
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_access_token(payload: TokenRefreshRequest, request: Request):
+    """
+    Exchanges a valid JWT refresh token for a new access and refresh token pair.
+    CRITICAL SECURITY GUARD: Rejects access tokens passed as refresh tokens.
+    """
+    import uuid
+    try:
+        decoded = decode_token(payload.refresh_token)
+        if decoded.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type: Refresh token required.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user_id_str = decoded.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user_id = uuid.UUID(user_id_str)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid or expired refresh token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    async with async_session_factory() as session:
+        stmt = select(User).where(User.id == user_id, User.is_active.is_(True))
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User identity not found or account deactivated.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        new_access_token = create_access_token(user_id=user.id)
+        new_refresh_token = create_refresh_token(user_id=user.id)
+
+        audit = AuditLog(
+            user_id=user.id,
+            action="auth.refresh",
+            resource_type="user",
+            resource_id=str(user.id),
+            ip_address=request.client.host if request.client else None,
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+        session.add(audit)
+        await session.commit()
+
+        return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
+
 @router.get("/me", response_model=UserProfileResponse)
 async def get_user_profile(ctx: SecurityContext = Depends(get_security_context)):
     """
@@ -124,3 +191,4 @@ async def get_user_profile(ctx: SecurityContext = Depends(get_security_context))
             user=UserResponse.model_validate(user),
             memberships=membership_responses,
         )
+

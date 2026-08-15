@@ -30,6 +30,17 @@ resource "aws_iam_role" "runtime_role" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.runtime_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  s3_env = var.environment == "production" ? "prod" : var.environment
+}
+
 resource "aws_iam_role_policy" "runtime_policy" {
   name = "HiringAIRuntimePolicy-${var.environment}"
   role = aws_iam_role.runtime_role.id
@@ -46,8 +57,8 @@ resource "aws_iam_role_policy" "runtime_policy" {
           "s3:ListBucket"
         ]
         Resource = [
-          "arn:aws:s3:::sthiring-*",
-          "arn:aws:s3:::sthiring-*/*"
+          "arn:aws:s3:::sthiring-documents-${local.s3_env}-${var.region}",
+          "arn:aws:s3:::sthiring-documents-${local.s3_env}-${var.region}/*"
         ]
       },
       {
@@ -58,7 +69,10 @@ resource "aws_iam_role_policy" "runtime_policy" {
           "sqs:DeleteMessage",
           "sqs:GetQueueAttributes"
         ]
-        Resource = "arn:aws:sqs:${var.region}:*:*"
+        Resource = [
+          "arn:aws:sqs:${var.region}:${data.aws_caller_identity.current.account_id}:${var.environment}-application-events",
+          "arn:aws:sqs:${var.region}:${data.aws_caller_identity.current.account_id}:${var.environment}-application-events-dlq"
+        ]
       },
       {
         Effect = "Allow"
@@ -67,7 +81,7 @@ resource "aws_iam_role_policy" "runtime_policy" {
           "ssm:GetParameters",
           "ssm:GetParametersByPath"
         ]
-        Resource = "arn:aws:ssm:${var.region}:*:parameter/hiring-ai/*"
+        Resource = "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/hiring-ai/${var.environment}/*"
       },
       {
         Effect = "Allow"
@@ -78,10 +92,21 @@ resource "aws_iam_role_policy" "runtime_policy" {
           "ecr:BatchGetImage"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
       }
     ]
   })
 }
+
 
 resource "aws_iam_instance_profile" "instance_profile" {
   name = "HiringAIInstanceProfile-${var.environment}"
@@ -94,6 +119,18 @@ resource "aws_instance" "ec2_host" {
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = aws_iam_instance_profile.instance_profile.name
+
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y snapd docker.io docker-compose-v2
+              snap install amazon-ssm-agent --classic
+              systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+              systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+              systemctl enable docker
+              systemctl start docker
+              usermod -aG docker ubuntu
+              EOF
 
   root_block_device {
     volume_size           = 30

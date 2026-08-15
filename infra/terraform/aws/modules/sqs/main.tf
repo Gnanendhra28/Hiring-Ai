@@ -11,11 +11,11 @@ resource "aws_sqs_queue" "dlq" {
 resource "aws_sqs_queue" "events" {
   name                       = "${var.environment}-application-events"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 345600 # 4 days
+  message_retention_seconds  = var.message_retention_seconds
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq.arn
-    maxReceiveCount     = 3
+    maxReceiveCount     = var.max_receive_count
   })
 
   tags = {
@@ -27,6 +27,19 @@ resource "aws_sqs_queue" "events" {
 
 variable "environment" { type = string }
 
+variable "message_retention_seconds" {
+  type    = number
+  default = 345600
+}
+
+variable "max_receive_count" {
+  type    = number
+  default = 3
+}
+
 output "sqs_queue_url" { value = aws_sqs_queue.events.url }
 output "sqs_queue_arn" { value = aws_sqs_queue.events.arn }
 output "sqs_dlq_arn" { value = aws_sqs_queue.dlq.arn }
+output "queue_name" { value = aws_sqs_queue.events.name }
+output "dlq_name" { value = aws_sqs_queue.dlq.name }
+

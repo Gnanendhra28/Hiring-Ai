@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, List, Optional
 import httpx
 
@@ -41,6 +42,8 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
     ) -> Dict[str, Any]:
         """
         Executes Google Gemini REST API generateContent call for narrative recommendations & explanations.
+        Includes bounded retries with exponential backoff for transient errors (429, 500, 502, 503, 504, timeouts).
+        Fails fast immediately for permanent client errors (400, 401, 403, 404).
         """
         logger.info(f"[Gemini AI Gateway] Executing chat completion via model={self.model}")
 
@@ -69,43 +72,83 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
             },
         }
 
-        async with httpx.AsyncClient(timeout=settings.AI_REQUEST_TIMEOUT_SECONDS) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code != 200:
-                raise RuntimeError(f"Gemini API call failed with status {resp.status_code}: {resp.text}")
+        TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
+        max_attempts = 3
+        attempt = 0
+        backoff_base = 0.1  # Initial backoff: 0.1s, 0.2s
 
-            data = resp.json()
-            candidates = data.get("candidates", [])
-            text_out = ""
-            if candidates:
-                parts = candidates[0].get("content", {}).get("parts", [])
-                if parts:
-                    text_out = parts[0].get("text", "").strip()
-
-            usage = data.get("usageMetadata", {})
-            input_tokens = usage.get("promptTokenCount", len(prompt_text) // 4)
-            output_tokens = usage.get("candidatesTokenCount", len(text_out) // 4)
-
-            # Gemini pricing estimate
-            cost = (input_tokens * 0.000075 / 1000) + (output_tokens * 0.00030 / 1000)
-
+        while attempt < max_attempts:
+            attempt += 1
             try:
-                from app.core.metrics import metrics
-                metrics.increment("ai_provider_calls_total", labels={"provider": "GEMINI", "status": "success"})
-                metrics.increment("ai_tokens_total", value=input_tokens, labels={"provider": "GEMINI", "type": "input"})
-                metrics.increment("ai_tokens_total", value=output_tokens, labels={"provider": "GEMINI", "type": "output"})
-                metrics.increment("ai_estimated_cost_usd_total", value=cost, labels={"provider": "GEMINI"})
-            except Exception:
-                pass
+                async with httpx.AsyncClient(timeout=settings.AI_REQUEST_TIMEOUT_SECONDS) as client:
+                    resp = await client.post(url, json=payload)
+                    
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        candidates = data.get("candidates", [])
+                        text_out = ""
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                text_out = parts[0].get("text", "").strip()
 
-            return {
-                "content": text_out,
-                "model": self.model,
-                "provider": "GEMINI",
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "estimated_cost": round(cost, 6),
-            }
+                        usage = data.get("usageMetadata", {})
+                        input_tokens = usage.get("promptTokenCount", len(prompt_text) // 4)
+                        output_tokens = usage.get("candidatesTokenCount", len(text_out) // 4)
+
+                        # Gemini pricing estimate
+                        cost = (input_tokens * 0.000075 / 1000) + (output_tokens * 0.00030 / 1000)
+
+                        try:
+                            from app.core.metrics import metrics
+                            metrics.increment("ai_provider_calls_total", labels={"provider": "GEMINI", "status": "success"})
+                            metrics.increment("ai_tokens_total", value=input_tokens, labels={"provider": "GEMINI", "type": "input"})
+                            metrics.increment("ai_tokens_total", value=output_tokens, labels={"provider": "GEMINI", "type": "output"})
+                            metrics.increment("ai_estimated_cost_usd_total", value=cost, labels={"provider": "GEMINI"})
+                        except Exception:
+                            pass
+
+                        return {
+                            "content": text_out,
+                            "model": self.model,
+                            "provider": "GEMINI",
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
+                            "estimated_cost": round(cost, 6),
+                        }
+
+                    if resp.status_code in TRANSIENT_STATUS_CODES:
+                        if attempt < max_attempts:
+                            delay = backoff_base * (2 ** (attempt - 1))
+                            logger.warning(
+                                f"[Gemini AI Gateway] Transient error {resp.status_code} (Attempt {attempt}/{max_attempts}). "
+                                f"Retrying in {delay:.2f}s..."
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        else:
+                            logger.error(f"[Gemini AI Gateway] Max retries exhausted ({max_attempts}) for status {resp.status_code}.")
+                            raise RuntimeError(f"Gemini API call failed with status {resp.status_code}: {resp.text}")
+
+                    # Permanent client error (400, 401, 403, 404, etc.) -> DO NOT RETRY!
+                    logger.error(f"[Gemini AI Gateway] Permanent client error status {resp.status_code}: {resp.text}")
+                    raise RuntimeError(f"Gemini API call failed with status {resp.status_code}: {resp.text}")
+
+            except (httpx.TimeoutException, httpx.NetworkError) as net_err:
+                if attempt < max_attempts:
+                    delay = backoff_base * (2 ** (attempt - 1))
+                    logger.warning(
+                        f"[Gemini AI Gateway] Network/timeout exception (Attempt {attempt}/{max_attempts}): {net_err}. "
+                        f"Retrying in {delay:.2f}s..."
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                else:
+                    logger.error(f"[Gemini AI Gateway] Max retries exhausted ({max_attempts}) for network error: {net_err}")
+                    raise RuntimeError(f"Gemini API network error after {max_attempts} attempts: {str(net_err)}")
+
+        raise RuntimeError("Gemini API call failed: Max attempts reached.")
+
 
 
     async def extract_candidate_intelligence(

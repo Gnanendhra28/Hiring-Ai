@@ -15,14 +15,21 @@ engine_kwargs = {
     "future": True,
 }
 
-if settings.APP_ENV.lower() in ("testing", "test"):
+import sys
+
+if settings.APP_ENV.lower() in ("testing", "test") or "pytest" in sys.modules:
     engine_kwargs["poolclass"] = NullPool
 else:
     engine_kwargs["pool_size"] = settings.DATABASE_POOL_SIZE
     engine_kwargs["max_overflow"] = settings.DATABASE_MAX_OVERFLOW
 
+
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 engine: AsyncEngine = create_async_engine(
-    settings.DATABASE_URL,
+    db_url,
     **engine_kwargs,
 )
 

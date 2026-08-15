@@ -1,5 +1,12 @@
 import asyncio
+import os
+import sys
 from logging.config import fileConfig
+
+# Ensure current directory and parent directory are on sys.path for app module imports
+sys.path.insert(0, os.getcwd())
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -13,7 +20,10 @@ import app.domains.document_intelligence.models  # noqa: F401
 
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+config.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
 
 if config.config_file_name:
     fileConfig(config.config_file_name)

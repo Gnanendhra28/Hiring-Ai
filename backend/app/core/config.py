@@ -34,9 +34,10 @@ class Settings(BaseSettings):
 
     # Database (Azure PostgreSQL + pgvector)
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/hiring_db"
-    DATABASE_POOL_SIZE: int = 20
-    DATABASE_MAX_OVERFLOW: int = 10
+    DATABASE_POOL_SIZE: int = 5
+    DATABASE_MAX_OVERFLOW: int = 5
     DATABASE_ECHO: bool = False
+
 
     # Cache
     REDIS_URL: str = "redis://localhost:6379/0"
