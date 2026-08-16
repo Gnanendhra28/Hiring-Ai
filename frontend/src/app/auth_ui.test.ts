@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { registerCandidate, registerEmployee, loginUser } from "../lib/api";
 
-describe("Phase 28 Candidate & Employee Auth API Client", () => {
+describe("Phase 30 Candidate & Employee Auth API Client", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("registerCandidate makes POST request to /api/v1/auth/register/candidate with first_name and last_name", async () => {
+  it("registerCandidate makes POST request to /api/v1/auth/register/candidate with phone_number", async () => {
     const mockUser = {
       id: "usr-123",
       email: "candidate@example.com",
       full_name: "Jane Candidate",
+      phone_number: "+91 98765 43210",
       is_platform_admin: false,
       is_active: true,
       is_verified: false,
@@ -22,9 +23,10 @@ describe("Phase 28 Candidate & Employee Auth API Client", () => {
       json: async () => mockUser,
     });
 
-    const res = await registerCandidate("candidate@example.com", "Password123!", "Jane", "Candidate");
+    const res = await registerCandidate("candidate@example.com", "Password123!", "Jane", "Candidate", "+91 98765 43210");
     expect(res.email).toBe("candidate@example.com");
     expect(res.full_name).toBe("Jane Candidate");
+    expect(res.phone_number).toBe("+91 98765 43210");
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/register/candidate"),
       expect.objectContaining({
@@ -34,6 +36,7 @@ describe("Phase 28 Candidate & Employee Auth API Client", () => {
           password: "Password123!",
           first_name: "Jane",
           last_name: "Candidate",
+          phone_number: "+91 98765 43210",
         }),
       })
     );

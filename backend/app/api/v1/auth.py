@@ -66,8 +66,18 @@ async def register_user(payload: UserRegisterRequest, request: Request):
 
 @router.post("/register/candidate", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_candidate(payload: CandidateRegisterRequest, request: Request):
-    """Registers a Candidate identity with server-enforced CANDIDATE role assignment."""
+    """Registers a Candidate identity with server-enforced CANDIDATE role assignment and phone validation."""
     full_name = f"{payload.first_name.strip()} {payload.last_name.strip()}"
+    phone_clean = payload.phone_number.strip()
+
+    import re
+    digits = re.sub(r"\D", "", phone_clean)
+    if len(digits) < 7 or len(digits) > 15:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide a valid phone number (minimum 7 digits).",
+        )
+
     async with async_session_factory() as session:
         stmt = select(User).where(User.email == payload.email.lower())
         result = await session.execute(stmt)
@@ -81,6 +91,7 @@ async def register_candidate(payload: CandidateRegisterRequest, request: Request
             email=payload.email.lower(),
             password_hash=hash_password(payload.password),
             full_name=full_name,
+            phone_number=phone_clean,
             is_platform_admin=False,
         )
         session.add(user)

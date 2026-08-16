@@ -13,6 +13,7 @@ export default function CandidateSignupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,8 +24,20 @@ export default function CandidateSignupPage() {
     e.preventDefault();
     setError(null);
 
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNumber.trim() || !password) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    // Phone validation
+    const digitsOnly = phoneNumber.replace(/\D/g, "");
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      setError("Please enter a valid phone number (minimum 7 digits).");
+      return;
+    }
+
     if (password !== confirmPassword) {
-      setError("Passwords do not match. Please re-enter your password.");
+      setError("Passwords do not match.");
       return;
     }
 
@@ -36,7 +49,7 @@ export default function CandidateSignupPage() {
     setIsSubmitting(true);
 
     try {
-      await registerCandidate(email, password, firstName, lastName);
+      await registerCandidate(email, password, firstName, lastName, phoneNumber);
       await loginUser(email, password);
       await refetchProfile();
       router.push("/candidate/dashboard");
@@ -73,32 +86,30 @@ export default function CandidateSignupPage() {
         {/* Value Proposition */}
         <div className="relative z-10 max-w-lg my-auto space-y-6">
           <h1 className="text-4xl xl:text-5xl font-black text-white tracking-tight leading-tight">
-            Find your next <br />
-            <span className="text-gradient-cyan">opportunity with evidence.</span>
+            Find opportunities <br />
+            <span className="text-gradient-cyan">matched to your strengths.</span>
           </h1>
           <p className="text-slate-300 text-base leading-relaxed">
-            Create your candidate profile to get matched with top opportunities based on transparent, evidence-backed skill verification.
+            Create your candidate account to get matched with top opportunities based on transparent, evidence-backed skill verification.
           </p>
 
-          {/* Governance Badge */}
-          <div className="p-4 rounded-2xl glass-panel border border-emerald-500/30 flex items-center space-x-3 bg-emerald-950/20">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-sm">
-              ✓
-            </div>
-            <div>
-              <div className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">SECURE &amp; PRIVATE</div>
-              <div className="text-xs text-slate-300">Protected attribute masking ensures unbiased evaluation of your skills.</div>
-            </div>
-          </div>
-
+          {/* Value Highlights */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-              <span>Server-enforced role security with zero client manipulation</span>
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+              <span>Evidence-backed job matching</span>
             </div>
             <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-              <span>Real-time skill vector normalization against job requisitions</span>
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+              <span>Explainable recommendations</span>
+            </div>
+            <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+              <span>Application tracking &amp; interview workflow</span>
+            </div>
+            <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+              <span>Human-centered AI — Recruiter holds 100% decision authority</span>
             </div>
           </div>
         </div>
@@ -110,7 +121,7 @@ export default function CandidateSignupPage() {
         </div>
       </div>
 
-      {/* ------------------------------------------------ RIGHT SIDE: REGISTRATION CARD ------------------------------------------------ */}
+      {/* ------------------------------------------------ RIGHT SIDE: CANDIDATE REGISTRATION CARD ------------------------------------------------ */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 relative">
         <div className="glass-panel p-8 md:p-10 rounded-3xl max-w-md w-full border border-slate-800 shadow-2xl relative z-10">
           {/* Mobile Header */}
@@ -120,14 +131,14 @@ export default function CandidateSignupPage() {
                 AH
               </div>
               <span className="text-xl font-black text-white tracking-tight">
-                AuraHire <span className="text-gradient-cyan">AI</span>
+                AuraHire <span className="text-gradient-cyan">AI Enterprise</span>
               </span>
             </Link>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-white tracking-tight">Create your account</h2>
-            <p className="text-xs text-slate-400 mt-1">Find your next opportunity.</p>
+            <h2 className="text-2xl font-black text-white tracking-tight">Create your candidate account</h2>
+            <p className="text-xs text-slate-400 mt-1">Find your next opportunity with AuraHire AI.</p>
           </div>
 
           {error && (
@@ -140,41 +151,41 @@ export default function CandidateSignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="first-name-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                <label htmlFor="cand-first-name-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                   First name
                 </label>
                 <input
-                  id="first-name-input"
+                  id="cand-first-name-input"
                   type="text"
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Jane"
+                  placeholder="Enter your first name"
                   className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
                 />
               </div>
               <div>
-                <label htmlFor="last-name-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                <label htmlFor="cand-last-name-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                   Last name
                 </label>
                 <input
-                  id="last-name-input"
+                  id="cand-last-name-input"
                   type="text"
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
+                  placeholder="Enter your last name"
                   className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="email-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+              <label htmlFor="cand-email-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                 Email
               </label>
               <input
-                id="email-input"
+                id="cand-email-input"
                 type="email"
                 required
                 value={email}
@@ -185,12 +196,27 @@ export default function CandidateSignupPage() {
             </div>
 
             <div>
-              <label htmlFor="password-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+              <label htmlFor="cand-phone-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                Phone Number
+              </label>
+              <input
+                id="cand-phone-input"
+                type="tel"
+                required
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+91 XXXXX XXXXX"
+                className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="cand-password-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                 Password
               </label>
               <div className="relative">
                 <input
-                  id="password-input"
+                  id="cand-password-input"
                   type={showPassword ? "text" : "password"}
                   required
                   minLength={8}
@@ -210,11 +236,11 @@ export default function CandidateSignupPage() {
             </div>
 
             <div>
-              <label htmlFor="confirm-password-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+              <label htmlFor="cand-confirm-password-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                 Confirm Password
               </label>
               <input
-                id="confirm-password-input"
+                id="cand-confirm-password-input"
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={8}
@@ -223,6 +249,9 @@ export default function CandidateSignupPage() {
                 placeholder="••••••••••••"
                 className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
               />
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-[11px] text-rose-400 font-mono mt-1">Passwords do not match.</p>
+              )}
             </div>
 
             <button
@@ -236,7 +265,7 @@ export default function CandidateSignupPage() {
                   <span>Creating account...</span>
                 </>
               ) : (
-                <span>Create account</span>
+                <span>Create Candidate Account</span>
               )}
             </button>
           </form>

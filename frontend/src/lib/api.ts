@@ -149,7 +149,8 @@ export async function registerCandidate(
   email: string,
   password: string,
   firstName: string,
-  lastName: string
+  lastName: string,
+  phoneNumber: string
 ): Promise<AuthUser> {
   const baseUrl = getApiBaseUrl();
   try {
@@ -161,15 +162,16 @@ export async function registerCandidate(
         password,
         first_name: firstName,
         last_name: lastName,
+        phone_number: phoneNumber,
       }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: null }));
       if (res.status === 400 || res.status === 409) {
-        throw new Error("This email is already registered. Try signing in instead.");
+        throw new Error(err.detail || "This email is already registered. Try signing in instead.");
       }
       if (res.status === 422) {
-        throw new Error("Please verify all fields. Password must be at least 8 characters.");
+        throw new Error("Please verify all fields. Phone number and 8-character password are required.");
       }
       throw new Error(err.detail || "We couldn't create your candidate account right now. Please try again.");
     }

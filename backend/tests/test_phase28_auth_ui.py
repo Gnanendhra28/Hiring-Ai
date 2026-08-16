@@ -10,15 +10,16 @@ from app.core.security import hash_password, create_access_token
 from app.db.rls import set_tenant_context
 
 @pytest.mark.asyncio
-async def test_candidate_registration_assigns_candidate_role():
-    """Test candidate signup endpoint assigns candidate role server-side."""
+async def test_candidate_registration_success_stores_phone():
+    """Test candidate registration stores phone number and assigns candidate role server-side."""
     unique_email = f"candidate-{uuid.uuid4()}@example.com"
     payload = {
         "email": unique_email,
         "password": "Password123!",
         "first_name": "Jane",
         "last_name": "Candidate",
-        "role": "ADMIN"  # Malicious role tampering parameter in payload
+        "phone_number": "+91 98765 43210",
+        "role": "ADMIN"  # Malicious role parameter
     }
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -28,7 +29,50 @@ async def test_candidate_registration_assigns_candidate_role():
     data = res.json()
     assert data["email"] == unique_email
     assert data["full_name"] == "Jane Candidate"
+    assert data["phone_number"] == "+91 98765 43210"
     assert data["is_platform_admin"] is False
+
+@pytest.mark.asyncio
+async def test_candidate_registration_invalid_or_missing_phone_rejected():
+    """Test candidate signup with invalid phone (too short) or missing phone returns 422 or 400 error."""
+    payload_invalid_phone = {
+        "email": f"cand-badphone-{uuid.uuid4()}@example.com",
+        "password": "Password123!",
+        "first_name": "Bad",
+        "last_name": "Phone",
+        "phone_number": "123"  # Too short
+    }
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res = await ac.post("/api/v1/auth/register/candidate", json=payload_invalid_phone)
+    assert res.status_code in (400, 422)
+
+    payload_missing_phone = {
+        "email": f"cand-nophone-{uuid.uuid4()}@example.com",
+        "password": "Password123!",
+        "first_name": "No",
+        "last_name": "Phone"
+    }
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res2 = await ac.post("/api/v1/auth/register/candidate", json=payload_missing_phone)
+    assert res2.status_code == 422
+
+@pytest.mark.asyncio
+async def test_candidate_registration_duplicate_email_rejected():
+    """Test duplicate candidate registration returns 400 Bad Request."""
+    email = f"duplicate-{uuid.uuid4()}@example.com"
+    payload = {
+        "email": email,
+        "password": "Password123!",
+        "first_name": "Dup",
+        "last_name": "User",
+        "phone_number": "+91 99999 88888"
+    }
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res1 = await ac.post("/api/v1/auth/register/candidate", json=payload)
+        assert res1.status_code == 201
+        res2 = await ac.post("/api/v1/auth/register/candidate", json=payload)
+        assert res2.status_code == 400
+        assert "already exists" in res2.json()["detail"].lower()
 
 @pytest.mark.asyncio
 async def test_employee_registration_tampering_with_candidate_or_admin_role_fails():

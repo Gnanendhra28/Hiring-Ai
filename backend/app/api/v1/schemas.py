@@ -20,6 +20,7 @@ class CandidateRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8)
     first_name: str = Field(..., min_length=1)
     last_name: str = Field(..., min_length=1)
+    phone_number: str = Field(..., min_length=7, max_length=50)
 
 class EmployeeRegisterRequest(BaseModel):
     email: EmailStr
@@ -47,6 +48,7 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     full_name: str
+    phone_number: Optional[str] = None
     is_platform_admin: bool
     is_active: bool
     is_verified: bool
