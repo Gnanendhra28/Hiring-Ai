@@ -81,10 +81,8 @@ export function getApiBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  // In development, if window is present, relative paths trigger Next.js rewrites.
-  // When running client-side without NEXT_PUBLIC_API_URL set, default to local FastAPI backend port 8000.
-  if (typeof window !== "undefined" && window.location.port === "3000") {
-    return "http://localhost:8000";
+  if (typeof window !== "undefined") {
+    return "";
   }
   return "http://localhost:8000";
 }
