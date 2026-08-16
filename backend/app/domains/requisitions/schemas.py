@@ -85,6 +85,8 @@ class RequisitionReportResponse(BaseModel):
 class TenantRequisitionReportResponse(BaseModel):
     organization_id: uuid.UUID
     total_requisitions: int = 0
+    total_jobs: int = 0
+    active_jobs: int = 0
     requisition_status_counts: Dict[str, int] = {"DRAFT": 0, "PUBLISHED": 0, "PAUSED": 0, "CLOSED": 0}
     total_applications_all_jobs: int = 0
     total_hired_all_jobs: int = 0

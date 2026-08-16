@@ -333,6 +333,8 @@ class RequisitionReportingService:
             return TenantRequisitionReportResponse(
                 organization_id=organization_id,
                 total_requisitions=len(jobs),
+                total_jobs=len(jobs),
+                active_jobs=status_counts.get("PUBLISHED", 0),
                 requisition_status_counts=status_counts,
                 total_applications_all_jobs=total_apps,
                 total_hired_all_jobs=total_hired,
