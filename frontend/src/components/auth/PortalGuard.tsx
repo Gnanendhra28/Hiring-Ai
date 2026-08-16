@@ -17,16 +17,16 @@ export function PortalGuard({ allowedPortals, children }: PortalGuardProps) {
   const pathname = usePathname();
 
   const primaryAllowedPortal = allowedPortals[0] || "recruiter";
-  const isLoginRoute = pathname && pathname.includes("/login");
+  const isAuthRoute = Boolean(pathname && (pathname.includes("/login") || pathname.includes("/signup")));
 
   useEffect(() => {
-    if (!isLoginRoute && !isLoading && !isAuthenticated) {
+    if (!isAuthRoute && !isLoading && !isAuthenticated) {
       const loginUrl = `/login?portal=${primaryAllowedPortal}&redirect=${encodeURIComponent(pathname)}`;
       router.push(loginUrl);
     }
-  }, [isLoginRoute, isLoading, isAuthenticated, primaryAllowedPortal, pathname, router]);
+  }, [isAuthRoute, isLoading, isAuthenticated, primaryAllowedPortal, pathname, router]);
 
-  if (isLoginRoute) {
+  if (isAuthRoute) {
     return <>{children}</>;
   }
 
