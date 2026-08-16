@@ -3,94 +3,116 @@
 import React, { useState } from "react";
 import Link from "next/link";
 
-interface CandidateAssRow {
+interface AssessmentItem {
   id: string;
-  assessment_title: string;
-  assigned_at: string;
-  due_at: string;
-  status: string;
+  title: string;
+  company: string;
+  duration: string;
+  assignedAt: string;
+  dueAt: string;
+  status: "PENDING" | "COMPLETED";
 }
 
 export default function CandidateAssessmentsPage() {
-  const [assessments, setAssessments] = useState<CandidateAssRow[]>([
+  const [assessments, setAssessments] = useState<AssessmentItem[]>([
     {
       id: "ass-101",
-      assessment_title: "Python Backend Systems Architecture Test",
-      assigned_at: "2026-08-14",
-      due_at: "2026-08-21",
-      status: "SENT",
+      title: "Full Stack Systems & Async Architecture Challenge",
+      company: "Nexus Hiring AI",
+      duration: "45 Minutes",
+      assignedAt: "Aug 14, 2026",
+      dueAt: "Aug 21, 2026 (Due in 5 days)",
+      status: "PENDING",
+    },
+    {
+      id: "ass-102",
+      title: "Frontend Vector Normalization & State Management Test",
+      company: "Acme Cloud Corp",
+      duration: "30 Minutes",
+      assignedAt: "Aug 10, 2026",
+      dueAt: "Aug 16, 2026",
+      status: "COMPLETED",
     },
   ]);
 
-  const handleStartTest = (id: string) => {
+  const handleStart = (id: string) => {
     setAssessments(
       assessments.map((a) => (a.id === id ? { ...a, status: "COMPLETED" } : a))
     );
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Assigned Technical Assessments</h1>
-            <p className="text-slate-400 text-xs mt-1">Complete your technical tests before the specified due date.</p>
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono mb-2">
+            <span>TECHNICAL ASSESSMENTS</span>
           </div>
-          <Link href="/candidate/dashboard" className="text-xs text-slate-400 hover:underline">
-            &larr; Candidate Dashboard
-          </Link>
+          <h1 className="text-3xl font-black text-white tracking-tight">Assigned Assessments</h1>
+          <p className="text-slate-400 text-xs mt-1">Complete your technical coding tests and skill evaluations before the specified deadlines.</p>
         </div>
 
-        {assessments.length === 0 ? (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-12 text-center">
-            <div className="text-slate-400 font-medium">No assigned assessments</div>
-            <p className="text-slate-500 text-xs mt-1">Assessments assigned by hiring organizations will appear here.</p>
+        <Link
+          href="/candidate/dashboard"
+          className="text-xs font-mono text-slate-400 hover:text-white hover:underline self-start sm:self-auto"
+        >
+          ← Return to Dashboard
+        </Link>
+      </div>
+
+      {/* Assessment Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {assessments.map((item) => (
+          <div
+            key={item.id}
+            className="glass-panel rounded-3xl p-6 border border-slate-800 space-y-5 flex flex-col justify-between hover:border-slate-700 transition-all"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono uppercase text-slate-500">{item.company}</span>
+                <span
+                  className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold border ${
+                    item.status === "COMPLETED"
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                  }`}
+                >
+                  {item.status === "COMPLETED" ? "Completed ✓" : "Action Required"}
+                </span>
+              </div>
+
+              <h2 className="text-base font-bold text-white leading-snug">{item.title}</h2>
+
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono text-slate-400 pt-2 border-t border-slate-800/80">
+                <div>
+                  <span className="text-slate-500 block text-[10px]">TIME ALLOTTED</span>
+                  <span className="text-slate-200">{item.duration}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">DEADLINE</span>
+                  <span className="text-slate-200">{item.dueAt}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              {item.status === "PENDING" ? (
+                <button
+                  onClick={() => handleStart(item.id)}
+                  className="w-full py-3 px-4 rounded-xl btn-shimmer font-bold text-white text-xs shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>Start Assessment Now</span>
+                  <span className="font-mono">→</span>
+                </button>
+              ) : (
+                <div className="py-2.5 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold text-center">
+                  Score Verified &amp; Submitted to Recruiter ✓
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 bg-slate-900/80 uppercase tracking-wider">
-                  <th className="p-4">Assessment Title</th>
-                  <th className="p-4">Assigned Date</th>
-                  <th className="p-4">Due Date</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {assessments.map((a) => (
-                  <tr key={a.id} className="hover:bg-slate-900/50">
-                    <td className="p-4 font-semibold text-white">{a.assessment_title}</td>
-                    <td className="p-4 text-slate-400">{a.assigned_at}</td>
-                    <td className="p-4 text-slate-400">{a.due_at}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-semibold border ${
-                        a.status === "COMPLETED"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                      }`}>
-                        {a.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      {a.status !== "COMPLETED" ? (
-                        <button
-                          onClick={() => handleStartTest(a.id)}
-                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-semibold shadow-md transition-all"
-                        >
-                          Start Test &rarr;
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-emerald-400 font-semibold">Completed ✓</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );

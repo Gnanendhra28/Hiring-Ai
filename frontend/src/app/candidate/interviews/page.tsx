@@ -3,84 +3,101 @@
 import React, { useState } from "react";
 import Link from "next/link";
 
-interface CandidateInterviewRow {
+interface InterviewItem {
   id: string;
-  interview_type: string;
-  scheduled_at: string;
+  type: string;
+  jobTitle: string;
+  company: string;
+  scheduledAt: string;
   timezone: string;
-  meeting_url: string;
-  status: string;
+  meetingUrl: string;
+  interviewerName: string;
+  status: "SCHEDULED" | "COMPLETED" | "RESCHEDULED";
 }
 
 export default function CandidateInterviewsPage() {
-  const [interviews] = useState<CandidateInterviewRow[]>([
+  const [interviews] = useState<InterviewItem[]>([
     {
       id: "int-101",
-      interview_type: "TECHNICAL",
-      scheduled_at: "2026-08-16 10:00 AM",
-      timezone: "America/Chicago",
-      meeting_url: "https://meet.internal/test-room/fc0f6a74d1",
+      type: "Technical Systems Architecture Interview",
+      jobTitle: "Senior Frontend Architect",
+      company: "Acme Cloud Corp",
+      scheduledAt: "Tomorrow at 2:00 PM IST (Aug 17, 2026)",
+      timezone: "Asia/Kolkata (IST)",
+      meetingUrl: "https://meet.internal/test-room/fc0f6a74d1",
+      interviewerName: "Dr. Sarah Jenkins (VP of Engineering)",
       status: "SCHEDULED",
     },
   ]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Scheduled Interviews</h1>
-            <p className="text-slate-400 text-xs mt-1">Review meeting dates, times, timezones, and join video conference rooms.</p>
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono mb-2">
+            <span>INTERVIEW ROOMS</span>
           </div>
-          <Link href="/candidate/dashboard" className="text-xs text-slate-400 hover:underline">
-            &larr; Candidate Dashboard
-          </Link>
+          <h1 className="text-3xl font-black text-white tracking-tight">Scheduled Interviews</h1>
+          <p className="text-slate-400 text-xs mt-1">Review confirmed meeting dates, interviewer profiles, and launch your video conference room.</p>
         </div>
 
-        {interviews.length === 0 ? (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-12 text-center">
-            <div className="text-slate-400 font-medium">No interviews scheduled</div>
-            <p className="text-slate-500 text-xs mt-1">Interviews scheduled by hiring organizations will appear here.</p>
+        <Link
+          href="/candidate/dashboard"
+          className="text-xs font-mono text-slate-400 hover:text-white hover:underline self-start sm:self-auto"
+        >
+          ← Return to Dashboard
+        </Link>
+      </div>
+
+      {/* Interviews List */}
+      <div className="space-y-6">
+        {interviews.map((item) => (
+          <div
+            key={item.id}
+            className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 space-y-6 hover:border-slate-700 transition-all"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold">
+                    {item.status}
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">{item.company}</span>
+                </div>
+                <h2 className="text-lg font-bold text-white mt-1">{item.type}</h2>
+                <div className="text-xs text-slate-400 mt-0.5">{item.jobTitle} • Interviewer: {item.interviewerName}</div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <a
+                  href={item.meetingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-3 px-6 rounded-xl btn-shimmer font-bold text-white text-xs shadow-lg shadow-sky-500/20 transition-all flex items-center space-x-2"
+                >
+                  <span>Launch Video Room</span>
+                  <span className="font-mono">→</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800/80 text-xs font-mono">
+              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-slate-500 block text-[10px]">SCHEDULED TIME</span>
+                <span className="text-slate-200 font-bold">{item.scheduledAt}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-slate-500 block text-[10px]">TIMEZONE</span>
+                <span className="text-slate-200">{item.timezone}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-slate-500 block text-[10px]">VERIFICATION STATUS</span>
+                <span className="text-emerald-400 font-bold">Calendar Confirmed ✓</span>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 bg-slate-900/80 uppercase tracking-wider">
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Scheduled Date & Time</th>
-                  <th className="p-4">Timezone</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Join Meeting</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {interviews.map((i) => (
-                  <tr key={i.id} className="hover:bg-slate-900/50">
-                    <td className="p-4 font-semibold text-white">{i.interview_type}</td>
-                    <td className="p-4 text-slate-300">{i.scheduled_at}</td>
-                    <td className="p-4 text-slate-400 font-mono">{i.timezone}</td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        {i.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <a
-                        href={i.meeting_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-semibold shadow-md transition-all"
-                      >
-                        Join Room &rarr;
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );
