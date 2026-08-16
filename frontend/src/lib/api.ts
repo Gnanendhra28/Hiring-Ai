@@ -261,6 +261,52 @@ export async function fetchUserProfile(): Promise<UserProfileData | null> {
 
 export const getUserProfile = fetchUserProfile;
 
+export interface CandidateProfileData {
+  id?: string;
+  user_id?: string;
+  location?: string;
+  headline?: string;
+  summary?: string;
+  phone?: string;
+  photo_url?: string;
+  degree?: string;
+  college?: string;
+  skills?: string[];
+  experience?: any[];
+  education?: any[];
+  career_preferences?: Record<string, any>;
+  languages?: any[];
+  internships?: any[];
+  projects?: any[];
+  accomplishments?: Record<string, any>;
+  employment?: any[];
+  website_url?: string;
+  linkedin_url?: string;
+  resume_url?: string;
+  resume_filename?: string;
+  resume_filesize?: number;
+  resume_updated_at?: string;
+  created_at?: string;
+}
+
+export async function getCandidateProfile(): Promise<CandidateProfileData | null> {
+  const res = await apiFetch("/api/v1/candidate/profile");
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function updateCandidateProfile(data: Partial<CandidateProfileData>): Promise<CandidateProfileData> {
+  const res = await apiFetch("/api/v1/candidate/profile", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: null }));
+    throw new Error(err.detail || "Failed to update candidate profile.");
+  }
+  return res.json();
+}
+
 let refreshPromise: Promise<string | null> | null = null;
 
 export async function performTokenRefresh(): Promise<string | null> {

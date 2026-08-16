@@ -77,4 +77,27 @@ describe("Phase 31 Unified Auth & Google OAuth API Client", () => {
       })
     );
   });
+
+  it("getCandidateProfile and updateCandidateProfile call /api/v1/candidate/profile", async () => {
+    const mockProfile = {
+      id: "prof-123",
+      user_id: "usr-123",
+      headline: "AI Systems Engineer",
+      skills: ["Python", "FastAPI", "React"],
+      education: [{ degree: "B.Tech", institution: "IIT Bhilai", start_year: "2022", end_year: "2026" }],
+      career_preferences: { job_type: "Full-time Jobs", locations: "Bengaluru, Remote" },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockProfile,
+    });
+
+    const { getCandidateProfile, updateCandidateProfile } = await import("../lib/api");
+    const p = await getCandidateProfile();
+    expect(p?.headline).toBe("AI Systems Engineer");
+
+    const updatedP = await updateCandidateProfile({ headline: "Lead Engineer" });
+    expect(updatedP?.headline).toBe("AI Systems Engineer");
+  });
 });

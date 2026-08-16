@@ -56,11 +56,25 @@ async def update_my_candidate_profile(
                 location=payload.location,
                 headline=payload.headline,
                 summary=payload.summary,
+                phone=payload.phone,
+                photo_url=payload.photo_url,
+                degree=payload.degree,
+                college=payload.college,
                 skills=payload.skills,
                 experience=payload.experience,
                 education=payload.education,
+                career_preferences=payload.career_preferences,
+                languages=payload.languages,
+                internships=payload.internships,
+                projects=payload.projects,
+                accomplishments=payload.accomplishments,
+                employment=payload.employment,
                 website_url=payload.website_url,
                 linkedin_url=payload.linkedin_url,
+                resume_url=payload.resume_url,
+                resume_filename=payload.resume_filename,
+                resume_filesize=payload.resume_filesize,
+                resume_updated_at=payload.resume_updated_at,
             )
             session.add(profile)
         else:
@@ -70,16 +84,44 @@ async def update_my_candidate_profile(
                 profile.headline = payload.headline
             if payload.summary is not None:
                 profile.summary = payload.summary
+            if payload.phone is not None:
+                profile.phone = payload.phone
+            if payload.photo_url is not None:
+                profile.photo_url = payload.photo_url
+            if payload.degree is not None:
+                profile.degree = payload.degree
+            if payload.college is not None:
+                profile.college = payload.college
             if payload.skills is not None:
                 profile.skills = payload.skills
             if payload.experience is not None:
                 profile.experience = payload.experience
             if payload.education is not None:
                 profile.education = payload.education
+            if payload.career_preferences is not None:
+                profile.career_preferences = payload.career_preferences
+            if payload.languages is not None:
+                profile.languages = payload.languages
+            if payload.internships is not None:
+                profile.internships = payload.internships
+            if payload.projects is not None:
+                profile.projects = payload.projects
+            if payload.accomplishments is not None:
+                profile.accomplishments = payload.accomplishments
+            if payload.employment is not None:
+                profile.employment = payload.employment
             if payload.website_url is not None:
                 profile.website_url = payload.website_url
             if payload.linkedin_url is not None:
                 profile.linkedin_url = payload.linkedin_url
+            if payload.resume_url is not None:
+                profile.resume_url = payload.resume_url
+            if payload.resume_filename is not None:
+                profile.resume_filename = payload.resume_filename
+            if payload.resume_filesize is not None:
+                profile.resume_filesize = payload.resume_filesize
+            if payload.resume_updated_at is not None:
+                profile.resume_updated_at = payload.resume_updated_at
 
         await session.commit()
         await session.refresh(profile)

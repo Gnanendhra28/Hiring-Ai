@@ -112,25 +112,53 @@ class CandidateProfileRequest(BaseModel):
     location: Optional[str] = Field(None, max_length=255)
     headline: Optional[str] = Field(None, max_length=255)
     summary: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=50)
+    photo_url: Optional[str] = Field(None, max_length=500)
+    degree: Optional[str] = Field(None, max_length=255)
+    college: Optional[str] = Field(None, max_length=255)
     skills: Optional[List[str]] = Field(default_factory=list)
     experience: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     education: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    career_preferences: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    languages: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    internships: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    projects: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    accomplishments: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    employment: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     website_url: Optional[str] = Field(None, max_length=500)
     linkedin_url: Optional[str] = Field(None, max_length=500)
+    resume_url: Optional[str] = Field(None, max_length=500)
+    resume_filename: Optional[str] = Field(None, max_length=255)
+    resume_filesize: Optional[int] = None
+    resume_updated_at: Optional[str] = None
 
 class CandidateProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     user_id: uuid.UUID
-    location: Optional[str]
-    headline: Optional[str]
-    summary: Optional[str]
-    skills: Optional[List[str]]
-    experience: Optional[List[Any]]
-    education: Optional[List[Any]]
-    website_url: Optional[str]
-    linkedin_url: Optional[str]
+    location: Optional[str] = None
+    headline: Optional[str] = None
+    summary: Optional[str] = None
+    phone: Optional[str] = None
+    photo_url: Optional[str] = None
+    degree: Optional[str] = None
+    college: Optional[str] = None
+    skills: Optional[List[str]] = None
+    experience: Optional[List[Any]] = None
+    education: Optional[List[Any]] = None
+    career_preferences: Optional[Dict[str, Any]] = None
+    languages: Optional[List[Any]] = None
+    internships: Optional[List[Any]] = None
+    projects: Optional[List[Any]] = None
+    accomplishments: Optional[Dict[str, Any]] = None
+    employment: Optional[List[Any]] = None
+    website_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    resume_url: Optional[str] = None
+    resume_filename: Optional[str] = None
+    resume_filesize: Optional[int] = None
+    resume_updated_at: Optional[str] = None
     created_at: datetime
 
 # --- Job Workspace Schemas ---
