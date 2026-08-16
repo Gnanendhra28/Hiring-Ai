@@ -5,6 +5,27 @@ import Link from "next/link";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"scoring" | "verification" | "governance">("scoring");
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsAccountMenuOpen(false);
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("#homepage-account-menu")) {
+        setIsAccountMenuOpen(false);
+      }
+    };
+    if (isAccountMenuOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isAccountMenuOpen]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-sky-500 selection:text-white relative overflow-hidden font-sans">
@@ -40,19 +61,73 @@ export default function Home() {
             <a href="#security" className="hover:text-sky-400 transition-colors">Security</a>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/candidate/login"
-              className="px-4 py-2 text-xs md:text-sm font-medium rounded-lg glass-panel hover:bg-slate-800 text-slate-200 border border-slate-700 transition-all"
+          {/* Profile / Account Dropdown Menu */}
+          <div className="relative" id="homepage-account-menu">
+            <button
+              type="button"
+              aria-label="Account Menu"
+              aria-expanded={isAccountMenuOpen}
+              onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+              className="w-10 h-10 rounded-full glass-panel border border-slate-700 hover:border-sky-500/50 hover:bg-slate-800 flex items-center justify-center text-slate-200 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-md"
             >
-              Candidate Login
-            </Link>
-            <Link
-              href="/employee/login"
-              className="px-4 py-2 text-xs md:text-sm font-semibold rounded-lg bg-sky-500 hover:bg-sky-400 text-white transition-all shadow-md shadow-sky-500/20 hover:shadow-sky-500/40"
-            >
-              Employee Login
-            </Link>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </button>
+
+            {isAccountMenuOpen && (
+              <div className="absolute right-0 mt-3 w-64 glass-panel bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl p-3 z-50 backdrop-blur-xl space-y-3 font-sans">
+                <div className="px-3 py-1.5 border-b border-slate-800/80">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Account</span>
+                </div>
+
+                {/* Candidate Section */}
+                <div className="space-y-1">
+                  <div className="px-3 py-1 text-[11px] font-mono font-semibold text-sky-400 uppercase tracking-wider">
+                    Candidate
+                  </div>
+                  <Link
+                    href="/candidate/login"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                    className="flex items-center space-x-2 px-3 py-2 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                    <span>Sign in</span>
+                  </Link>
+                  <Link
+                    href="/candidate/signup"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                    className="flex items-center space-x-2 px-3 py-2 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                    <span>Create account</span>
+                  </Link>
+                </div>
+
+                {/* Employee / Recruiter Section */}
+                <div className="space-y-1 pt-2 border-t border-slate-800/80">
+                  <div className="px-3 py-1 text-[11px] font-mono font-semibold text-indigo-400 uppercase tracking-wider">
+                    Employee / Recruiter
+                  </div>
+                  <Link
+                    href="/employee/login"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                    className="flex items-center space-x-2 px-3 py-2 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                    <span>Sign in</span>
+                  </Link>
+                  <Link
+                    href="/employee/signup"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                    className="flex items-center space-x-2 px-3 py-2 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                    <span>Create account</span>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </nav>
