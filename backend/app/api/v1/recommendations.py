@@ -81,6 +81,12 @@ async def generate_job_recommendations(
         if rec:
             results.append(CandidateRecommendationResponse.model_validate(rec))
 
+    if not results:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to generate candidate recommendations. Verify active Job Intelligence, Candidate Score, and Ranking Version exist and are not STALE.",
+        )
+
     return results
 
 @router.get("/{job_id}/recommendations", response_model=List[CandidateRecommendationResponse])

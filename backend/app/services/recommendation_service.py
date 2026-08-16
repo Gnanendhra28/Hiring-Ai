@@ -80,8 +80,22 @@ class RecommendationService:
             score_rec = (await session.execute(stmt_score)).scalars().first()
 
             if not score_rec:
-                logger.error(f"No active Phase 9B CandidateJobScore found for job {job_id} and candidate {candidate_id}.")
-                return None
+                logger.info(f"No active Phase 9B CandidateJobScore found for job {job_id} and candidate {candidate_id}. Executing scoring.")
+                from app.services.scoring_service import ScoringService
+                scoring_service = ScoringService()
+                score_success = await scoring_service.process_candidate_scoring(
+                    job_id=job_id,
+                    candidate_id=candidate_id,
+                    organization_id=organization_id,
+                    user_id=user_id,
+                    application_id=application_id,
+                )
+                if not score_success:
+                    logger.error(f"Candidate scoring failed for job {job_id} and candidate {candidate_id}.")
+                    return None
+                score_rec = (await session.execute(stmt_score)).scalars().first()
+                if not score_rec:
+                    return None
 
             # 3. Fetch Active Authoritative Candidate Ranking (Phase 9C)
             stmt_ranking_v = select(CandidateRankingVersion).where(
@@ -91,8 +105,17 @@ class RecommendationService:
             ranking_v = (await session.execute(stmt_ranking_v)).scalars().first()
 
             if not ranking_v:
-                logger.error(f"No active Phase 9C CandidateRankingVersion found for job {job_id}.")
-                return None
+                logger.info(f"No active Phase 9C CandidateRankingVersion found for job {job_id}. Executing ranking snapshot.")
+                from app.services.ranking_service import RankingService
+                ranking_service = RankingService()
+                ranking_v = await ranking_service.generate_ranking_snapshot(
+                    job_id=job_id,
+                    organization_id=organization_id,
+                    user_id=user_id,
+                )
+                if not ranking_v:
+                    logger.error(f"Candidate ranking snapshot generation failed for job {job_id}.")
+                    return None
 
             stmt_ranking_item = select(CandidateJobRanking).where(
                 CandidateJobRanking.ranking_version_id == ranking_v.id,
@@ -102,8 +125,24 @@ class RecommendationService:
             ranking_item = (await session.execute(stmt_ranking_item)).scalar_one_or_none()
 
             if not ranking_item:
-                logger.error(f"Candidate {candidate_id} not found in ranking snapshot {ranking_v.id}.")
-                return None
+                from app.services.ranking_service import RankingService
+                ranking_service = RankingService()
+                ranking_v = await ranking_service.generate_ranking_snapshot(
+                    job_id=job_id,
+                    organization_id=organization_id,
+                    user_id=user_id,
+                )
+                if ranking_v:
+                    stmt_ranking_item = select(CandidateJobRanking).where(
+                        CandidateJobRanking.ranking_version_id == ranking_v.id,
+                        CandidateJobRanking.candidate_id == candidate_id,
+                        CandidateJobRanking.organization_id == organization_id,
+                    )
+                    ranking_item = (await session.execute(stmt_ranking_item)).scalar_one_or_none()
+
+                if not ranking_item:
+                    logger.error(f"Candidate {candidate_id} not found in ranking snapshot.")
+                    return None
 
             # 4. Fetch Candidate Document & Feature Matches for Evidence Allowlist
             stmt_doc = select(CandidateDocument).where(CandidateDocument.id == score_rec.candidate_document_id)

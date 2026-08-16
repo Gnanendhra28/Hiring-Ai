@@ -142,8 +142,24 @@ class ScoringService:
             match_rec = (await session.execute(stmt_match)).scalars().first()
 
             if not match_rec:
-                logger.error(f"No CandidateJobMatch record found for job {job_id} and candidate {candidate_id}. Execute Phase 9A feature matching first.")
-                return False
+                logger.info(f"No CandidateJobMatch record found for job {job_id} and candidate {candidate_id}. Executing Phase 9A feature matching.")
+                from app.services.matching_service import MatchingService
+                matching_service = MatchingService()
+                match_success = await matching_service.process_candidate_matching(
+                    job_id=job_id,
+                    candidate_id=candidate_id,
+                    organization_id=organization_id,
+                    user_id=user_id,
+                    application_id=application_id,
+                )
+                if not match_success:
+                    logger.error(f"Candidate feature matching failed for job {job_id} and candidate {candidate_id}.")
+                    return False
+                
+                match_rec = (await session.execute(stmt_match)).scalars().first()
+                if not match_rec:
+                    logger.error(f"CandidateJobMatch record missing after matching execution for job {job_id} and candidate {candidate_id}.")
+                    return False
 
             stmt_reqs = select(CandidateRequirementMatch).where(CandidateRequirementMatch.match_id == match_rec.id)
             req_matches = list((await session.execute(stmt_reqs)).scalars().all())

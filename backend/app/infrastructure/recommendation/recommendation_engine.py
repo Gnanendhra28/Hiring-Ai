@@ -106,7 +106,7 @@ class RecommendationEngine:
             reasons.append({
                 "reason_code": ReasonCodeEnum.HIGH_SCORE_CONFIDENCE,
                 "reason_type": "POSITIVE",
-                "description": f"High score evaluation confidence ({(score_confidence * 100).toFixed(0) if hasattr(score_confidence, 'toFixed') else round(score_confidence * 100)}%).",
+                "description": f"High score evaluation confidence ({round(score_confidence * 100)}%).",
             })
         elif score_confidence < 0.65:
             reasons.append({

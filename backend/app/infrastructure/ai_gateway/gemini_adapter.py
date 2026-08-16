@@ -20,7 +20,7 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or settings.AI_API_KEY
-        self.model = model or getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
+        self.model = model or getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash")
 
         env = settings.APP_ENV.lower().strip()
         if env in ("staging", "production"):
