@@ -28,6 +28,7 @@ from app.api.v1.assessments import router as assessments_router
 from app.api.v1.interviews import router as interviews_router
 from app.api.v1.communications import router as communications_router
 from app.api.v1.document_intelligence import router as doc_intel_router
+from app.api.v1.requisitions import router as requisitions_router
 
 import time
 from app.core.metrics import metrics
@@ -195,6 +196,7 @@ app.include_router(assessments_router, prefix="/api/v1")
 app.include_router(interviews_router, prefix="/api/v1")
 app.include_router(communications_router, prefix="/api/v1")
 app.include_router(doc_intel_router, prefix="/api/v1")
+app.include_router(requisitions_router, prefix="/api/v1")
 
 @app.get("/api/v1/health", tags=["Health"])
 async def api_health_check():

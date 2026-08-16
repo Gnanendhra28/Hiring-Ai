@@ -261,4 +261,28 @@ describe("Frontend API Client & Auth Refresh Interceptor", () => {
     expect(getOrgId()).toBeNull();
     expect(window.location.href).toBe("/login");
   });
+
+  // 11. Requisition reporting API helpers
+  it("11. fetchRequisitionReport calls GET /api/v1/requisitions/{id}/report", async () => {
+    setTokens("valid_token", "refresh");
+    setOrgId("org_123");
+
+    const mockReport = {
+      requisition_id: "job-123",
+      title: "Backend Engineer",
+      total_applications: 5,
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(mockReport), { status: 200 })
+    );
+    global.fetch = fetchMock;
+
+    const { fetchRequisitionReport } = await import("./api");
+    const data = await fetchRequisitionReport("job-123");
+
+    expect(data).toEqual(mockReport);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/requisitions/job-123/report");
+  });
 });

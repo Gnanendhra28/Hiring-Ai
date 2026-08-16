@@ -480,4 +480,108 @@ export async function completeCandidateHire(jobId: string, appId: string, notes?
   });
 }
 
+export interface FunnelConversionMetrics {
+  application_to_eligible_pct: number;
+  eligible_to_top_k_pct: number;
+  top_k_to_reviewed_pct: number;
+  reviewed_to_advanced_pct: number;
+  advanced_to_offer_pct: number;
+  offer_to_accepted_pct: number;
+  accepted_to_hired_pct: number;
+}
+
+export interface DecisionAnalytics {
+  decision_counts: { ADVANCE: number; REJECT: number; HOLD: number };
+  decision_rates_pct: { advance_rate_pct: number; reject_rate_pct: number; hold_rate_pct: number };
+  ai_recommendation_distribution: { RECOMMEND: number; REQUIRES_REVIEW: number; DO_NOT_RECOMMEND: number };
+  ai_override_sample_size: number;
+  ai_agreed_count: number;
+  ai_overridden_count: number;
+  ai_override_rate_pct: number;
+  ai_override_note: string;
+}
+
+export interface ScoreAnalytics {
+  average_score?: number;
+  median_score?: number;
+  highest_score?: number;
+  lowest_score?: number;
+  pass_count: number;
+  fail_count: number;
+  confidence_distribution: { HIGH: number; MEDIUM: number; LOW: number };
+}
+
+export interface OfferAnalytics {
+  offers_extended: number;
+  offers_accepted: number;
+  offer_acceptance_rate_pct: number;
+  avg_offer_to_acceptance_days?: number;
+}
+
+export interface RequisitionReport {
+  requisition_id: string;
+  organization_id: string;
+  title: string;
+  department?: string;
+  location?: string;
+  employment_type: string;
+  job_status: string;
+  created_at: string;
+  closed_at?: string;
+  active_intelligence_version?: number;
+  intelligence_status?: string;
+  intelligence_confidence?: number;
+  total_applications: number;
+  eligible_applications: number;
+  ineligible_applications: number;
+  top_k_candidates: number;
+  candidates_reviewed: number;
+  candidates_advanced: number;
+  candidates_rejected: number;
+  candidates_held: number;
+  offers_extended: number;
+  offers_accepted: number;
+  candidates_hired: number;
+  requisition_fill_status: string;
+  funnel_conversion: FunnelConversionMetrics;
+  decision_analytics: DecisionAnalytics;
+  score_analytics: ScoreAnalytics;
+  offer_analytics: OfferAnalytics;
+  time_to_first_candidate_days?: number;
+  time_to_first_review_days?: number;
+  time_to_first_decision_days?: number;
+  time_to_fill_days?: number;
+  time_to_hire_days?: number;
+}
+
+export interface TenantRequisitionReport {
+  organization_id: string;
+  total_requisitions: number;
+  requisition_status_counts: { DRAFT: number; PUBLISHED: number; PAUSED: number; CLOSED: number };
+  total_applications_all_jobs: number;
+  total_hired_all_jobs: number;
+  avg_tenant_time_to_fill_days?: number;
+  avg_tenant_time_to_hire_days?: number;
+}
+
+export async function fetchRequisitionReport(jobId: string): Promise<RequisitionReport | null> {
+  const res = await apiFetch(`/api/v1/requisitions/${jobId}/report`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchTenantRequisitionReport(): Promise<TenantRequisitionReport | null> {
+  const res = await apiFetch(`/api/v1/requisitions/report`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function exportRequisitionReportCSV(jobId: string): Promise<Response> {
+  return await apiFetch(`/api/v1/requisitions/${jobId}/report/export`);
+}
+
 
