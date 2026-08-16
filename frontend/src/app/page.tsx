@@ -42,22 +42,22 @@ export default function Home() {
 
           <div className="flex items-center space-x-3">
             <Link
-              href="/recruiter/dashboard"
+              href="/login?portal=recruiter"
               className="px-4 py-2 text-xs md:text-sm font-semibold rounded-lg bg-sky-500 hover:bg-sky-400 text-white transition-all shadow-md shadow-sky-500/20 hover:shadow-sky-500/40"
             >
-              Recruiter Portal
+              Recruiter Login
             </Link>
             <Link
-              href="/candidate/dashboard"
+              href="/login?portal=candidate"
               className="px-4 py-2 text-xs md:text-sm font-medium rounded-lg glass-panel hover:bg-slate-800 text-slate-200 border border-slate-700 transition-all"
             >
-              Candidate Portal
+              Candidate Login
             </Link>
             <Link
-              href="/admin/dashboard"
+              href="/login?portal=admin"
               className="hidden lg:inline-flex px-3 py-2 text-xs font-mono font-medium rounded-lg text-slate-400 hover:text-white transition-colors"
             >
-              Admin
+              Admin Login
             </Link>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function Home() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link
-              href="/recruiter/dashboard"
+              href="/login?portal=recruiter"
               className="w-full sm:w-auto px-8 py-4 text-base font-bold rounded-xl btn-shimmer text-white shadow-xl shadow-sky-500/25 flex items-center justify-center gap-2 group"
             >
               <span>Access Recruiter Portal</span>
@@ -96,17 +96,17 @@ export default function Home() {
             </Link>
 
             <Link
-              href="/candidate/dashboard"
+              href="/login?portal=candidate"
               className="w-full sm:w-auto px-8 py-4 text-base font-semibold rounded-xl glass-panel-hover text-slate-200 border border-slate-700/80 flex items-center justify-center gap-2"
             >
-              <span>Candidate Portal</span>
+              Candidate Login
             </Link>
 
             <Link
-              href="/admin/dashboard"
+              href="/login?portal=admin"
               className="w-full sm:w-auto px-6 py-4 text-base font-mono text-slate-400 hover:text-white border border-transparent hover:border-slate-800 rounded-xl transition-all"
             >
-              Platform Admin
+              Platform Admin Login
             </Link>
           </div>
         </div>
@@ -679,24 +679,24 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/recruiter/dashboard"
+              href="/login?portal=recruiter"
               className="w-full sm:w-auto px-8 py-4 text-base font-bold rounded-xl btn-shimmer text-white shadow-xl shadow-sky-500/25"
             >
-              Recruiter Dashboard →
+              Recruiter Login →
             </Link>
 
             <Link
-              href="/candidate/dashboard"
+              href="/login?portal=candidate"
               className="w-full sm:w-auto px-8 py-4 text-base font-semibold rounded-xl glass-panel-hover text-slate-200 border border-slate-700"
             >
-              Candidate Portal
+              Candidate Login
             </Link>
 
             <Link
-              href="/admin/dashboard"
+              href="/login?portal=admin"
               className="w-full sm:w-auto px-6 py-4 text-base font-mono text-slate-400 hover:text-white transition-colors"
             >
-              Platform Admin
+              Admin Login
             </Link>
           </div>
         </div>
@@ -714,9 +714,9 @@ export default function Home() {
           </div>
 
           <div className="flex items-center space-x-6 text-xs text-slate-400">
-            <Link href="/recruiter/dashboard" className="hover:text-white transition-colors">Recruiter</Link>
-            <Link href="/candidate/dashboard" className="hover:text-white transition-colors">Candidate</Link>
-            <Link href="/admin/dashboard" className="hover:text-white transition-colors">Admin</Link>
+            <Link href="/login?portal=recruiter" className="hover:text-white transition-colors">Recruiter Login</Link>
+            <Link href="/login?portal=candidate" className="hover:text-white transition-colors">Candidate Login</Link>
+            <Link href="/login?portal=admin" className="hover:text-white transition-colors">Admin Login</Link>
           </div>
 
           <div className="flex items-center space-x-2 text-xs font-mono text-emerald-400">

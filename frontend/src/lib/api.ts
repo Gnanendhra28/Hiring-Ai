@@ -54,6 +54,69 @@ export function logoutAndRedirect(redirectUrl = "/login"): void {
   }
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  full_name: string;
+  is_platform_admin: boolean;
+  is_active: boolean;
+  is_verified: boolean;
+}
+
+export interface OrgMembership {
+  id: string;
+  organization_id: string;
+  organization_name: string;
+  organization_slug: string;
+  role: "PLATFORM_ADMIN" | "ORGANIZATION_ADMIN" | "RECRUITER" | "CANDIDATE";
+  status: "ACTIVE" | "SUSPENDED" | "INVITED";
+}
+
+export interface UserProfileData {
+  user: AuthUser;
+  memberships: OrgMembership[];
+}
+
+export async function loginUser(email: string, password: string): Promise<{ access_token: string; refresh_token: string }> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Authentication failed." }));
+    throw new Error(err.detail || "Authentication failed.");
+  }
+  const data = await res.json();
+  setTokens(data.access_token, data.refresh_token);
+  return data;
+}
+
+export async function registerUser(email: string, password: string, full_name: string): Promise<AuthUser> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, full_name }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Registration failed." }));
+    throw new Error(err.detail || "Registration failed.");
+  }
+  return res.json();
+}
+
+export async function fetchUserProfile(): Promise<UserProfileData | null> {
+  const res = await apiFetch("/api/v1/auth/me");
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.memberships && data.memberships.length > 0 && !getOrgId()) {
+    setOrgId(data.memberships[0].organization_id);
+  }
+  return data;
+}
+
 let refreshPromise: Promise<string | null> | null = null;
 
 export async function performTokenRefresh(): Promise<string | null> {

@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: 'Multi-Tenant End-to-End AI-Powered Recruitment SaaS Platform',
 }
 
+import { AuthProvider } from '@/components/auth/AuthContext'
+
 export default function RootLayout({
   children,
 }: {
@@ -16,7 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }
