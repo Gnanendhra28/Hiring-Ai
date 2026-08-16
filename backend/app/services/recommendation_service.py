@@ -9,6 +9,7 @@ from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.applications.models import Application, ApplicationStatusEnum
 from app.domains.audit.models import AuditLog
+from app.domains.candidates.models import CandidateProfile
 from app.domains.document_intelligence.models import CandidateDocument
 from app.domains.job_intelligence.models import (
     JobIntelligenceVersion,
@@ -341,17 +342,25 @@ class RecommendationService:
             prev_state = dec_obj.review_state.value if dec_obj else ReviewStateEnum.PENDING_REVIEW.value
             new_state = ReviewStateEnum.DECIDED.value
 
+            stmt_prof = select(CandidateProfile).where(
+                (CandidateProfile.id == app_obj.candidate_id) | (CandidateProfile.user_id == app_obj.candidate_id)
+            )
+            prof_obj = (await session.execute(stmt_prof)).scalar_one_or_none()
+            cand_prof_id = prof_obj.id if prof_obj else app_obj.candidate_id
+
             if not dec_obj:
                 dec_obj = CandidateDecision(
                     organization_id=organization_id,
                     job_id=app_obj.job_id,
-                    candidate_id=app_obj.candidate_id,
+                    candidate_id=cand_prof_id,
                     application_id=application_id,
                     review_state=ReviewStateEnum.DECIDED,
                     decision=decision,
                     decision_reason=decision_reason,
                     decided_by_user_id=user_id,
                     decided_at=func.now(),
+                    created_at=func.now(),
+                    updated_at=func.now(),
                 )
                 session.add(dec_obj)
             else:
@@ -360,12 +369,13 @@ class RecommendationService:
                 dec_obj.decision_reason = decision_reason
                 dec_obj.decided_by_user_id = user_id
                 dec_obj.decided_at = func.now()
+                dec_obj.updated_at = func.now()
 
             # Append Immutable Decision Audit Record
             audit_entry = CandidateDecisionAudit(
                 organization_id=organization_id,
                 job_id=app_obj.job_id,
-                candidate_id=app_obj.candidate_id,
+                candidate_id=cand_prof_id,
                 application_id=application_id,
                 recommendation_id=dec_obj.recommendation_id,
                 decision=decision,
@@ -373,6 +383,8 @@ class RecommendationService:
                 new_state=new_state,
                 decision_reason=decision_reason,
                 decided_by_user_id=user_id,
+                decided_at=func.now(),
+                created_at=func.now(),
             )
             session.add(audit_entry)
 
@@ -392,6 +404,7 @@ class RecommendationService:
             session.add(audit_log)
 
             await session.commit()
+            await session.refresh(dec_obj)
 
             # Publish Event
             event_envelope = EventEnvelope(
