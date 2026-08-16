@@ -77,34 +77,72 @@ export interface UserProfileData {
   memberships: OrgMembership[];
 }
 
-export async function loginUser(email: string, password: string): Promise<{ access_token: string; refresh_token: string }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-  const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Authentication failed." }));
-    throw new Error(err.detail || "Authentication failed.");
+export function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-  const data = await res.json();
-  setTokens(data.access_token, data.refresh_token);
-  return data;
+  // In development, if window is present, relative paths trigger Next.js rewrites.
+  // When running client-side without NEXT_PUBLIC_API_URL set, default to local FastAPI backend port 8000.
+  if (typeof window !== "undefined" && window.location.port === "3000") {
+    return "http://localhost:8000";
+  }
+  return "http://localhost:8000";
+}
+
+export async function loginUser(email: string, password: string): Promise<{ access_token: string; refresh_token: string }> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: null }));
+      if (res.status === 401) {
+        throw new Error("Invalid email address or password. Please try again.");
+      }
+      if (res.status === 403) {
+        throw new Error("Your account has been deactivated or lacks access.");
+      }
+      throw new Error(err.detail || "Authentication failed. Please check your credentials.");
+    }
+    const data = await res.json();
+    setTokens(data.access_token, data.refresh_token);
+    return data;
+  } catch (error: any) {
+    if (error.name === "TypeError" || error.message.includes("fetch")) {
+      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
+    }
+    throw error;
+  }
 }
 
 export async function registerUser(email: string, password: string, full_name: string): Promise<AuthUser> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-  const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, full_name }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Registration failed." }));
-    throw new Error(err.detail || "Registration failed.");
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, full_name }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: null }));
+      if (res.status === 400 || res.status === 409) {
+        throw new Error("This email is already registered. Try signing in instead.");
+      }
+      if (res.status === 422) {
+        throw new Error("Please verify all fields. Password must be at least 8 characters.");
+      }
+      throw new Error(err.detail || "We couldn't create your account right now. Please try again.");
+    }
+    return res.json();
+  } catch (error: any) {
+    if (error.name === "TypeError" || error.message.includes("fetch")) {
+      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
+    }
+    throw error;
   }
-  return res.json();
 }
 
 export async function registerCandidate(
@@ -113,22 +151,35 @@ export async function registerCandidate(
   firstName: string,
   lastName: string
 ): Promise<AuthUser> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-  const res = await fetch(`${baseUrl}/api/v1/auth/register/candidate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      password,
-      first_name: firstName,
-      last_name: lastName,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Candidate registration failed." }));
-    throw new Error(err.detail || "Candidate registration failed.");
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/auth/register/candidate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: null }));
+      if (res.status === 400 || res.status === 409) {
+        throw new Error("This email is already registered. Try signing in instead.");
+      }
+      if (res.status === 422) {
+        throw new Error("Please verify all fields. Password must be at least 8 characters.");
+      }
+      throw new Error(err.detail || "We couldn't create your candidate account right now. Please try again.");
+    }
+    return res.json();
+  } catch (error: any) {
+    if (error.name === "TypeError" || error.message.includes("fetch")) {
+      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
+    }
+    throw error;
   }
-  return res.json();
 }
 
 export async function registerEmployee(
@@ -138,23 +189,36 @@ export async function registerEmployee(
   lastName: string,
   companyName?: string
 ): Promise<AuthUser> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-  const res = await fetch(`${baseUrl}/api/v1/auth/register/employee`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      password,
-      first_name: firstName,
-      last_name: lastName,
-      company_name: companyName,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Employee registration failed." }));
-    throw new Error(err.detail || "Employee registration failed.");
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/auth/register/employee`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        company_name: companyName,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: null }));
+      if (res.status === 400 || res.status === 409) {
+        throw new Error("This email is already registered. Try signing in instead.");
+      }
+      if (res.status === 422) {
+        throw new Error("Please verify all fields. Password must be at least 8 characters.");
+      }
+      throw new Error(err.detail || "We couldn't create your employee account right now. Please try again.");
+    }
+    return res.json();
+  } catch (error: any) {
+    if (error.name === "TypeError" || error.message.includes("fetch")) {
+      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
+    }
+    throw error;
   }
-  return res.json();
 }
 
 export async function fetchUserProfile(): Promise<UserProfileData | null> {

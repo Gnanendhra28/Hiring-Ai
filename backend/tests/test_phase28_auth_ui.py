@@ -18,7 +18,7 @@ async def test_candidate_registration_assigns_candidate_role():
         "password": "Password123!",
         "first_name": "Jane",
         "last_name": "Candidate",
-        "role": "PLATFORM_ADMIN"  # Malicious role parameter in payload
+        "role": "ADMIN"  # Malicious role tampering parameter in payload
     }
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -29,6 +29,40 @@ async def test_candidate_registration_assigns_candidate_role():
     assert data["email"] == unique_email
     assert data["full_name"] == "Jane Candidate"
     assert data["is_platform_admin"] is False
+
+@pytest.mark.asyncio
+async def test_employee_registration_tampering_with_candidate_or_admin_role_fails():
+    """Test employee registration ignores client-supplied CANDIDATE or PLATFORM_ADMIN role parameter."""
+    unique_email = f"employee-tamper-{uuid.uuid4()}@company.com"
+    company_name = f"Tamper Tech {str(uuid.uuid4())[:8]}"
+    payload = {
+        "email": unique_email,
+        "password": "Password123!",
+        "first_name": "Tamper",
+        "last_name": "User",
+        "company_name": company_name,
+        "role": "CANDIDATE"  # Malicious role parameter
+    }
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res = await ac.post("/api/v1/auth/register/employee", json=payload)
+    
+    assert res.status_code == 201
+    user_data = res.json()
+    assert user_data["is_platform_admin"] is False
+
+    # Login and verify membership is strictly RECRUITER (not CANDIDATE)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        login_res = await ac.post("/api/v1/auth/login", json={"email": unique_email, "password": "Password123!"})
+        assert login_res.status_code == 200
+        token = login_res.json()["access_token"]
+
+        async with async_session_factory() as session:
+            u = (await session.execute(select(User).where(User.email == unique_email))).scalar_one()
+            org = (await session.execute(select(Organization).where(Organization.name == company_name))).scalar_one()
+            await set_tenant_context(session, org.id)
+            mem = (await session.execute(select(OrganizationMembership).where(OrganizationMembership.user_id == u.id))).scalar_one()
+            assert mem.role == RoleEnum.RECRUITER
 
 @pytest.mark.asyncio
 async def test_employee_registration_assigns_recruiter_role():
