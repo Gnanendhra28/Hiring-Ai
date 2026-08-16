@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     OIDC_CLIENT_ID: Optional[str] = None
     OIDC_CLIENT_SECRET: Optional[str] = None
     OIDC_ISSUER: Optional[str] = None
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: Optional[str] = "http://localhost:3000/auth/callback/google"
 
     # AI Gateway & Cost Safeguards
     AI_PROVIDER: str = "gemini"

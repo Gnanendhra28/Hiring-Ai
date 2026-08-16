@@ -118,6 +118,34 @@ export async function loginUser(email: string, password: string): Promise<{ acce
   }
 }
 
+export async function getGoogleAuthUrl(redirectUri?: string): Promise<{ url: string | null; configured: boolean }> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const query = redirectUri ? `?redirect_uri=${encodeURIComponent(redirectUri)}` : "";
+    const res = await fetch(`${baseUrl}/api/v1/auth/google/url${query}`);
+    if (!res.ok) return { url: null, configured: false };
+    return res.json();
+  } catch {
+    return { url: null, configured: false };
+  }
+}
+
+export async function googleAuthCallback(code: string, redirectUri?: string, requestedRole?: string): Promise<{ access_token: string; refresh_token: string }> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v1/auth/google/callback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, redirect_uri: redirectUri, requested_role: requestedRole }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: null }));
+    throw new Error(err.detail || "Google authentication failed.");
+  }
+  const data = await res.json();
+  setTokens(data.access_token, data.refresh_token);
+  return data;
+}
+
 export async function registerUser(email: string, password: string, full_name: string): Promise<AuthUser> {
   const baseUrl = getApiBaseUrl();
   try {
@@ -232,6 +260,8 @@ export async function fetchUserProfile(): Promise<UserProfileData | null> {
   }
   return data;
 }
+
+export const getUserProfile = fetchUserProfile;
 
 let refreshPromise: Promise<string | null> | null = null;
 

@@ -1,12 +1,17 @@
 import uuid
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+import urllib.parse
+from app.core.config import settings
 from app.api.v1.deps import get_security_context, SecurityContext
 from app.api.v1.schemas import (
     CandidateRegisterRequest,
     EmployeeRegisterRequest,
+    GoogleAuthRequest,
+    GoogleAuthUrlResponse,
     OrganizationMembershipResponse,
     TokenRefreshRequest,
     TokenResponse,
@@ -311,4 +316,148 @@ async def get_user_profile(ctx: SecurityContext = Depends(get_security_context))
             user=UserResponse.model_validate(user),
             memberships=membership_responses,
         )
+
+
+@router.get("/google/url", response_model=GoogleAuthUrlResponse)
+async def get_google_auth_url(redirect_uri: Optional[str] = None):
+    """
+    Returns the Google OAuth 2.0 authorization consent URL if GOOGLE_CLIENT_ID is configured.
+    """
+    client_id = settings.GOOGLE_CLIENT_ID
+    if not client_id or client_id in ("placeholder_client_id", "placeholder_google_client_id"):
+        return GoogleAuthUrlResponse(url=None, configured=False)
+
+    target_redirect = redirect_uri or settings.GOOGLE_REDIRECT_URI or "http://localhost:3000/auth/callback/google"
+    params = {
+        "client_id": client_id,
+        "redirect_uri": target_redirect,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
+    return GoogleAuthUrlResponse(url=url, configured=True)
+
+
+@router.post("/google/callback", response_model=TokenResponse)
+async def google_oauth_callback(payload: GoogleAuthRequest, request: Request):
+    """
+    Exchanges Google OAuth code for tokens, verifies Google identity,
+    links existing accounts by verified email, or provisions a candidate/employee account.
+    CRITICAL GUARD: Admin accounts CANNOT be created via self-service Google OAuth.
+    """
+    client_id = settings.GOOGLE_CLIENT_ID
+    client_secret = settings.GOOGLE_CLIENT_SECRET
+    target_redirect = payload.redirect_uri or settings.GOOGLE_REDIRECT_URI or "http://localhost:3000/auth/callback/google"
+
+    if not client_id or not client_secret or client_id in ("placeholder_client_id", "placeholder_google_client_id"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google OAuth is not configured on this server.",
+        )
+
+    token_url = "https://oauth2.googleapis.com/token"
+    data = {
+        "code": payload.code,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": target_redirect,
+        "grant_type": "authorization_code",
+    }
+
+    import httpx
+    async with httpx.AsyncClient(timeout=10.0) as http_client:
+        token_resp = await http_client.post(token_url, data=data)
+        if token_resp.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Failed to exchange authorization code with Google: {token_resp.text}",
+            )
+        token_data = token_resp.json()
+        google_access_token = token_data.get("access_token")
+
+        if not google_access_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No access token returned from Google.",
+            )
+
+        userinfo_resp = await http_client.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {google_access_token}"},
+        )
+        if userinfo_resp.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Failed to retrieve user profile from Google.",
+            )
+        userinfo = userinfo_resp.json()
+
+    email = userinfo.get("email", "").lower()
+    email_verified = userinfo.get("email_verified", False)
+    full_name = userinfo.get("name") or f"{userinfo.get('given_name', '')} {userinfo.get('family_name', '')}".strip() or "Google User"
+
+    if not email or not email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account email is not verified.",
+        )
+
+    async with async_session_factory() as session:
+        stmt = select(User).where(User.email == email)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(
+                email=email,
+                password_hash=hash_password(str(uuid.uuid4())),
+                full_name=full_name,
+                is_platform_admin=False,
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+            if payload.requested_role and payload.requested_role.upper() in ("RECRUITER", "EMPLOYEE"):
+                import re
+                slug_base = re.sub(r'[^a-z0-9]+', '-', full_name.lower()).strip('-') or "org"
+                slug = f"{slug_base}-{str(uuid.uuid4())[:8]}"
+                org = Organization(name=f"{full_name}'s Organization", slug=slug)
+                session.add(org)
+                await session.commit()
+                await session.refresh(org)
+
+                await set_tenant_context(session, org.id)
+                membership = OrganizationMembership(
+                    organization_id=org.id,
+                    user_id=user.id,
+                    role=RoleEnum.RECRUITER,
+                    status=MembershipStatusEnum.ACTIVE,
+                )
+                session.add(membership)
+                await session.commit()
+
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account has been deactivated.",
+            )
+
+        access_token = create_access_token(user_id=user.id)
+        refresh_token = create_refresh_token(user_id=user.id)
+
+        audit = AuditLog(
+            user_id=user.id,
+            action="auth.google.login",
+            resource_type="user",
+            resource_id=str(user.id),
+            ip_address=request.client.host if request.client else None,
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+        session.add(audit)
+        await session.commit()
+
+        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 

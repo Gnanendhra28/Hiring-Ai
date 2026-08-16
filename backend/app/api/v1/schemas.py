@@ -41,6 +41,15 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
 
+class GoogleAuthRequest(BaseModel):
+    code: str
+    redirect_uri: Optional[str] = None
+    requested_role: Optional[str] = "CANDIDATE"
+
+class GoogleAuthUrlResponse(BaseModel):
+    url: Optional[str] = None
+    configured: bool
+
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
