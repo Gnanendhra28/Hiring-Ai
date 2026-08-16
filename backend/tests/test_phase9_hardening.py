@@ -48,7 +48,12 @@ async def test_missing_gemini_credentials_fail_fast_in_production():
 @pytest.mark.asyncio
 async def test_test_adapter_remains_usable_in_testing():
     """Test 3: TestAIGatewayAdapter is selected in testing environment."""
-    mock_settings = Settings(APP_ENV="testing", AI_PROVIDER="gemini")
+    mock_settings = Settings(
+        APP_ENV="testing",
+        AI_PROVIDER="gemini",
+        GEMINI_API_KEY="placeholder_gemini_api_key",
+        AI_API_KEY="placeholder_ai_api_key",
+    )
     with patch("app.infrastructure.factories.settings", mock_settings):
         provider = AIGatewayFactory.get_provider()
         assert isinstance(provider, TestAIGatewayAdapter)

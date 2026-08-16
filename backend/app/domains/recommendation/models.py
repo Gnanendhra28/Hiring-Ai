@@ -188,7 +188,7 @@ class RecommendationProcessingAudit(Base):
     recommendation_id = Column(UUID(as_uuid=True), ForeignKey("candidate_recommendations.id", ondelete="CASCADE"), nullable=False, index=True)
 
     provider = Column(String(50), nullable=False, default="gemini")
-    model = Column(String(100), nullable=False, default="gemini-1.5-flash")
+    model = Column(String(100), nullable=False, default="gemini-3.5-flash")
     input_tokens = Column(Integer, nullable=False, default=0)
     output_tokens = Column(Integer, nullable=False, default=0)
     estimated_cost_usd = Column(Float, nullable=False, default=0.0)

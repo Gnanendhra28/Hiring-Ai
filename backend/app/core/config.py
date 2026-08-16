@@ -66,19 +66,19 @@ class Settings(BaseSettings):
     OIDC_ISSUER: Optional[str] = None
 
     # AI Gateway & Cost Safeguards
-    AI_PROVIDER: str = "openai"
+    AI_PROVIDER: str = "gemini"
     LLM_PROVIDER: str = "gemini"
     AI_API_KEY: Optional[str] = "placeholder_ai_api_key"
     GEMINI_API_KEY: Optional[str] = "placeholder_gemini_api_key"
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash"
     AI_FAST_MODEL: str = "gpt-4o-mini"
     AI_STRONG_MODEL: str = "gpt-4o"
     AI_ESCALATION_CONFIDENCE_THRESHOLD: float = 0.75
     AI_MAX_INPUT_TOKENS: int = 4000
     AI_MAX_OUTPUT_TOKENS: int = 2000
     AI_REQUEST_TIMEOUT_SECONDS: float = 30.0
-    EMBEDDING_PROVIDER: str = "openai"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_PROVIDER: str = "gemini"
+    EMBEDDING_MODEL: str = "gemini-embedding-001"
     EMBEDDING_DIMENSION: int = 1536
 
 

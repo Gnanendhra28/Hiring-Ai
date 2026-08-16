@@ -217,7 +217,7 @@ class RecommendationService:
                 organization_id=organization_id,
                 recommendation_id=rec_obj.id,
                 provider=getattr(settings, "LLM_PROVIDER", getattr(settings, "AI_PROVIDER", "gemini")),
-                model=getattr(settings, "GEMINI_MODEL", getattr(settings, "AI_FAST_MODEL", "gemini-1.5-flash")),
+                model=getattr(settings, "GEMINI_MODEL", getattr(settings, "AI_FAST_MODEL", "gemini-3.5-flash")),
                 input_tokens=150,
                 output_tokens=80,
                 processing_duration_ms=duration_ms,

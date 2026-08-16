@@ -169,7 +169,7 @@ async def test_12_api_pagination_bounds():
 async def test_13_gemini_cost_tracking():
     """Verify Gemini adapter cost estimation math."""
     adapter = GeminiAIGatewayAdapter(api_key="test_key")
-    assert adapter.model == "gemini-1.5-flash"
+    assert adapter.model == "gemini-3.5-flash"
     c_in = 1000
     c_out = 500
     expected_cost = round((c_in * 0.000075 / 1000) + (c_out * 0.00030 / 1000), 6)

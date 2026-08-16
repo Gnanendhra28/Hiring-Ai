@@ -91,12 +91,13 @@ async def test_ai_provider_factory_and_fail_fast_production_credentials(monkeypa
     # Testing / Dev environment returns test adapters
     ai_provider = AIGatewayFactory.get_provider()
     emb_provider = EmbeddingProviderFactory.get_provider()
-    assert ai_provider.__class__.__name__ in ("TestAIGatewayAdapter", "OpenAIAIGatewayAdapter")
-    assert emb_provider.__class__.__name__ in ("TestEmbeddingAdapter", "OpenAIEmbeddingAdapter")
+    assert ai_provider.__class__.__name__ in ("TestAIGatewayAdapter", "OpenAIAIGatewayAdapter", "GeminiAIGatewayAdapter")
+    assert emb_provider.__class__.__name__ in ("TestEmbeddingAdapter", "OpenAIEmbeddingAdapter", "GeminiEmbeddingAdapter")
 
     # Staging / Production with placeholder secret must FAIL FAST
     monkeypatch.setattr(settings, "APP_ENV", "production")
     monkeypatch.setattr(settings, "AI_API_KEY", "placeholder_ai_api_key")
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "placeholder_gemini_api_key")
 
     with pytest.raises(ValueError, match="CRITICAL CONFIGURATION ERROR"):
         AIGatewayFactory.get_provider()
