@@ -218,3 +218,16 @@ async def api_health_check():
         "service": "api_v1",
         "version": settings.APP_VERSION,
     }
+
+@app.get("/api/v1/health/version", tags=["Health"])
+async def api_version_check():
+    """
+    Returns safe application version identification for deployment verification.
+    """
+    return {
+        "version": settings.APP_VERSION,
+        "environment": settings.APP_ENV,
+        "commit": "162420e",
+        "status": "ACTIVE",
+    }
+
