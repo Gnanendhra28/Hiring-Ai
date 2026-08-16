@@ -14,6 +14,7 @@ export default function CandidateSignupPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [collegeUniversity, setCollegeUniversity] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +26,7 @@ export default function CandidateSignupPage() {
     setError(null);
 
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNumber.trim() || !password) {
-      setError("Please fill in all required fields.");
+      setError("Please fill in all required fields including your Phone Number.");
       return;
     }
 
@@ -37,7 +38,7 @@ export default function CandidateSignupPage() {
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Passwords do not match. Please re-enter your password.");
       return;
     }
 
@@ -79,37 +80,43 @@ export default function CandidateSignupPage() {
           </Link>
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-            <span>CANDIDATE ACCOUNT REGISTRATION</span>
+            <span>CANDIDATE REGISTRATION</span>
           </div>
         </div>
 
         {/* Value Proposition */}
         <div className="relative z-10 max-w-lg my-auto space-y-6">
           <h1 className="text-4xl xl:text-5xl font-black text-white tracking-tight leading-tight">
-            Find opportunities <br />
-            <span className="text-gradient-cyan">matched to your strengths.</span>
+            Build your future. <br />
+            <span className="text-gradient-cyan">Find the right opportunity.</span>
           </h1>
           <p className="text-slate-300 text-base leading-relaxed">
-            Create your candidate account to get matched with top opportunities based on transparent, evidence-backed skill verification.
+            Create your candidate profile to showcase your skills, college/university credentials, and get matched with top roles through explainable recommendations.
           </p>
 
-          {/* Value Highlights */}
+          {/* Privacy & Security Badge */}
+          <div className="p-4 rounded-2xl glass-panel border border-emerald-500/30 flex items-center space-x-3 bg-emerald-950/20">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-sm">
+              ✓
+            </div>
+            <div>
+              <div className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">EVIDENCE-BACKED MATCHING</div>
+              <div className="text-xs text-slate-300">Protected attribute masking with explainable, multi-factor vector skill analysis.</div>
+            </div>
+          </div>
+
           <div className="space-y-3 pt-2">
             <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
-              <span>Evidence-backed job matching</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+              <span>Candidate profile creation &amp; academic institution credentials</span>
             </div>
             <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
-              <span>Explainable recommendations</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+              <span>Evidence-backed job matching and transparent skill recommendations</span>
             </div>
             <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
-              <span>Application tracking &amp; interview workflow</span>
-            </div>
-            <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
-              <span>Human-centered AI — Recruiter holds 100% decision authority</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+              <span>Real-time status updates across your entire application lifecycle</span>
             </div>
           </div>
         </div>
@@ -121,7 +128,7 @@ export default function CandidateSignupPage() {
         </div>
       </div>
 
-      {/* ------------------------------------------------ RIGHT SIDE: CANDIDATE REGISTRATION CARD ------------------------------------------------ */}
+      {/* ------------------------------------------------ RIGHT SIDE: REGISTRATION CARD ------------------------------------------------ */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 relative">
         <div className="glass-panel p-8 md:p-10 rounded-3xl max-w-md w-full border border-slate-800 shadow-2xl relative z-10">
           {/* Mobile Header */}
@@ -137,7 +144,7 @@ export default function CandidateSignupPage() {
           </div>
 
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-white tracking-tight">Create your candidate account</h2>
+            <h2 className="text-2xl font-black text-white tracking-tight">Create your account</h2>
             <p className="text-xs text-slate-400 mt-1">Find your next opportunity with AuraHire AI.</p>
           </div>
 
@@ -160,7 +167,7 @@ export default function CandidateSignupPage() {
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Enter your first name"
+                  placeholder="Jane"
                   className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
                 />
               </div>
@@ -174,7 +181,7 @@ export default function CandidateSignupPage() {
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Enter your last name"
+                  placeholder="Doe"
                   className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
                 />
               </div>
@@ -206,6 +213,20 @@ export default function CandidateSignupPage() {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="+91 XXXXX XXXXX"
+                className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="cand-college-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                College / University <span className="text-slate-500 uppercase">(Optional)</span>
+              </label>
+              <input
+                id="cand-college-input"
+                type="text"
+                value={collegeUniversity}
+                onChange={(e) => setCollegeUniversity(e.target.value)}
+                placeholder="e.g. Stanford University or IIT Bombay"
                 className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
               />
             </div>
@@ -265,7 +286,7 @@ export default function CandidateSignupPage() {
                   <span>Creating account...</span>
                 </>
               ) : (
-                <span>Create Candidate Account</span>
+                <span>Create account</span>
               )}
             </button>
           </form>
