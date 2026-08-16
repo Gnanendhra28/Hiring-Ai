@@ -145,7 +145,7 @@ export default function CandidateSignupPage() {
 
           <div className="mb-6">
             <h2 className="text-2xl font-black text-white tracking-tight">Create your account</h2>
-            <p className="text-xs text-slate-400 mt-1">Find your next opportunity with AuraHire AI.</p>
+            <p className="text-xs text-slate-400 mt-1">Find your next opportunity.</p>
           </div>
 
           {error && (
@@ -159,7 +159,7 @@ export default function CandidateSignupPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="cand-first-name-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
-                  First name
+                  First Name
                 </label>
                 <input
                   id="cand-first-name-input"
@@ -167,13 +167,13 @@ export default function CandidateSignupPage() {
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Jane"
+                  placeholder="Enter your first name"
                   className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
                 />
               </div>
               <div>
                 <label htmlFor="cand-last-name-input" className="block text-xs font-mono uppercase text-slate-400 mb-1">
-                  Last name
+                  Last Name
                 </label>
                 <input
                   id="cand-last-name-input"
@@ -181,7 +181,7 @@ export default function CandidateSignupPage() {
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
+                  placeholder="Enter your last name"
                   className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
                 />
               </div>
@@ -226,7 +226,7 @@ export default function CandidateSignupPage() {
                 type="text"
                 value={collegeUniversity}
                 onChange={(e) => setCollegeUniversity(e.target.value)}
-                placeholder="e.g. Stanford University or IIT Bombay"
+                placeholder="Enter your college or university"
                 className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm font-mono transition-all"
               />
             </div>
