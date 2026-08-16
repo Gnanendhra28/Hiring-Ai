@@ -309,5 +309,27 @@ describe("Frontend API Client & Auth Refresh Interceptor", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/requisitions/dashboard?status=PUBLISHED");
   });
+
+  // 13. Webhook API helpers
+  it("13. fetchWebhookSubscriptions calls GET /api/v1/webhooks/subscriptions", async () => {
+    setTokens("valid_token", "refresh");
+    setOrgId("org_123");
+
+    const mockSubs = [
+      { id: "sub-1", endpoint_url: "https://partner.com/wh", enabled: true, subscribed_events: ["candidate.hired"] },
+    ];
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(mockSubs), { status: 200 })
+    );
+    global.fetch = fetchMock;
+
+    const { fetchWebhookSubscriptions } = await import("./api");
+    const data = await fetchWebhookSubscriptions();
+
+    expect(data).toEqual(mockSubs);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/webhooks/subscriptions");
+  });
 });
 

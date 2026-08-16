@@ -740,5 +740,126 @@ export async function exportOrganizationReportCSV(params?: {
   return await apiFetch(url);
 }
 
+// ---------------------------------------------------------------------------
+// Phase 20: Enterprise Webhook Management APIs
+// ---------------------------------------------------------------------------
+
+export interface WebhookSubscription {
+  id: string;
+  organization_id: string;
+  endpoint_url: string;
+  enabled: boolean;
+  subscribed_events: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookSubscriptionCreateResponse extends WebhookSubscription {
+  secret: string;
+}
+
+export interface SecretRotationResponse {
+  subscription_id: string;
+  new_secret: string;
+}
+
+export interface WebhookEventResponse {
+  id: string;
+  organization_id: string;
+  subscription_id: string;
+  event_id: string;
+  event_type: string;
+  delivery_status: string;
+  attempt_count: number;
+  first_attempt_at?: string;
+  last_attempt_at?: string;
+  delivered_at?: string;
+  last_http_status?: number;
+  last_error_code?: string;
+  created_at: string;
+}
+
+export interface WebhookTestResponse {
+  subscription_id: string;
+  event_type: string;
+  delivery_status: string;
+  http_status?: number;
+  delivered: boolean;
+}
+
+export async function fetchWebhookSubscriptions(): Promise<WebhookSubscription[]> {
+  const res = await apiFetch("/api/v1/webhooks/subscriptions");
+  if (res.ok) {
+    return await res.json();
+  }
+  return [];
+}
+
+export async function createWebhookSubscription(data: {
+  endpoint_url: string;
+  subscribed_events: string[];
+}): Promise<WebhookSubscriptionCreateResponse | null> {
+  const res = await apiFetch("/api/v1/webhooks/subscriptions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function updateWebhookSubscription(
+  subscriptionId: string,
+  data: { endpoint_url?: string; enabled?: boolean; subscribed_events?: string[] }
+): Promise<WebhookSubscription | null> {
+  const res = await apiFetch(`/api/v1/webhooks/subscriptions/${subscriptionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function deleteWebhookSubscription(subscriptionId: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/webhooks/subscriptions/${subscriptionId}`, {
+    method: "DELETE",
+  });
+  return res.ok || res.status === 204;
+}
+
+export async function rotateWebhookSecret(subscriptionId: string): Promise<SecretRotationResponse | null> {
+  const res = await apiFetch(`/api/v1/webhooks/subscriptions/${subscriptionId}/rotate-secret`, {
+    method: "POST",
+  });
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function sendTestWebhook(subscriptionId: string): Promise<WebhookTestResponse | null> {
+  const res = await apiFetch(`/api/v1/webhooks/subscriptions/${subscriptionId}/test`, {
+    method: "POST",
+  });
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchWebhookDeliveryHistory(subscriptionId?: string): Promise<WebhookEventResponse[]> {
+  const query = subscriptionId ? `?subscription_id=${encodeURIComponent(subscriptionId)}` : "";
+  const res = await apiFetch(`/api/v1/webhooks/events${query}`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return [];
+}
+
 
 
