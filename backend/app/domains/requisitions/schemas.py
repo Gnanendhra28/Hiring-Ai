@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
 class FunnelConversionMetrics(BaseModel):
@@ -92,3 +92,88 @@ class TenantRequisitionReportResponse(BaseModel):
     total_hired_all_jobs: int = 0
     avg_tenant_time_to_fill_days: Optional[float] = None
     avg_tenant_time_to_hire_days: Optional[float] = None
+
+class OrganizationRequisitionPerformanceRow(BaseModel):
+    requisition_id: uuid.UUID
+    title: str
+    status: str
+    department: Optional[str] = None
+    location: Optional[str] = None
+    employment_type: str
+    applications: int = 0
+    eligible: int = 0
+    reviewed: int = 0
+    advanced: int = 0
+    offers: int = 0
+    hired: int = 0
+    time_to_fill_days: Optional[float] = None
+    time_to_hire_days: Optional[float] = None
+    intelligence_status: str = "COMPLETED"
+    created_at: datetime
+
+class OrganizationDashboardResponse(BaseModel):
+    organization_id: uuid.UUID
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
+    
+    # Requisition Summary
+    total_requisitions: int = 0
+    open_requisitions: int = 0
+    published_requisitions: int = 0
+    paused_requisitions: int = 0
+    closed_requisitions: int = 0
+    filled_requisitions: int = 0
+
+    # Pipeline Totals
+    total_applications: int = 0
+    eligible_candidates: int = 0
+    candidates_advanced: int = 0
+    offers_extended: int = 0
+    offers_accepted: int = 0
+    candidates_hired: int = 0
+
+    # Lifecycle Averages
+    avg_time_to_fill_days: Optional[float] = None
+    avg_time_to_hire_days: Optional[float] = None
+    average_candidate_score: Optional[float] = None
+
+    # Distributions
+    pass_fail_distribution: Dict[str, int] = {"PASS": 0, "FAIL": 0}
+    confidence_distribution: Dict[str, int] = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+
+    # Performance Table
+    requisitions: List[OrganizationRequisitionPerformanceRow] = []
+
+class AuditAnalyticsResponse(BaseModel):
+    organization_id: uuid.UUID
+    total_recruiter_decisions: int = 0
+    advance_count: int = 0
+    reject_count: int = 0
+    hold_count: int = 0
+    offer_extended_count: int = 0
+    offer_accepted_count: int = 0
+    candidate_hired_count: int = 0
+    audit_trail_completeness_pct: float = 100.0
+    decision_activity_by_requisition: Dict[str, int] = {}
+
+class AIGovernanceAnalyticsResponse(BaseModel):
+    organization_id: uuid.UUID
+    ai_recommendations_generated: int = 0
+    requires_review_count: int = 0
+    recommendation_confidence_distribution: Dict[str, int] = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    recommendation_generation_failures: int = 0
+    recommendation_avg_latency_ms: Optional[float] = None
+    recruiter_decisions_count: int = 0
+    recommendation_override_count: int = 0
+    ai_decision_authority: str = "HUMAN_RECRUITER_ONLY_0_PERCENT_AI_MUTATION"
+
+class AITelemetryResponse(BaseModel):
+    organization_id: uuid.UUID
+    total_gemini_requests: int = 0
+    successful_requests: int = 0
+    failed_requests: int = 0
+    retry_count: int = 0
+    estimated_input_tokens: int = 0
+    estimated_output_tokens: int = 0
+    estimated_cost_usd: float = 0.0
+    average_latency_ms: Optional[float] = None

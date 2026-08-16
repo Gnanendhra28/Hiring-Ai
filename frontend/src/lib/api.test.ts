@@ -285,4 +285,29 @@ describe("Frontend API Client & Auth Refresh Interceptor", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/requisitions/job-123/report");
   });
+
+  // 12. Organization dashboard API helper
+  it("12. fetchOrganizationDashboard calls GET /api/v1/requisitions/dashboard with query params", async () => {
+    setTokens("valid_token", "refresh");
+    setOrgId("org_123");
+
+    const mockDashboard = {
+      organization_id: "org_123",
+      total_requisitions: 3,
+      open_requisitions: 2,
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(mockDashboard), { status: 200 })
+    );
+    global.fetch = fetchMock;
+
+    const { fetchOrganizationDashboard } = await import("./api");
+    const data = await fetchOrganizationDashboard({ status: "PUBLISHED" });
+
+    expect(data).toEqual(mockDashboard);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/requisitions/dashboard?status=PUBLISHED");
+  });
 });
+

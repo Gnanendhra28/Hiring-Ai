@@ -584,4 +584,161 @@ export async function exportRequisitionReportCSV(jobId: string): Promise<Respons
   return await apiFetch(`/api/v1/requisitions/${jobId}/report/export`);
 }
 
+export interface OrganizationRequisitionPerformanceRow {
+  requisition_id: string;
+  title: string;
+  status: string;
+  department?: string;
+  location?: string;
+  employment_type: string;
+  applications: number;
+  eligible: number;
+  reviewed: number;
+  advanced: number;
+  offers: number;
+  hired: number;
+  time_to_fill_days?: number;
+  time_to_hire_days?: number;
+  intelligence_status: string;
+  created_at: string;
+}
+
+export interface OrganizationDashboard {
+  organization_id: string;
+  period_start?: string;
+  period_end?: string;
+  total_requisitions: number;
+  open_requisitions: number;
+  published_requisitions: number;
+  paused_requisitions: number;
+  closed_requisitions: number;
+  filled_requisitions: number;
+  total_applications: number;
+  eligible_candidates: number;
+  candidates_advanced: number;
+  offers_extended: number;
+  offers_accepted: number;
+  candidates_hired: number;
+  avg_time_to_fill_days?: number;
+  avg_time_to_hire_days?: number;
+  average_candidate_score?: number;
+  pass_fail_distribution: { PASS: number; FAIL: number };
+  confidence_distribution: { HIGH: number; MEDIUM: number; LOW: number };
+  requisitions: OrganizationRequisitionPerformanceRow[];
+}
+
+export interface AuditAnalytics {
+  organization_id: string;
+  total_recruiter_decisions: number;
+  advance_count: number;
+  reject_count: number;
+  hold_count: number;
+  offer_extended_count: number;
+  offer_accepted_count: number;
+  candidate_hired_count: number;
+  audit_trail_completeness_pct: number;
+  decision_activity_by_requisition: Record<string, number>;
+}
+
+export interface AIGovernanceAnalytics {
+  organization_id: string;
+  ai_recommendations_generated: number;
+  requires_review_count: number;
+  recommendation_confidence_distribution: { HIGH: number; MEDIUM: number; LOW: number };
+  recommendation_generation_failures: number;
+  recommendation_avg_latency_ms?: number;
+  recruiter_decisions_count: number;
+  recommendation_override_count: number;
+  ai_decision_authority: string;
+}
+
+export interface AITelemetry {
+  organization_id: string;
+  total_gemini_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  retry_count: number;
+  estimated_input_tokens: number;
+  estimated_output_tokens: number;
+  estimated_cost_usd: number;
+  average_latency_ms?: number;
+}
+
+export async function fetchOrganizationDashboard(params?: {
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  department?: string;
+  employment_type?: string;
+  location?: string;
+}): Promise<OrganizationDashboard | null> {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+  if (params?.status) query.append("status", params.status);
+  if (params?.department) query.append("department", params.department);
+  if (params?.employment_type) query.append("employment_type", params.employment_type);
+  if (params?.location) query.append("location", params.location);
+
+  const url = `/api/v1/requisitions/dashboard${query.toString() ? `?${query.toString()}` : ""}`;
+  const res = await apiFetch(url);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchAuditAnalytics(params?: { start_date?: string; end_date?: string }): Promise<AuditAnalytics | null> {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+  const url = `/api/v1/requisitions/audit-analytics${query.toString() ? `?${query.toString()}` : ""}`;
+  const res = await apiFetch(url);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchAIGovernanceAnalytics(params?: { start_date?: string; end_date?: string }): Promise<AIGovernanceAnalytics | null> {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+  const url = `/api/v1/requisitions/ai-governance-analytics${query.toString() ? `?${query.toString()}` : ""}`;
+  const res = await apiFetch(url);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchAITelemetry(): Promise<AITelemetry | null> {
+  const res = await apiFetch(`/api/v1/requisitions/ai-telemetry`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function exportOrganizationReportCSV(params?: {
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  department?: string;
+  employment_type?: string;
+  location?: string;
+}): Promise<Response> {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+  if (params?.status) query.append("status", params.status);
+  if (params?.department) query.append("department", params.department);
+  if (params?.employment_type) query.append("employment_type", params.employment_type);
+  if (params?.location) query.append("location", params.location);
+
+  const url = `/api/v1/requisitions/report/export${query.toString() ? `?${query.toString()}` : ""}`;
+  return await apiFetch(url);
+}
+
+
 
