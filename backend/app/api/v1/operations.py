@@ -100,3 +100,25 @@ async def get_operations_metrics(
             "recruiter_decision_authority": "HUMAN_RECRUITER_ONLY_100_PERCENT",
         },
     }
+
+@router.get("/security-events")
+async def get_security_events(
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+) -> Dict[str, Any]:
+    """
+    Returns tenant-isolated security and audit events for CloudWatch / SIEM observability.
+    Enforces RLS, X-Organization-ID, and tenant role authorization.
+    """
+    if not ctx.active_organization_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+
+    from app.core.audit_streaming import audit_streamer
+    events = audit_streamer.get_organization_events(organization_id=str(ctx.active_organization_id))
+
+    return {
+        "organization_id": str(ctx.active_organization_id),
+        "siem_adapter": audit_streamer.adapter.health_check(),
+        "total_events": len(events),
+        "events": events,
+    }
+

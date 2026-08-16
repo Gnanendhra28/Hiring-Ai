@@ -908,5 +908,31 @@ export async function fetchOperationsMetrics(): Promise<OperationsMetricsRespons
   return null;
 }
 
+export interface SecurityEventsResponse {
+  organization_id: string;
+  siem_adapter: {
+    status: string;
+    provider: string;
+    external_siem: string;
+  };
+  total_events: number;
+  events: Array<{
+    event_id: string;
+    event_type: string;
+    occurred_at: string;
+    outcome: string;
+    severity: string;
+  }>;
+}
+
+export async function fetchSecurityEvents(): Promise<SecurityEventsResponse | null> {
+  const res = await apiFetch("/api/v1/operations/security-events");
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+
 
 

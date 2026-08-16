@@ -355,5 +355,31 @@ describe("Frontend API Client & Auth Refresh Interceptor", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/operations/metrics");
   });
+
+  // 15. Security events helper
+  it("15. fetchSecurityEvents calls GET /api/v1/operations/security-events", async () => {
+    setTokens("valid_token", "refresh");
+    setOrgId("org_123");
+
+    const mockEvents = {
+      organization_id: "org_123",
+      siem_adapter: { status: "HEALTHY", provider: "CLOUDWATCH_ONLY" },
+      total_events: 1,
+      events: [{ event_id: "evt-1", event_type: "auth.login.success", occurred_at: "2026-08-16T12:00:00Z", outcome: "SUCCESS", severity: "INFO" }],
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(mockEvents), { status: 200 })
+    );
+    global.fetch = fetchMock;
+
+    const { fetchSecurityEvents } = await import("./api");
+    const data = await fetchSecurityEvents();
+
+    expect(data).toEqual(mockEvents);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/operations/security-events");
+  });
 });
+
 
