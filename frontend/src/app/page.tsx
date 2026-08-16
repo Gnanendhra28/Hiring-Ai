@@ -42,22 +42,16 @@ export default function Home() {
 
           <div className="flex items-center space-x-3">
             <Link
-              href="/login?portal=recruiter"
-              className="px-4 py-2 text-xs md:text-sm font-semibold rounded-lg bg-sky-500 hover:bg-sky-400 text-white transition-all shadow-md shadow-sky-500/20 hover:shadow-sky-500/40"
-            >
-              Recruiter Login
-            </Link>
-            <Link
-              href="/login?portal=candidate"
+              href="/candidate/login"
               className="px-4 py-2 text-xs md:text-sm font-medium rounded-lg glass-panel hover:bg-slate-800 text-slate-200 border border-slate-700 transition-all"
             >
               Candidate Login
             </Link>
             <Link
-              href="/login?portal=admin"
-              className="hidden lg:inline-flex px-3 py-2 text-xs font-mono font-medium rounded-lg text-slate-400 hover:text-white transition-colors"
+              href="/employee/login"
+              className="px-4 py-2 text-xs md:text-sm font-semibold rounded-lg bg-sky-500 hover:bg-sky-400 text-white transition-all shadow-md shadow-sky-500/20 hover:shadow-sky-500/40"
             >
-              Admin Login
+              Employee Login
             </Link>
           </div>
         </div>
@@ -86,27 +80,20 @@ export default function Home() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link
-              href="/login?portal=recruiter"
-              className="w-full sm:w-auto px-8 py-4 text-base font-bold rounded-xl btn-shimmer text-white shadow-xl shadow-sky-500/25 flex items-center justify-center gap-2 group"
-            >
-              <span>Access Recruiter Portal</span>
-              <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
-
-            <Link
-              href="/login?portal=candidate"
+              href="/candidate/login"
               className="w-full sm:w-auto px-8 py-4 text-base font-semibold rounded-xl glass-panel-hover text-slate-200 border border-slate-700/80 flex items-center justify-center gap-2"
             >
               Candidate Login
             </Link>
 
             <Link
-              href="/login?portal=admin"
-              className="w-full sm:w-auto px-6 py-4 text-base font-mono text-slate-400 hover:text-white border border-transparent hover:border-slate-800 rounded-xl transition-all"
+              href="/employee/login"
+              className="w-full sm:w-auto px-8 py-4 text-base font-bold rounded-xl btn-shimmer text-white shadow-xl shadow-sky-500/25 flex items-center justify-center gap-2 group"
             >
-              Platform Admin Login
+              <span>Employee Login</span>
+              <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </Link>
           </div>
         </div>
@@ -670,34 +657,11 @@ export default function Home() {
       {/* ---------------------------------------------------------------- FINAL CTA ---------------------------------------------------------------- */}
       <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
         <div className="p-12 rounded-3xl glass-panel border border-slate-800 relative overflow-hidden">
-          <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-6">
-            Ready to transform enterprise hiring?
-          </h2>
-          <p className="text-slate-300 text-base md:text-lg max-w-2xl mx-auto mb-8">
-            Experience evidence-backed AI recruitment with complete governance and tenant isolation.
-          </p>
-
+          <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-6">Ready to transform enterprise hiring?</h2>
+          <p className="text-slate-300 text-base md:text-lg max-w-2xl mx-auto mb-8">Experience evidence-backed AI recruitment with complete governance and tenant isolation.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/login?portal=recruiter"
-              className="w-full sm:w-auto px-8 py-4 text-base font-bold rounded-xl btn-shimmer text-white shadow-xl shadow-sky-500/25"
-            >
-              Recruiter Login →
-            </Link>
-
-            <Link
-              href="/login?portal=candidate"
-              className="w-full sm:w-auto px-8 py-4 text-base font-semibold rounded-xl glass-panel-hover text-slate-200 border border-slate-700"
-            >
-              Candidate Login
-            </Link>
-
-            <Link
-              href="/login?portal=admin"
-              className="w-full sm:w-auto px-6 py-4 text-base font-mono text-slate-400 hover:text-white transition-colors"
-            >
-              Admin Login
-            </Link>
+            <Link href="/candidate/login" className="w-full sm:w-auto px-8 py-4 text-base font-semibold rounded-xl glass-panel-hover text-slate-200 border border-slate-700">Candidate Login</Link>
+            <Link href="/employee/login" className="w-full sm:w-auto px-8 py-4 text-base font-bold rounded-xl btn-shimmer text-white shadow-xl shadow-sky-500/25">Employee Login →</Link>
           </div>
         </div>
       </section>
@@ -714,9 +678,8 @@ export default function Home() {
           </div>
 
           <div className="flex items-center space-x-6 text-xs text-slate-400">
-            <Link href="/login?portal=recruiter" className="hover:text-white transition-colors">Recruiter Login</Link>
-            <Link href="/login?portal=candidate" className="hover:text-white transition-colors">Candidate Login</Link>
-            <Link href="/login?portal=admin" className="hover:text-white transition-colors">Admin Login</Link>
+            <Link href="/candidate/login" className="hover:text-white transition-colors">Candidate Login</Link>
+            <Link href="/employee/login" className="hover:text-white transition-colors">Employee Login</Link>
           </div>
 
           <div className="flex items-center space-x-2 text-xs font-mono text-emerald-400">

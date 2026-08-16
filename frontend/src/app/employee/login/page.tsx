@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 
-export default function CandidateLoginPage() {
+export default function EmployeeLoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
@@ -23,9 +23,9 @@ export default function CandidateLoginPage() {
 
     try {
       await login(email, password);
-      router.push("/candidate/dashboard");
+      router.push("/recruiter/dashboard");
     } catch (err: any) {
-      setError(err.message || "Invalid email address or password.");
+      setError(err.message || "Invalid work email address or password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -40,11 +40,11 @@ export default function CandidateLoginPage() {
             AH
           </div>
           <span className="text-2xl font-black text-white tracking-tight">
-            AuraHire <span className="text-gradient-cyan">AI</span>
+            AuraHire <span className="text-gradient-cyan">AI Enterprise</span>
           </span>
         </Link>
-        <span className="block text-xs font-mono uppercase tracking-widest text-sky-400">
-          Candidate Portal
+        <span className="block text-xs font-mono uppercase tracking-widest text-indigo-400">
+          Employee &amp; Recruiter Portal
         </span>
       </div>
 
@@ -52,7 +52,7 @@ export default function CandidateLoginPage() {
       <div className="glass-panel p-8 rounded-3xl max-w-md w-full border border-slate-800 shadow-2xl relative overflow-hidden">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-white tracking-tight">Welcome back</h1>
-          <p className="text-xs text-slate-400 mt-1">Sign in to continue your job search.</p>
+          <p className="text-xs text-slate-400 mt-1">Sign in to manage your hiring workflow.</p>
         </div>
 
         {error && (
@@ -70,14 +70,14 @@ export default function CandidateLoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
-              Email
+              Work Email
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="you@company.com"
               className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 text-sm font-mono"
             />
           </div>
@@ -157,8 +157,8 @@ export default function CandidateLoginPage() {
         {/* Footer Link */}
         <div className="text-center pt-4 border-t border-slate-800 text-xs text-slate-400">
           Don&apos;t have an account?{" "}
-          <Link href="/candidate/signup" className="text-sky-400 font-bold hover:underline">
-            Sign up
+          <Link href="/employee/signup" className="text-sky-400 font-bold hover:underline">
+            Create employee account
           </Link>
         </div>
       </div>

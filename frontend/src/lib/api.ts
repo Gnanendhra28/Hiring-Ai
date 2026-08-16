@@ -107,6 +107,56 @@ export async function registerUser(email: string, password: string, full_name: s
   return res.json();
 }
 
+export async function registerCandidate(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string
+): Promise<AuthUser> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const res = await fetch(`${baseUrl}/api/v1/auth/register/candidate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      password,
+      first_name: firstName,
+      last_name: lastName,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Candidate registration failed." }));
+    throw new Error(err.detail || "Candidate registration failed.");
+  }
+  return res.json();
+}
+
+export async function registerEmployee(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  companyName?: string
+): Promise<AuthUser> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const res = await fetch(`${baseUrl}/api/v1/auth/register/employee`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      password,
+      first_name: firstName,
+      last_name: lastName,
+      company_name: companyName,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Employee registration failed." }));
+    throw new Error(err.detail || "Employee registration failed.");
+  }
+  return res.json();
+}
+
 export async function fetchUserProfile(): Promise<UserProfileData | null> {
   const res = await apiFetch("/api/v1/auth/me");
   if (!res.ok) return null;

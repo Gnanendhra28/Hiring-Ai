@@ -15,6 +15,19 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8)
     full_name: str = Field(..., min_length=2)
 
+class CandidateRegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    first_name: str = Field(..., min_length=1)
+    last_name: str = Field(..., min_length=1)
+
+class EmployeeRegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    first_name: str = Field(..., min_length=1)
+    last_name: str = Field(..., min_length=1)
+    company_name: Optional[str] = Field(None, min_length=2, max_length=255)
+
 class UserLoginRequest(BaseModel):
     email: EmailStr
     password: str
