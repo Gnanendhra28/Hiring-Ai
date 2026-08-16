@@ -193,7 +193,7 @@ export default function WebhookSettingsPage() {
             </div>
             {subscriptions.length === 0 ? (
               <div className="p-8 text-center text-gray-500 text-sm">
-                No webhook subscriptions configured. Click "+ Add Webhook Endpoint" to create one.
+                No webhook subscriptions configured. Click &quot;+ Add Webhook Endpoint&quot; to create one.
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
