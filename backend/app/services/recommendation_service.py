@@ -1,5 +1,6 @@
 import time
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import delete, select, func
 
@@ -7,7 +8,10 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
-from app.domains.applications.models import Application, ApplicationStatusEnum
+from app.domains.applications.models import Application, ApplicationStatusEnum, CandidatePlacement, OfferStatusEnum
+from app.domains.jobs.models import Job
+from app.domains.identity.models import User
+from app.domains.organizations.models import OrganizationMembership
 from app.domains.audit.models import AuditLog
 from app.domains.candidates.models import CandidateProfile
 from app.domains.document_intelligence.models import CandidateDocument
@@ -423,3 +427,209 @@ class RecommendationService:
 
             logger.info(f"Successfully recorded decision {decision.value} for application {application_id}")
             return dec_obj
+
+    async def get_placement(
+        self,
+        application_id: uuid.UUID,
+        organization_id: uuid.UUID,
+    ) -> Optional[CandidatePlacement]:
+        async with async_session_factory() as session:
+            await session.begin()
+            await set_tenant_context(session, organization_id=organization_id)
+            stmt = select(CandidatePlacement).where(
+                CandidatePlacement.application_id == application_id,
+                CandidatePlacement.organization_id == organization_id,
+            )
+            return (await session.execute(stmt)).scalar_one_or_none()
+
+    async def create_offer(
+        self,
+        application_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        user_id: uuid.UUID,
+        notes: Optional[str] = None,
+    ) -> CandidatePlacement:
+        async with async_session_factory() as session:
+            await session.begin()
+            await set_tenant_context(session, organization_id=organization_id, user_id=user_id)
+
+            stmt_app = select(Application).where(
+                Application.id == application_id,
+                Application.organization_id == organization_id,
+            )
+            app_obj = (await session.execute(stmt_app)).scalar_one_or_none()
+            if not app_obj:
+                raise ValueError("Application not found or access denied.")
+
+            if app_obj.status == ApplicationStatusEnum.REJECTED:
+                raise ValueError("Cannot extend offer to a rejected candidate.")
+
+            stmt_pl = select(CandidatePlacement).where(CandidatePlacement.application_id == application_id)
+            pl_obj = (await session.execute(stmt_pl)).scalar_one_or_none()
+
+            stmt_usr = select(User).where(User.id == user_id)
+            usr_obj = (await session.execute(stmt_usr)).scalar_one_or_none()
+            valid_user_id = user_id if usr_obj else None
+
+            now = datetime.now(timezone.utc)
+            if not pl_obj:
+                pl_obj = CandidatePlacement(
+                    organization_id=organization_id,
+                    job_id=app_obj.job_id,
+                    candidate_id=app_obj.candidate_id,
+                    application_id=application_id,
+                    offer_status=OfferStatusEnum.OFFER_EXTENDED,
+                    offer_created_at=now,
+                    created_by_user_id=valid_user_id,
+                    notes=notes,
+                )
+                session.add(pl_obj)
+            else:
+                pl_obj.offer_status = OfferStatusEnum.OFFER_EXTENDED
+                pl_obj.offer_created_at = now
+                if notes:
+                    pl_obj.notes = notes
+
+            app_obj.status = ApplicationStatusEnum.OFFER
+            stmt_prof = select(CandidateProfile).where(
+                (CandidateProfile.id == app_obj.candidate_id) | (CandidateProfile.user_id == app_obj.candidate_id)
+            )
+            prof_obj = (await session.execute(stmt_prof)).scalar_one_or_none()
+            cand_prof_id = prof_obj.id if prof_obj else app_obj.candidate_id
+
+            audit_entry = CandidateDecisionAudit(
+                organization_id=organization_id,
+                job_id=app_obj.job_id,
+                candidate_id=cand_prof_id,
+                application_id=application_id,
+                decision=RecruiterDecisionEnum.ADVANCE,
+                previous_state=app_obj.status.value,
+                new_state=OfferStatusEnum.OFFER_EXTENDED.value,
+                decision_reason=f"Offer extended to candidate. Notes: {notes or 'N/A'}",
+                decided_by_user_id=valid_user_id,
+                decided_at=now,
+                created_at=now,
+            )
+            session.add(audit_entry)
+            await session.commit()
+            return pl_obj
+
+    async def accept_offer(
+        self,
+        application_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        user_id: uuid.UUID,
+        notes: Optional[str] = None,
+    ) -> CandidatePlacement:
+        async with async_session_factory() as session:
+            await session.begin()
+            await set_tenant_context(session, organization_id=organization_id, user_id=user_id)
+
+            stmt_pl = select(CandidatePlacement).where(
+                CandidatePlacement.application_id == application_id,
+                CandidatePlacement.organization_id == organization_id,
+            )
+            pl_obj = (await session.execute(stmt_pl)).scalar_one_or_none()
+            if not pl_obj or pl_obj.offer_status == OfferStatusEnum.NOT_CREATED:
+                raise ValueError("Offer must be created before it can be accepted.")
+            stmt_usr = select(User).where(User.id == user_id)
+            usr_obj = (await session.execute(stmt_usr)).scalar_one_or_none()
+            valid_user_id = user_id if usr_obj else None
+
+            now = datetime.now(timezone.utc)
+            pl_obj.offer_status = OfferStatusEnum.OFFER_ACCEPTED
+            pl_obj.offer_accepted_at = now
+            if notes:
+                pl_obj.notes = notes
+
+            stmt_app = select(Application).where(Application.id == application_id)
+            app_obj = (await session.execute(stmt_app)).scalar_one_or_none()
+            if app_obj:
+                app_obj.status = ApplicationStatusEnum.OFFER
+
+            stmt_prof = select(CandidateProfile).where(
+                (CandidateProfile.id == pl_obj.candidate_id) | (CandidateProfile.user_id == pl_obj.candidate_id)
+            )
+            prof_obj = (await session.execute(stmt_prof)).scalar_one_or_none()
+            cand_prof_id = prof_obj.id if prof_obj else pl_obj.candidate_id
+
+            audit_entry = CandidateDecisionAudit(
+                organization_id=organization_id,
+                job_id=pl_obj.job_id,
+                candidate_id=cand_prof_id,
+                application_id=application_id,
+                decision=RecruiterDecisionEnum.ADVANCE,
+                previous_state=OfferStatusEnum.OFFER_EXTENDED.value,
+                new_state=OfferStatusEnum.OFFER_ACCEPTED.value,
+                decision_reason=f"Offer accepted by candidate. Notes: {notes or 'N/A'}",
+                decided_by_user_id=valid_user_id,
+                decided_at=now,
+                created_at=now,
+            )
+            session.add(audit_entry)
+            await session.commit()
+            return pl_obj
+
+    async def complete_hire(
+        self,
+        application_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        user_id: uuid.UUID,
+        notes: Optional[str] = None,
+    ) -> CandidatePlacement:
+        async with async_session_factory() as session:
+            await session.begin()
+            await set_tenant_context(session, organization_id=organization_id, user_id=user_id)
+
+            stmt_pl = select(CandidatePlacement).where(
+                CandidatePlacement.application_id == application_id,
+                CandidatePlacement.organization_id == organization_id,
+            )
+            pl_obj = (await session.execute(stmt_pl)).scalar_one_or_none()
+            if not pl_obj or pl_obj.offer_status not in (OfferStatusEnum.OFFER_EXTENDED, OfferStatusEnum.OFFER_ACCEPTED):
+                raise ValueError("Candidate must have an extended or accepted offer before placement.")
+
+            stmt_usr = select(User).where(User.id == user_id)
+            usr_obj = (await session.execute(stmt_usr)).scalar_one_or_none()
+            valid_user_id = user_id if usr_obj else None
+
+            now = datetime.now(timezone.utc)
+            prev_status = pl_obj.offer_status.value
+            pl_obj.offer_status = OfferStatusEnum.HIRED
+            pl_obj.placed_at = now
+            if notes:
+                pl_obj.notes = notes
+
+            stmt_app = select(Application).where(Application.id == application_id)
+            app_obj = (await session.execute(stmt_app)).scalar_one_or_none()
+            if app_obj:
+                app_obj.status = ApplicationStatusEnum.HIRED
+
+            stmt_job = select(Job).where(Job.id == pl_obj.job_id)
+            job_obj = (await session.execute(stmt_job)).scalar_one_or_none()
+            if job_obj and hasattr(job_obj, "status"):
+                from app.domains.jobs.models import JobStatusEnum
+                job_obj.status = JobStatusEnum.CLOSED
+
+            stmt_prof = select(CandidateProfile).where(
+                (CandidateProfile.id == pl_obj.candidate_id) | (CandidateProfile.user_id == pl_obj.candidate_id)
+            )
+            prof_obj = (await session.execute(stmt_prof)).scalar_one_or_none()
+            cand_prof_id = prof_obj.id if prof_obj else pl_obj.candidate_id
+
+            audit_entry = CandidateDecisionAudit(
+                organization_id=organization_id,
+                job_id=pl_obj.job_id,
+                candidate_id=cand_prof_id,
+                application_id=application_id,
+                decision=RecruiterDecisionEnum.ADVANCE,
+                previous_state=prev_status,
+                new_state=OfferStatusEnum.HIRED.value,
+                decision_reason=f"Candidate hired and placed. Notes: {notes or 'N/A'}",
+                decided_by_user_id=valid_user_id,
+                decided_at=now,
+                created_at=now,
+            )
+            session.add(audit_entry)
+            await session.commit()
+            return pl_obj

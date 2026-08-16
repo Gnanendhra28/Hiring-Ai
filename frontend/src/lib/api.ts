@@ -435,3 +435,49 @@ export async function submitRecruiterDecision(
   });
 }
 
+export interface CandidatePlacement {
+  id: string;
+  organization_id: string;
+  job_id: string;
+  candidate_id: string;
+  application_id: string;
+  offer_status: "NOT_CREATED" | "OFFER_EXTENDED" | "OFFER_ACCEPTED" | "OFFER_REJECTED" | "HIRED";
+  offer_created_at?: string;
+  offer_accepted_at?: string;
+  placed_at?: string;
+  created_by_user_id?: string;
+  notes?: string;
+  time_to_fill_days?: number;
+  time_to_hire_days?: number;
+}
+
+export async function fetchCandidatePlacement(jobId: string, appId: string): Promise<CandidatePlacement | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/applications/${appId}/placement`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function createCandidateOffer(jobId: string, appId: string, notes?: string): Promise<Response> {
+  return await apiFetch(`/api/v1/jobs/${jobId}/applications/${appId}/offer/create`, {
+    method: "POST",
+    body: JSON.stringify({ notes }),
+  });
+}
+
+export async function acceptCandidateOffer(jobId: string, appId: string, notes?: string): Promise<Response> {
+  return await apiFetch(`/api/v1/jobs/${jobId}/applications/${appId}/offer/accept`, {
+    method: "POST",
+    body: JSON.stringify({ notes }),
+  });
+}
+
+export async function completeCandidateHire(jobId: string, appId: string, notes?: string): Promise<Response> {
+  return await apiFetch(`/api/v1/jobs/${jobId}/applications/${appId}/placement/hire`, {
+    method: "POST",
+    body: JSON.stringify({ notes }),
+  });
+}
+
+

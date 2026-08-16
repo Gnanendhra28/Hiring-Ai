@@ -52,3 +52,44 @@ class Application(Base, UUIDMixin, TimestampMixin, TenantMixin):
     )
     decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     decision_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+class OfferStatusEnum(str, enum.Enum):
+    NOT_CREATED = "NOT_CREATED"
+    OFFER_EXTENDED = "OFFER_EXTENDED"
+    OFFER_ACCEPTED = "OFFER_ACCEPTED"
+    OFFER_REJECTED = "OFFER_REJECTED"
+    HIRED = "HIRED"
+
+class CandidatePlacement(Base, UUIDMixin, TimestampMixin, TenantMixin):
+    """
+    Placement and Requisition Fill Lifecycle entity.
+    Tracks offer creation, offer acceptance, hiring placement date,
+    and calculates deterministic Time-to-Fill and Time-to-Hire metrics.
+    Scoped by organization_id for tenant RLS isolation.
+    """
+    __tablename__ = "candidate_placements"
+    __table_args__ = (
+        UniqueConstraint("application_id", name="uq_candidate_placement_application"),
+        {"extend_existing": True},
+    )
+
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    candidate_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    offer_status: Mapped[OfferStatusEnum] = mapped_column(
+        SQLEnum(OfferStatusEnum), default=OfferStatusEnum.NOT_CREATED, nullable=False, index=True
+    )
+    offer_created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    offer_accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    placed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+

@@ -8,7 +8,11 @@ from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.organizations.models import RoleEnum
 from app.domains.ranking.models import CandidateJobRanking, CandidateRankingVersion
+from app.domains.applications.models import Application
+from app.domains.applications.schemas import CandidatePlacementResponse, PlacementActionRequest
+from app.domains.jobs.models import Job
 from app.domains.recommendation.models import (
+    CandidateDecision,
     CandidateDecisionAudit,
     CandidateRecommendation,
     CandidateRecommendationEvidence,
@@ -219,3 +223,160 @@ async def get_decision_history(
 
         audits = list((await session.execute(stmt)).scalars().all())
         return [CandidateDecisionAuditResponse.model_validate(a) for a in audits]
+
+@router.get("/{job_id}/applications/{application_id}/placement", response_model=CandidatePlacementResponse)
+async def get_candidate_placement(
+    job_id: uuid.UUID,
+    application_id: uuid.UUID,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+):
+    """Retrieves candidate placement lifecycle status and Time-to-Fill metrics."""
+    if not ctx.active_organization_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+
+    service = RecommendationService()
+    pl_obj = await service.get_placement(application_id=application_id, organization_id=ctx.active_organization_id)
+    if not pl_obj:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Placement record not found.")
+
+    # Calculate Time-to-Fill and Time-to-Hire
+    ttf_days = None
+    tth_days = None
+    if pl_obj.placed_at:
+        async with async_session_factory() as session:
+            await session.begin()
+            await set_tenant_context(session, organization_id=ctx.active_organization_id, user_id=ctx.user.id)
+            stmt_job = select(Job).where(Job.id == job_id)
+            job_obj = (await session.execute(stmt_job)).scalar_one_or_none()
+            if job_obj and job_obj.created_at:
+                ttf_days = round((pl_obj.placed_at - job_obj.created_at).total_seconds() / 86400.0, 2)
+
+            stmt_app = select(Application).where(Application.id == application_id)
+            app_obj = (await session.execute(stmt_app)).scalar_one_or_none()
+            if app_obj and app_obj.submitted_at:
+                tth_days = round((pl_obj.placed_at - app_obj.submitted_at).total_seconds() / 86400.0, 2)
+
+    return CandidatePlacementResponse(
+        id=pl_obj.id,
+        organization_id=pl_obj.organization_id,
+        job_id=pl_obj.job_id,
+        candidate_id=pl_obj.candidate_id,
+        application_id=pl_obj.application_id,
+        offer_status=pl_obj.offer_status,
+        offer_created_at=pl_obj.offer_created_at,
+        offer_accepted_at=pl_obj.offer_accepted_at,
+        placed_at=pl_obj.placed_at,
+        created_by_user_id=pl_obj.created_by_user_id,
+        notes=pl_obj.notes,
+        time_to_fill_days=ttf_days,
+        time_to_hire_days=tth_days,
+    )
+
+@router.post("/{job_id}/applications/{application_id}/offer/create", response_model=CandidatePlacementResponse)
+async def create_offer(
+    job_id: uuid.UUID,
+    application_id: uuid.UUID,
+    payload: PlacementActionRequest,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+):
+    """Extends formal employment offer to candidate (Recruiter explicit action)."""
+    if not ctx.active_organization_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+
+    service = RecommendationService()
+    try:
+        pl_obj = await service.create_offer(
+            application_id=application_id,
+            organization_id=ctx.active_organization_id,
+            user_id=ctx.user.id,
+            notes=payload.notes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    return CandidatePlacementResponse.model_validate(pl_obj)
+
+@router.post("/{job_id}/applications/{application_id}/offer/accept", response_model=CandidatePlacementResponse)
+async def accept_offer(
+    job_id: uuid.UUID,
+    application_id: uuid.UUID,
+    payload: PlacementActionRequest,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+):
+    """Marks extended offer as accepted by candidate (Recruiter explicit action)."""
+    if not ctx.active_organization_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+
+    service = RecommendationService()
+    try:
+        pl_obj = await service.accept_offer(
+            application_id=application_id,
+            organization_id=ctx.active_organization_id,
+            user_id=ctx.user.id,
+            notes=payload.notes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    return CandidatePlacementResponse.model_validate(pl_obj)
+
+@router.post("/{job_id}/applications/{application_id}/placement/hire", response_model=CandidatePlacementResponse)
+async def complete_candidate_hire(
+    job_id: uuid.UUID,
+    application_id: uuid.UUID,
+    payload: PlacementActionRequest,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+):
+    """Completes candidate hire/placement and triggers Time-to-Fill calculation (Recruiter explicit action)."""
+    if not ctx.active_organization_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+
+    service = RecommendationService()
+    try:
+        pl_obj = await service.complete_hire(
+            application_id=application_id,
+            organization_id=ctx.active_organization_id,
+            user_id=ctx.user.id,
+            notes=payload.notes,
+        )
+
+        # Calculate Time-to-Fill
+        ttf_days = None
+        tth_days = None
+        if pl_obj.placed_at:
+            async with async_session_factory() as session:
+                await session.begin()
+                await set_tenant_context(session, organization_id=ctx.active_organization_id, user_id=ctx.user.id)
+                stmt_job = select(Job).where(Job.id == job_id)
+                job_obj = (await session.execute(stmt_job)).scalar_one_or_none()
+                if job_obj and job_obj.created_at:
+                    ttf_days = round((pl_obj.placed_at - job_obj.created_at).total_seconds() / 86400.0, 2)
+
+                stmt_app = select(Application).where(Application.id == application_id)
+                app_obj = (await session.execute(stmt_app)).scalar_one_or_none()
+                if app_obj and app_obj.submitted_at:
+                    tth_days = round((pl_obj.placed_at - app_obj.submitted_at).total_seconds() / 86400.0, 2)
+
+        return CandidatePlacementResponse(
+            id=pl_obj.id,
+            organization_id=pl_obj.organization_id,
+            job_id=pl_obj.job_id,
+            candidate_id=pl_obj.candidate_id,
+            application_id=pl_obj.application_id,
+            offer_status=pl_obj.offer_status,
+            offer_created_at=pl_obj.offer_created_at,
+            offer_accepted_at=pl_obj.offer_accepted_at,
+            placed_at=pl_obj.placed_at,
+            created_by_user_id=pl_obj.created_by_user_id,
+            notes=pl_obj.notes,
+            time_to_fill_days=ttf_days,
+            time_to_hire_days=tth_days,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        import traceback
+        print("EXCEPTION IN complete_candidate_hire:")
+        traceback.print_exc()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
