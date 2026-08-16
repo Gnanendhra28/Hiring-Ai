@@ -163,7 +163,14 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
 
         system_prompt = (
             "You are an expert candidate document intelligence extractor. Extract structured skills, experiences, "
-            "educations, and facts from the resume text. Return valid JSON matching the CandidateExtractionSchema."
+            "educations, and facts from the resume text. Return ONLY valid JSON matching this exact structure:\n"
+            "{\n"
+            '  "skills": [{"skill_name": "Python", "years_experience": 5.0, "evidence_text": "Skills: Python", "confidence": 1.0}],\n'
+            '  "experiences": [{"company_name": "Acme Corp", "job_title": "Senior Architect", "start_date_str": "2021-01", "end_date_str": "Present", "is_current": true, "evidence_text": "Acme Corp...", "confidence": 1.0}],\n'
+            '  "educations": [{"institution": "Tech University", "degree": "BS", "field_of_study": "Computer Science", "start_date_str": "2014", "end_date_str": "2018", "evidence_text": "BS...", "confidence": 1.0}],\n'
+            '  "facts": [],\n'
+            '  "overall_confidence": 0.9\n'
+            "}"
         )
 
         messages = [
@@ -175,14 +182,94 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
         raw_json = result.get("content", "{}")
 
         # Parse output JSON into Pydantic schema
+        clean_json = raw_json
+        if "```json" in clean_json:
+            clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+        elif "```" in clean_json:
+            clean_json = clean_json.split("```")[1].split("```")[0].strip()
+
         try:
-            extraction = CandidateExtractionSchema.model_validate_json(raw_json)
-        except Exception:
-            # Try finding JSON block if formatted in markdown ```json ... ```
-            if "```json" in raw_json:
-                json_str = raw_json.split("```json")[1].split("```")[0].strip()
-                extraction = CandidateExtractionSchema.model_validate_json(json_str)
-            else:
+            extraction = CandidateExtractionSchema.model_validate_json(clean_json)
+        except Exception as err:
+            logger.warning(f"[Gemini AI Gateway] Direct CandidateExtractionSchema validation failed ({err}). Attempting repair...")
+            try:
+                import json
+                data = json.loads(clean_json)
+                if isinstance(data, dict):
+                    # 1. Repair skills
+                    if "skills" in data and isinstance(data["skills"], list):
+                        repaired_skills = []
+                        for item in data["skills"]:
+                            if isinstance(item, str):
+                                repaired_skills.append({"skill_name": item, "evidence_text": text[:200], "confidence": 0.9})
+                            elif isinstance(item, dict):
+                                s_name = item.get("skill_name") or item.get("name") or item.get("skill") or "Unknown Skill"
+                                repaired_skills.append({
+                                    "skill_name": str(s_name),
+                                    "years_experience": item.get("years_experience"),
+                                    "confidence": item.get("confidence", 0.9),
+                                    "evidence_text": str(item.get("evidence_text") or text[:200]),
+                                    "page_number": item.get("page_number", 1)
+                                })
+                        data["skills"] = repaired_skills
+
+                    # 2. Repair experiences
+                    if "experiences" in data and isinstance(data["experiences"], list):
+                        repaired_exps = []
+                        for item in data["experiences"]:
+                            if isinstance(item, dict):
+                                c_name = item.get("company_name") or item.get("company") or item.get("organization") or "Company"
+                                j_title = item.get("job_title") or item.get("title") or item.get("role") or "Role"
+                                s_date = str(item.get("start_date_str") or item.get("start_date") or "")
+                                e_date = str(item.get("end_date_str") or item.get("end_date") or "")
+                                repaired_exps.append({
+                                    "company_name": str(c_name),
+                                    "job_title": str(j_title),
+                                    "start_date_str": s_date or None,
+                                    "end_date_str": e_date or None,
+                                    "is_current": bool(item.get("is_current", False)),
+                                    "confidence": item.get("confidence", 0.9),
+                                    "evidence_text": str(item.get("evidence_text") or text[:200]),
+                                    "page_number": item.get("page_number", 1)
+                                })
+                        data["experiences"] = repaired_exps
+
+                    # 3. Repair educations
+                    if "educations" in data and isinstance(data["educations"], list):
+                        repaired_edus = []
+                        for item in data["educations"]:
+                            if isinstance(item, dict):
+                                inst = item.get("institution") or item.get("school") or item.get("university") or "Institution"
+                                repaired_edus.append({
+                                    "institution": str(inst),
+                                    "degree": item.get("degree"),
+                                    "field_of_study": item.get("field_of_study") or item.get("major"),
+                                    "start_date_str": str(item.get("start_date_str") or item.get("start_date") or "") or None,
+                                    "end_date_str": str(item.get("end_date_str") or item.get("end_date") or "") or None,
+                                    "confidence": item.get("confidence", 0.9),
+                                    "evidence_text": str(item.get("evidence_text") or text[:200]),
+                                    "page_number": item.get("page_number", 1)
+                                })
+                        data["educations"] = repaired_edus
+
+                    # 4. Repair facts
+                    if "facts" in data and isinstance(data["facts"], dict):
+                        repaired_facts = []
+                        for k, v in data["facts"].items():
+                            repaired_facts.append({
+                                "fact_type": str(k),
+                                "raw_value": str(v),
+                                "evidence_text": text[:200],
+                                "confidence": 0.9,
+                                "page_number": 1
+                            })
+                        data["facts"] = repaired_facts
+
+                    extraction = CandidateExtractionSchema.model_validate(data)
+                else:
+                    extraction = CandidateExtractionSchema()
+            except Exception as repair_err:
+                logger.error(f"[Gemini AI Gateway] CandidateExtractionSchema repair failed: {repair_err}")
                 extraction = CandidateExtractionSchema()
 
         return AIResultEnvelope(

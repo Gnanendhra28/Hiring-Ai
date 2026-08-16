@@ -24,7 +24,10 @@ class SkillNormalizer:
         # Languages
         "python": "Python",
         "python3": "Python",
+        "python 3": "Python",
         "python programming": "Python",
+        "aws": "AWS",
+        "amazon web services": "AWS",
         "typescript": "TypeScript",
         "ts": "TypeScript",
         "javascript": "JavaScript",

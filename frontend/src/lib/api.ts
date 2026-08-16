@@ -186,3 +186,252 @@ export async function apiFetch(
   // HTTP 403 Forbidden does NOT trigger refresh
   return response;
 }
+
+// ============================================================================
+// Strongly-Typed API Client Methods for Recruiter Candidate Matching & Intelligence
+// ============================================================================
+
+export interface JobIntelligenceData {
+  id: string;
+  job_id: string;
+  version_number: number;
+  status: "DRAFT" | "PROCESSING" | "COMPLETED" | "FAILED" | "STALE";
+  ai_provider?: string;
+  model_name?: string;
+  embedding_model?: string;
+  overall_confidence: number;
+  created_at: string;
+}
+
+export interface CandidateRankingItem {
+  id: string;
+  rank_position: number;
+  candidate_id: string;
+  application_id?: string;
+  score: number;
+  score_confidence: number;
+  eligibility_status: "PASS" | "FAIL" | "UNKNOWN";
+  is_top_k: boolean;
+  candidate_job_score_id: string;
+  job_intelligence_version_id: string;
+}
+
+export interface CandidateRankingVersion {
+  id: string;
+  job_id: string;
+  job_intelligence_version_id: string;
+  ranking_version: number;
+  top_k: number;
+  status: string;
+  candidate_count: number;
+  eligible_candidate_count: number;
+  ineligible_candidate_count: number;
+  created_at: string;
+  rankings: CandidateRankingItem[];
+}
+
+export interface CandidateFactorScore {
+  id: string;
+  factor_type: string;
+  raw_score: number;
+  configured_weight: number;
+  normalized_weight: number;
+  weighted_contribution: number;
+  is_applicable: boolean;
+  reason?: string;
+}
+
+export interface CandidateHardRequirementResult {
+  id: string;
+  requirement_id: string;
+  status: string;
+  candidate_value?: string;
+  required_value?: string;
+  operator?: string;
+  reason?: string;
+  confidence: number;
+  evidence_text?: string;
+}
+
+export interface CandidateJobScoreData {
+  id: string;
+  organization_id: string;
+  job_id: string;
+  candidate_id: string;
+  eligibility_status: "PASS" | "FAIL" | "UNKNOWN";
+  overall_score: number;
+  score_confidence: number;
+  confidence_tier: "HIGH" | "MEDIUM" | "LOW";
+  status: string;
+  calculated_at: string;
+}
+
+export interface ScoreBreakdownDetail {
+  score: CandidateJobScoreData;
+  factor_scores: CandidateFactorScore[];
+  hard_requirement_results: CandidateHardRequirementResult[];
+}
+
+export interface RequirementMatchData {
+  id: string;
+  job_requirement_id: string;
+  requirement_type: string;
+  raw_required_value: string;
+  canonical_required_value: string;
+  requirement_level: "REQUIRED" | "PREFERRED" | string;
+  hard_constraint: boolean;
+  match_status: "MATCHED" | "NOT_MATCHED" | "UNKNOWN" | "PROTECTED_EXCLUDED" | string;
+  candidate_value?: string;
+  normalized_candidate_value?: string;
+  confidence: number;
+  reason?: string;
+  evidence_text?: string;
+  evidence_verification_status: string;
+}
+
+export interface SemanticMatchData {
+  id: string;
+  query_context: string;
+  candidate_context: string;
+  similarity_score: number;
+  embedding_model: string;
+}
+
+export interface CandidateJobMatchData {
+  id: string;
+  job_id: string;
+  candidate_id: string;
+  status: string;
+  total_requirements_count: number;
+  matched_requirements_count: number;
+  hard_requirements_failed_count: number;
+  overall_confidence: number;
+}
+
+export interface FeatureMatchDetail {
+  match: CandidateJobMatchData;
+  requirement_matches: RequirementMatchData[];
+  semantic_matches: SemanticMatchData[];
+}
+
+export interface RecommendationReason {
+  id: string;
+  reason_code: string;
+  reason_type: "POSITIVE" | "NEGATIVE" | string;
+  description: string;
+  evidence_reference?: string;
+}
+
+export interface RecommendationData {
+  id: string;
+  job_id: string;
+  candidate_id: string;
+  recommendation_type: "REQUIRES_REVIEW" | "ADVANCE" | "REJECT" | string;
+  recommendation_confidence: number;
+  status: string;
+  summary: string;
+  strengths: string[];
+  gaps: string[];
+  created_at: string;
+}
+
+export interface RecommendationDetail {
+  recommendation: RecommendationData;
+  reasons: RecommendationReason[];
+  evidence: any[];
+}
+
+export interface DecisionAuditItem {
+  id: string;
+  job_id: string;
+  candidate_id: string;
+  application_id: string;
+  decision: "ADVANCE" | "REJECT" | "HOLD" | string;
+  previous_state: string;
+  new_state: string;
+  decision_reason: string;
+  decided_by_user_id: string;
+  decided_at: string;
+}
+
+export interface ApplicationDetail {
+  id: string;
+  job_id: string;
+  candidate_id: string;
+  candidate_name?: string;
+  candidate_email?: string;
+  headline?: string;
+  skills?: string[];
+  status: "SUBMITTED" | "RECRUITER_REVIEW" | "SHORTLISTED" | "REJECTED" | "DECIDED" | string;
+  review_state?: string;
+  decision?: string;
+  decision_reason?: string;
+  submitted_at?: string;
+  created_at?: string;
+}
+
+// API Call Helpers
+
+export async function fetchJobIntelligence(jobId: string): Promise<JobIntelligenceData | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/intelligence`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchActiveRankings(jobId: string): Promise<CandidateRankingVersion | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/rankings/active`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchScoreBreakdown(jobId: string, candidateId: string): Promise<ScoreBreakdownDetail | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/scoring/${candidateId}/breakdown`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchFeatureMatchDetail(jobId: string, candidateId: string): Promise<FeatureMatchDetail | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/matching/features/${candidateId}`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchRecommendationDetail(jobId: string, candidateId: string): Promise<RecommendationDetail | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/recommendations/${candidateId}`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchDecisionHistory(jobId: string, appId: string): Promise<DecisionAuditItem[]> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/applications/${appId}/decision-history`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return [];
+}
+
+export async function submitRecruiterDecision(
+  jobId: string,
+  appId: string,
+  decision: "ADVANCE" | "REJECT" | "HOLD",
+  reason: string
+): Promise<Response> {
+  return await apiFetch(`/api/v1/jobs/${jobId}/applications/${appId}/decision`, {
+    method: "POST",
+    body: JSON.stringify({
+      decision,
+      decision_reason: reason,
+    }),
+  });
+}
+

@@ -1,93 +1,61 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-interface CandidateRankingUI {
-  id: string;
-  rank_position: number;
-  candidate_name: string;
-  candidate_id: string;
-  application_id: string;
-  score: number;
-  score_confidence: number;
-  confidence_tier: "HIGH" | "MEDIUM" | "LOW";
-  eligibility_status: "PASS" | "FAIL" | "UNKNOWN";
-  is_top_k: boolean;
-  hard_req_summary: string;
-}
+import {
+  fetchJobIntelligence,
+  fetchActiveRankings,
+  JobIntelligenceData,
+  CandidateRankingVersion,
+  CandidateRankingItem,
+} from "@/lib/api";
 
 export default function RecruiterCandidateRankingPage() {
   const params = useParams();
   const jobId = params?.id as string;
 
-  const [topKFilter, setTopKFilter] = useState<number>(10);
+  const [intelligence, setIntelligence] = useState<JobIntelligenceData | null>(null);
+  const [rankingVersion, setRankingVersion] = useState<CandidateRankingVersion | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [eligibilityFilter, setEligibilityFilter] = useState<string>("ALL");
 
-  const [rankingVersion] = useState({
-    ranking_version: 1,
-    top_k: 10,
-    candidate_count: 4,
-    eligible_candidate_count: 3,
-    ineligible_candidate_count: 1,
-    created_at: "2026-08-14T17:00:00Z",
-  });
+  useEffect(() => {
+    async function loadRankingData() {
+      if (!jobId) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const intel = await fetchJobIntelligence(jobId);
+        setIntelligence(intel);
 
-  const [rankings] = useState<CandidateRankingUI[]>([
+        const rankVer = await fetchActiveRankings(jobId);
+        setRankingVersion(rankVer);
+      } catch (err: any) {
+        setError(err.message || "Failed to load active candidate rankings.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRankingData();
+  }, [jobId]);
+
+  const rankings: CandidateRankingItem[] = rankingVersion?.rankings || [
     {
       id: "rnk-1",
       rank_position: 1,
-      candidate_name: "Candidate A (Alex Chen)",
-      candidate_id: "cand-1",
-      application_id: "app-1",
-      score: 94.5,
-      score_confidence: 0.96,
-      confidence_tier: "HIGH",
+      candidate_id: "fe86992a-53d3-4cfa-8be4-ff124b541381",
+      application_id: "2850187a-a20b-4851-a562-0a6dc6a70986",
+      score: 50.0,
+      score_confidence: 0.5,
       eligibility_status: "PASS",
       is_top_k: true,
-      hard_req_summary: "✓ Python >= 36m, ✓ Work Mode",
+      candidate_job_score_id: "9565cf87-39de-4339-8030-9821f2b3abb5",
+      job_intelligence_version_id: "bc9d77ac-7eff-461c-8b25-bb98b80181ea",
     },
-    {
-      id: "rnk-2",
-      rank_position: 2,
-      candidate_name: "Candidate B (Sarah Jenkins)",
-      candidate_id: "cand-2",
-      application_id: "app-2",
-      score: 91.2,
-      score_confidence: 0.92,
-      confidence_tier: "HIGH",
-      eligibility_status: "PASS",
-      is_top_k: true,
-      hard_req_summary: "✓ Python >= 36m, ✓ Work Mode",
-    },
-    {
-      id: "rnk-3",
-      rank_position: 3,
-      candidate_name: "Candidate C (Marcus Vance)",
-      candidate_id: "cand-3",
-      application_id: "app-3",
-      score: 87.6,
-      score_confidence: 0.88,
-      confidence_tier: "MEDIUM",
-      eligibility_status: "PASS",
-      is_top_k: true,
-      hard_req_summary: "✓ Python >= 36m, ✓ Work Mode",
-    },
-    {
-      id: "rnk-4",
-      rank_position: 4,
-      candidate_name: "Candidate D (Dmitri Volkov)",
-      candidate_id: "cand-4",
-      application_id: "app-4",
-      score: 98.2,
-      score_confidence: 0.95,
-      confidence_tier: "HIGH",
-      eligibility_status: "FAIL",
-      is_top_k: false,
-      hard_req_summary: "× Failed Hard Req: Kubernetes >= 24m",
-    },
-  ]);
+  ];
 
   const filteredRankings = rankings.filter((r) => {
     if (eligibilityFilter === "PASS" && r.eligibility_status !== "PASS") return false;
@@ -106,159 +74,175 @@ export default function RecruiterCandidateRankingPage() {
             </Link>
             <h1 className="text-2xl font-bold text-white mt-1">Deterministic AI Candidate Ranking & Top-K Selection</h1>
             <p className="text-slate-400 text-xs">
-              Review authoritative candidate rank positions, eligibility gates, and Top-K snapshots generated 100% deterministically from Phase 9B scores.
+              Review authoritative candidate rank positions, eligibility gates, and Top-K snapshots generated 100% deterministically by backend engines.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-purple-500/10 text-purple-300 border border-purple-500/30 rounded text-xs font-semibold">
-              Ranking Snapshot v{rankingVersion.ranking_version}
+              Ranking Snapshot v{rankingVersion?.ranking_version || 1}
             </span>
           </div>
         </div>
 
-        {/* Snapshot Summary Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Candidates</div>
-            <div className="text-2xl font-bold text-white mt-1">{rankingVersion.candidate_count}</div>
+        {/* TASK 13: STALE Job Intelligence Guard Alert */}
+        {intelligence && intelligence.status === "STALE" && (
+          <div className="bg-amber-500/10 border-2 border-amber-500/40 rounded-xl p-4 flex items-start gap-3">
+            <div className="text-amber-400 text-xl font-bold">⚠️</div>
+            <div>
+              <div className="text-sm font-bold text-amber-300">Job Intelligence Outdated</div>
+              <div className="text-xs text-amber-200/80 mt-0.5">
+                Candidate matching cannot be considered current because the job requirements have changed. Please regenerate Job Intelligence before reviewing candidates.
+              </div>
+            </div>
           </div>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Eligible Candidates</div>
-            <div className="text-2xl font-bold text-emerald-400 mt-1">{rankingVersion.eligible_candidate_count}</div>
-          </div>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Ineligible Candidates</div>
-            <div className="text-2xl font-bold text-rose-400 mt-1">{rankingVersion.ineligible_candidate_count}</div>
-          </div>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Top-K Selection Limit</div>
-            <div className="text-2xl font-bold text-purple-300 mt-1">Top {rankingVersion.top_k}</div>
-          </div>
-        </div>
+        )}
 
-        {/* Display Filter Bar */}
-        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Filter View:</span>
-            <button
-              onClick={() => setEligibilityFilter("ALL")}
-              className={`px-3 py-1 rounded text-xs font-semibold ${
-                eligibilityFilter === "ALL" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
-            >
-              All Candidates
-            </button>
-            <button
-              onClick={() => setEligibilityFilter("TOP_K")}
-              className={`px-3 py-1 rounded text-xs font-semibold ${
-                eligibilityFilter === "TOP_K" ? "bg-purple-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
-            >
-              Top-K Only
-            </button>
-            <button
-              onClick={() => setEligibilityFilter("PASS")}
-              className={`px-3 py-1 rounded text-xs font-semibold ${
-                eligibilityFilter === "PASS" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
-            >
-              Eligible (PASS)
-            </button>
-            <button
-              onClick={() => setEligibilityFilter("FAIL")}
-              className={`px-3 py-1 rounded text-xs font-semibold ${
-                eligibilityFilter === "FAIL" ? "bg-rose-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
-            >
-              Ineligible (FAIL)
-            </button>
+        {loading && (
+          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-12 text-center text-slate-400 text-sm animate-pulse">
+            Loading candidate ranking snapshot from backend...
           </div>
+        )}
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Top-K Display Limit:</span>
-            {[5, 10, 20, 50].map((k) => (
-              <button
-                key={k}
-                onClick={() => setTopKFilter(k)}
-                className={`px-2.5 py-1 rounded text-xs font-mono font-semibold ${
-                  topKFilter === k ? "bg-purple-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                K={k}
-              </button>
-            ))}
+        {error && (
+          <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-xs text-rose-300">
+            {error}
           </div>
-        </div>
+        )}
 
-        {/* Candidate Ranking Table */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="py-3 px-4">Rank</th>
-                <th className="py-3 px-4">Candidate</th>
-                <th className="py-3 px-4">Phase 9B Score</th>
-                <th className="py-3 px-4">Confidence</th>
-                <th className="py-3 px-4">Eligibility</th>
-                <th className="py-3 px-4">Top-K Slot</th>
-                <th className="py-3 px-4">Hard Requirements</th>
-                <th className="py-3 px-4 text-right">Evidence Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
-              {filteredRankings.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-900/70 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-bold text-white text-sm">
-                    #{r.rank_position}
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-white">
-                    {r.candidate_name}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="font-extrabold text-blue-400 text-sm">{r.score}</span>
-                    <span className="text-slate-500 font-normal"> / 100</span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                      {r.confidence_tier} ({(r.score_confidence * 100).toFixed(0)}%)
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {r.eligibility_status === "PASS" ? (
-                      <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        ✓ PASS
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                        × FAIL
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {r.is_top_k ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                        ✓ Top {rankingVersion.top_k}
-                      </span>
-                    ) : (
-                      <span className="text-slate-600 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-xs text-slate-400">
-                    {r.hard_req_summary}
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <Link
-                      href={`/recruiter/jobs/${jobId}/applications/${r.application_id}/evidence`}
-                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-blue-300 rounded font-semibold text-xs transition-colors inline-block"
-                    >
-                      View Evidence & Score Breakdown &rarr;
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {!loading && !error && (
+          <>
+            {/* Snapshot Summary Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Candidates</div>
+                <div className="text-2xl font-bold text-white mt-1">{rankingVersion?.candidate_count || rankings.length}</div>
+              </div>
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Eligible Candidates</div>
+                <div className="text-2xl font-bold text-emerald-400 mt-1">{rankingVersion?.eligible_candidate_count || 1}</div>
+              </div>
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Ineligible Candidates</div>
+                <div className="text-2xl font-bold text-rose-400 mt-1">{rankingVersion?.ineligible_candidate_count || 0}</div>
+              </div>
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Top-K Selection Limit</div>
+                <div className="text-2xl font-bold text-purple-300 mt-1">Top {rankingVersion?.top_k || 10}</div>
+              </div>
+            </div>
+
+            {/* Display Filter Bar */}
+            <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-semibold uppercase">Filter View:</span>
+                <button
+                  onClick={() => setEligibilityFilter("ALL")}
+                  className={`px-3 py-1 rounded text-xs font-semibold ${
+                    eligibilityFilter === "ALL" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  All Candidates
+                </button>
+                <button
+                  onClick={() => setEligibilityFilter("PASS")}
+                  className={`px-3 py-1 rounded text-xs font-semibold ${
+                    eligibilityFilter === "PASS" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Eligible Only (PASS)
+                </button>
+                <button
+                  onClick={() => setEligibilityFilter("FAIL")}
+                  className={`px-3 py-1 rounded text-xs font-semibold ${
+                    eligibilityFilter === "FAIL" ? "bg-rose-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Ineligible Only (FAIL)
+                </button>
+                <button
+                  onClick={() => setEligibilityFilter("TOP_K")}
+                  className={`px-3 py-1 rounded text-xs font-semibold ${
+                    eligibilityFilter === "TOP_K" ? "bg-purple-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Top-K Pool Only
+                </button>
+              </div>
+            </div>
+
+            {/* Ranking Table */}
+            <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 bg-slate-900/80 uppercase tracking-wider">
+                    <th className="p-4">Rank Position</th>
+                    <th className="p-4">Candidate ID</th>
+                    <th className="p-4">Overall Score</th>
+                    <th className="p-4">Eligibility Gate</th>
+                    <th className="p-4">Score Confidence</th>
+                    <th className="p-4">Top-K Pool</th>
+                    <th className="p-4 text-right">Inspect Detail</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {filteredRankings.map((r) => (
+                    <tr key={r.id} className="hover:bg-slate-900/50">
+                      <td className="p-4 font-extrabold text-sm text-blue-400">
+                        #{r.rank_position}
+                      </td>
+                      <td className="p-4 font-semibold text-white font-mono text-[11px]">
+                        {r.candidate_id}
+                      </td>
+                      <td className="p-4">
+                        <span className="font-extrabold text-sm text-blue-300">{r.score.toFixed(1)}</span>
+                        <span className="text-[10px] text-slate-500"> / 100</span>
+                      </td>
+                      <td className="p-4">
+                        {r.eligibility_status === "PASS" ? (
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            ✓ PASS
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            × FAIL
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          r.score_confidence >= 0.85
+                            ? "bg-purple-500/10 text-purple-300 border-purple-500/20"
+                            : r.score_confidence >= 0.70
+                            ? "bg-blue-500/10 text-blue-300 border-blue-500/20"
+                            : "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                        }`}>
+                          {(r.score_confidence * 100).toFixed(0)}% ({r.score_confidence >= 0.85 ? "HIGH" : r.score_confidence >= 0.70 ? "MEDIUM" : "LOW"})
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        {r.is_top_k ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                            ★ Top-K Member
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">&mdash;</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        <Link
+                          href={`/recruiter/jobs/${jobId}/applications/${r.application_id || "2850187a-a20b-4851-a562-0a6dc6a70986"}/evidence`}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-semibold transition-all inline-block"
+                        >
+                          Inspect Candidate &rarr;
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

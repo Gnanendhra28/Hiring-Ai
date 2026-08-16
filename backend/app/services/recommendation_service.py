@@ -404,7 +404,6 @@ class RecommendationService:
             session.add(audit_log)
 
             await session.commit()
-            await session.refresh(dec_obj)
 
             # Publish Event
             event_envelope = EventEnvelope(

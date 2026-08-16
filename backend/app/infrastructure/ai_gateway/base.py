@@ -10,7 +10,7 @@ class ExtractedSkillSchema(BaseModel):
     skill_name: str
     years_experience: Optional[float] = None
     confidence: float = Field(1.0, ge=0.0, le=1.0)
-    evidence_text: str
+    evidence_text: Optional[str] = ""
     page_number: Optional[int] = 1
 
 class ExtractedExperienceSchema(BaseModel):
@@ -20,7 +20,7 @@ class ExtractedExperienceSchema(BaseModel):
     end_date_str: Optional[str] = None
     is_current: bool = False
     confidence: float = Field(1.0, ge=0.0, le=1.0)
-    evidence_text: str
+    evidence_text: Optional[str] = ""
     page_number: Optional[int] = 1
 
 class ExtractedEducationSchema(BaseModel):
@@ -30,13 +30,13 @@ class ExtractedEducationSchema(BaseModel):
     start_date_str: Optional[str] = None
     end_date_str: Optional[str] = None
     confidence: float = Field(1.0, ge=0.0, le=1.0)
-    evidence_text: str
+    evidence_text: Optional[str] = ""
     page_number: Optional[int] = 1
 
 class ExtractedFactSchema(BaseModel):
     fact_type: str
     raw_value: str
-    evidence_text: str
+    evidence_text: Optional[str] = ""
     page_number: Optional[int] = 1
     confidence: float = Field(1.0, ge=0.0, le=1.0)
 
