@@ -861,5 +861,52 @@ export async function fetchWebhookDeliveryHistory(subscriptionId?: string): Prom
   return [];
 }
 
+// ---------------------------------------------------------------------------
+// Phase 21: Enterprise Operations Observability APIs
+// ---------------------------------------------------------------------------
+
+export interface OperationsMetricsResponse {
+  organization_id: string;
+  system_health: {
+    backend_status: string;
+    worker_status: string;
+    ai_service_status: string;
+    database_status: string;
+    container_restarts: number;
+  };
+  rate_limiting: {
+    tenant_isolation: string;
+    read_api_limit: string;
+    state_change_limit: string;
+    ai_api_limit: string;
+    webhook_api_limit: string;
+  };
+  webhook_observability: {
+    total_events: number;
+    delivered: number;
+    retrying: number;
+    failed: number;
+    success_rate_percent: number;
+  };
+  ai_observability: {
+    total_requests: number;
+    total_token_estimate: number;
+    total_estimated_cost_usd: number;
+    average_latency_seconds: number;
+  };
+  ai_governance: {
+    ai_mutation_paths: number;
+    recruiter_decision_authority: string;
+  };
+}
+
+export async function fetchOperationsMetrics(): Promise<OperationsMetricsResponse | null> {
+  const res = await apiFetch("/api/v1/operations/metrics");
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
 
 

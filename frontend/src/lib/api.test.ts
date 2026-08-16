@@ -331,5 +331,29 @@ describe("Frontend API Client & Auth Refresh Interceptor", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/webhooks/subscriptions");
   });
+
+  // 14. Operations metrics helper
+  it("14. fetchOperationsMetrics calls GET /api/v1/operations/metrics", async () => {
+    setTokens("valid_token", "refresh");
+    setOrgId("org_123");
+
+    const mockMetrics = {
+      organization_id: "org_123",
+      system_health: { backend_status: "HEALTHY" },
+      ai_governance: { ai_mutation_paths: 0 },
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(mockMetrics), { status: 200 })
+    );
+    global.fetch = fetchMock;
+
+    const { fetchOperationsMetrics } = await import("./api");
+    const data = await fetchOperationsMetrics();
+
+    expect(data).toEqual(mockMetrics);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/operations/metrics");
+  });
 });
 

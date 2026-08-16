@@ -30,6 +30,7 @@ from app.api.v1.communications import router as communications_router
 from app.api.v1.document_intelligence import router as doc_intel_router
 from app.api.v1.requisitions import router as requisitions_router
 from app.api.v1.webhooks import router as webhooks_router
+from app.api.v1.operations import router as operations_router
 
 import time
 from app.core.metrics import metrics
@@ -69,7 +70,7 @@ app.add_middleware(
 # Rate Limiting Middleware
 @app.middleware("http")
 async def rate_limiting_middleware(request: Request, call_next) -> Response:
-    is_limited, max_reqs, retry_after = rate_limiter.is_rate_limited(request)
+    is_limited, max_reqs, remaining, reset_ts, retry_after = rate_limiter.is_rate_limited(request)
     if is_limited:
         logger.warning(
             f"[RateLimiter] Rate limit exceeded ({max_reqs} req/min) for path '{request.url.path}'"
@@ -77,12 +78,21 @@ async def rate_limiting_middleware(request: Request, call_next) -> Response:
         return JSONResponse(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             content={
-                "detail": "Rate limit exceeded. Too many requests. Please try again later.",
+                "detail": "Rate limit exceeded. Too many requests. Please try again shortly.",
                 "retry_after_seconds": retry_after,
             },
-            headers={"Retry-After": str(retry_after)},
+            headers={
+                "Retry-After": str(retry_after),
+                "X-RateLimit-Limit": str(max_reqs),
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": str(reset_ts),
+            },
         )
-    return await call_next(request)
+    response: Response = await call_next(request)
+    response.headers["X-RateLimit-Limit"] = str(max_reqs)
+    response.headers["X-RateLimit-Remaining"] = str(remaining)
+    response.headers["X-RateLimit-Reset"] = str(reset_ts)
+    return response
 
 # Request Context, Correlation ID & Metrics Middleware
 @app.middleware("http")
@@ -199,6 +209,7 @@ app.include_router(communications_router, prefix="/api/v1")
 app.include_router(doc_intel_router, prefix="/api/v1")
 app.include_router(requisitions_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
+app.include_router(operations_router, prefix="/api/v1")
 
 @app.get("/api/v1/health", tags=["Health"])
 async def api_health_check():
