@@ -1348,6 +1348,30 @@ export async function deleteEmployerProfile(userId: string): Promise<boolean> {
   return res.ok;
 }
 
+export interface AdminAnalyticsData {
+  approved_employers_count: number;
+  pending_employers_count: number;
+  total_employers_count: number;
+  employer_approval_rate: number;
+  approved_jobs_count: number;
+  pending_jobs_count: number;
+  active_jobs_count: number;
+  total_jobs_count: number;
+  job_approval_rate: number;
+  total_applications_count: number;
+  shortlisted_applications_count: number;
+  system_health: string;
+  last_updated: string;
+}
+
+export async function fetchAdminAnalytics(): Promise<AdminAnalyticsData | null> {
+  const res = await apiFetch("/api/v1/admin/analytics");
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
 
 
 

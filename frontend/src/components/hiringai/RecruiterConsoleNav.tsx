@@ -48,7 +48,7 @@ const adminLinks = [
   { label: "Employees Approval", href: "/admin/employers", icon: UserCheck },
   { label: "Approved Employees", href: "/admin/approved-employers", icon: ShieldCheck },
   { label: "Add Admin", href: "/admin/add-admin", icon: UserPlus },
-  { label: "Analytics", href: "/recruiter/reports", icon: BarChart3 },
+  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];
 
 interface NotificationItem {
