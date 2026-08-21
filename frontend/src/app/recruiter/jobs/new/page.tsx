@@ -97,6 +97,7 @@ ${formData.good_to_have
         department: formData.department,
         location: formattedLocation,
         employment_type: formData.employment_type,
+        status: formData.status,
         description: formData.description,
       };
 

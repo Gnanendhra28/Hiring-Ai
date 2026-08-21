@@ -169,6 +169,7 @@ class JobCreateRequest(BaseModel):
     department: Optional[str] = Field(None, max_length=255)
     location: Optional[str] = Field(None, max_length=255)
     employment_type: EmploymentTypeEnum = EmploymentTypeEnum.FULL_TIME
+    status: Optional[JobStatusEnum] = JobStatusEnum.PUBLISHED
 
 class JobUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=2, max_length=255)
