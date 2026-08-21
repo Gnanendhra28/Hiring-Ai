@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { fetchRecruiterJobs, updateJobStatus, JobItemData } from "@/lib/api";
 
 const defaultSampleJobs: JobItemData[] = [
@@ -168,9 +168,17 @@ export default function JobWorkspaceListPage() {
                     </select>
                   </td>
                   <td className="p-4 text-right">
-                    <Link href={`/recruiter/jobs/${job.id}/ranking`} className="text-xs text-sky-300 hover:text-sky-200 font-semibold">
-                      Open Workspace &rarr;
-                    </Link>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        href={`/recruiter/jobs/${job.id}/edit`}
+                        className="text-xs text-amber-300 hover:text-amber-200 font-medium flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20"
+                      >
+                        <Pencil size={12} /> Edit
+                      </Link>
+                      <Link href={`/recruiter/jobs/${job.id}/ranking`} className="text-xs text-sky-300 hover:text-sky-200 font-semibold">
+                        Open Workspace &rarr;
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
