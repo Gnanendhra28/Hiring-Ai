@@ -235,6 +235,8 @@ async def list_approved_employers(admin: User = Depends(require_platform_admin))
                 "registration_id": profile.registration_id,
                 "linkedin_url": profile.linkedin_url,
                 "verification_status": profile.verification_status,
+                "submitted_at": profile.submitted_at,
+            })
         return out
 
 @router.delete("/employers/{user_id}")
