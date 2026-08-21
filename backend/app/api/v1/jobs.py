@@ -13,6 +13,7 @@ from app.api.v1.schemas import (
     JobCreateRequest,
     JobListResponse,
     JobResponse,
+    JobUpdateRequest,
 )
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
@@ -78,10 +79,10 @@ async def create_job(
 @router.put("/{job_id}", response_model=JobResponse)
 async def update_job(
     job_id: uuid.UUID,
-    payload: JobCreateRequest,
+    payload: JobUpdateRequest,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
-    """Updates job posting content and transitions active job intelligence to STALE."""
+    """Updates job posting content, status, and transitions active job intelligence to STALE."""
     if not ctx.active_organization_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
 
@@ -95,11 +96,18 @@ async def update_job(
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
 
-        job.title = payload.title
-        job.description = payload.description
-        job.department = payload.department
-        job.location = payload.location
-        job.employment_type = payload.employment_type
+        if payload.title is not None:
+            job.title = payload.title
+        if payload.description is not None:
+            job.description = payload.description
+        if payload.department is not None:
+            job.department = payload.department
+        if payload.location is not None:
+            job.location = payload.location
+        if payload.employment_type is not None:
+            job.employment_type = payload.employment_type
+        if payload.status is not None:
+            job.status = payload.status
 
         # Mark active intelligence STALE if content updated
         await session.execute(
@@ -107,7 +115,6 @@ async def update_job(
             .where(JobIntelligenceVersion.job_id == job_id, JobIntelligenceVersion.is_active.is_(True))
             .values(status=JobIntelligenceVersionStatusEnum.STALE)
         )
-
 
         audit = AuditLog(
             organization_id=ctx.active_organization_id,
@@ -122,6 +129,37 @@ async def update_job(
         await session.begin()
         await set_tenant_context(session, ctx.active_organization_id)
         return (await session.execute(stmt)).scalar_one()
+
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(
+    job_id: uuid.UUID,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+):
+    """Deletes a job posting and associated audit record within tenant context."""
+    if not ctx.active_organization_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, ctx.active_organization_id)
+
+        stmt = select(Job).where(Job.id == job_id, Job.organization_id == ctx.active_organization_id)
+        job = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not job:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+        await session.delete(job)
+
+        audit = AuditLog(
+            organization_id=ctx.active_organization_id,
+            user_id=ctx.user.id,
+            action="job.delete",
+            resource_type="job",
+            resource_id=str(job_id),
+        )
+        session.add(audit)
+        await session.commit()
 
 @router.post("/{job_id}/submit-verification", response_model=JobResponse)
 async def submit_job_for_verification(

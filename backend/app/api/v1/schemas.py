@@ -176,6 +176,7 @@ class JobUpdateRequest(BaseModel):
     department: Optional[str] = Field(None, max_length=255)
     location: Optional[str] = Field(None, max_length=255)
     employment_type: Optional[EmploymentTypeEnum] = None
+    status: Optional[JobStatusEnum] = None
 
 class JobVerifyRequest(BaseModel):
     action: str = Field(..., description="APPROVE or REJECT")

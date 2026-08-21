@@ -1186,6 +1186,46 @@ export async function fetchSecurityEvents(): Promise<SecurityEventsResponse | nu
   return null;
 }
 
+export interface JobItemData {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  department?: string;
+  location?: string;
+  employment_type: string;
+  status: "DRAFT" | "PUBLISHED" | "PAUSED" | "CLOSED";
+  verification_status: string;
+  created_at: string;
+  applications_count?: number;
+  ai_shortlisted_count?: number;
+  skills?: string[];
+}
+
+export async function fetchRecruiterJobs(): Promise<JobItemData[]> {
+  const res = await apiFetch("/api/v1/jobs");
+  if (res.ok) {
+    const data = await res.json();
+    return data.items || [];
+  }
+  return [];
+}
+
+export async function updateJobStatus(jobId: string, status: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+  return res.ok;
+}
+
+export async function deleteJobPost(jobId: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}`, {
+    method: "DELETE",
+  });
+  return res.ok;
+}
+
 
 
 
