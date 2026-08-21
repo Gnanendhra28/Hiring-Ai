@@ -98,6 +98,7 @@ ${formData.good_to_have
         location: formattedLocation,
         employment_type: formData.employment_type,
         status: formData.status,
+        verification_status: "PENDING_VERIFICATION",
         description: formData.description,
       };
 

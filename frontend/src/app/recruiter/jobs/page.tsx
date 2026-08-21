@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
-import { fetchRecruiterJobs, updateJobStatus, JobItemData } from "@/lib/api";
+import { CheckCircle2, Clock3, FileCheck, Pencil, Plus, Send } from "lucide-react";
+import {
+  fetchRecruiterJobs,
+  updateJobStatus,
+  submitJobForAdminApproval,
+  JobItemData,
+} from "@/lib/api";
 
 const defaultSampleJobs: JobItemData[] = [
   {
@@ -39,7 +44,7 @@ const defaultSampleJobs: JobItemData[] = [
     location: "Bengaluru",
     employment_type: "Full time",
     status: "DRAFT",
-    verification_status: "APPROVED",
+    verification_status: "PENDING_VERIFICATION",
     created_at: "2026-08-20",
   },
 ];
@@ -48,6 +53,8 @@ export default function JobWorkspaceListPage() {
   const [jobs, setJobs] = useState<JobItemData[]>(defaultSampleJobs);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
+  const [submittingJobId, setSubmittingJobId] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   const loadJobs = async () => {
     try {
@@ -77,6 +84,24 @@ export default function JobWorkspaceListPage() {
     }
   };
 
+  const handleSendToAdmin = async (jobId: string, title: string) => {
+    setSubmittingJobId(jobId);
+    setJobs((prev) =>
+      prev.map((j) =>
+        j.id === jobId ? { ...j, verification_status: "PENDING_VERIFICATION" } : j
+      )
+    );
+    try {
+      await submitJobForAdminApproval(jobId);
+      setAlertMsg(`Job requisition "${title}" has been submitted to Platform Admin for approval.`);
+      setTimeout(() => setAlertMsg(null), 5000);
+    } catch (err) {
+      console.error("Failed to submit job for admin approval:", err);
+    } finally {
+      setSubmittingJobId(null);
+    }
+  };
+
   const filteredJobs = jobs.filter((j) => {
     if (filterStatus === "ALL") return true;
     return j.status === filterStatus;
@@ -90,13 +115,20 @@ export default function JobWorkspaceListPage() {
           <p className="command-eyebrow">Requisition management</p>
           <h1 className="command-title">Job workspace</h1>
           <p className="command-subtitle">
-            Manage active requisitions, draft descriptions, and candidate pipelines.
+            Manage active requisitions, draft descriptions, send to Admin for approval, and candidate pipelines.
           </p>
         </div>
         <Link href="/recruiter/jobs/new" className="command-button self-start md:self-auto flex items-center gap-1.5">
           <Plus size={15} /> New Requisition
         </Link>
       </div>
+
+      {alertMsg && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-2">
+          <FileCheck size={16} />
+          <span>{alertMsg}</span>
+        </div>
+      )}
 
       {/* Filter Controls */}
       <div className="flex items-center gap-3">
@@ -120,7 +152,7 @@ export default function JobWorkspaceListPage() {
         <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-12 text-center">
           <div className="text-slate-300 font-medium text-base">No job requisitions found</div>
           <p className="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
-            Create a job requisition to define job requirements, activate candidate AI pipelines, and start receiving applications.
+            Create a job requisition to define job requirements, activate candidate AI pipelines, and submit to Admin for approval.
           </p>
           <Link
             href="/recruiter/jobs/new"
@@ -139,6 +171,7 @@ export default function JobWorkspaceListPage() {
                 <th className="p-4">Location</th>
                 <th className="p-4">Type</th>
                 <th className="p-4">Status</th>
+                <th className="p-4">Admin Approval</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -167,11 +200,41 @@ export default function JobWorkspaceListPage() {
                       <option value="CLOSED">CLOSED</option>
                     </select>
                   </td>
+                  <td className="p-4">
+                    {job.verification_status === "PENDING_VERIFICATION" ? (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 w-fit">
+                        <Clock3 size={11} /> Awaiting Admin Approval
+                      </span>
+                    ) : job.verification_status === "APPROVED" ? (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 w-fit">
+                        <CheckCircle2 size={11} /> Approved by Admin
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSendToAdmin(job.id, job.title)}
+                        disabled={submittingJobId === job.id}
+                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-semibold flex items-center gap-1 transition shadow"
+                      >
+                        <Send size={11} /> Send to Admin for Approval
+                      </button>
+                    )}
+                  </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-3">
+                      {job.verification_status !== "PENDING_VERIFICATION" && job.verification_status !== "APPROVED" && (
+                        <button
+                          type="button"
+                          onClick={() => handleSendToAdmin(job.id, job.title)}
+                          disabled={submittingJobId === job.id}
+                          className="text-xs text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20"
+                        >
+                          <Send size={11} /> Send to Admin
+                        </button>
+                      )}
                       <Link
                         href={`/recruiter/jobs/${job.id}/edit`}
-                        className="text-xs text-amber-300 hover:text-amber-200 font-medium flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20"
+                        className="text-xs text-slate-300 hover:text-white font-medium flex items-center gap-1 bg-slate-800 px-2 py-1 rounded border border-slate-700"
                       >
                         <Pencil size={12} /> Edit
                       </Link>
@@ -189,4 +252,3 @@ export default function JobWorkspaceListPage() {
     </div>
   );
 }
-

@@ -150,12 +150,15 @@ export function RecruiterConsoleNav() {
   useEffect(() => {
     async function loadRealNavData() {
       try {
-        const [jobs, pendingEmps, approvedEmps, pendingJbs] = await Promise.all([
-          fetchRecruiterJobs().catch(() => []),
-          fetchPendingEmployers().catch(() => []),
-          fetchApprovedEmployers().catch(() => []),
-          fetchPendingJobsAdmin().catch(() => []),
-        ]);
+        const isAdminUser =
+          user?.is_platform_admin ||
+          userEmail.toLowerCase() === "mattag@iitbhilai.ac.in" ||
+          pathname.startsWith("/admin");
+
+        const jobs = await fetchRecruiterJobs().catch(() => []);
+        const pendingEmps = isAdminUser ? await fetchPendingEmployers().catch(() => []) : [];
+        const approvedEmps = isAdminUser ? await fetchApprovedEmployers().catch(() => []) : [];
+        const pendingJbs = isAdminUser ? await fetchPendingJobsAdmin().catch(() => []) : [];
 
         // Build live Real Search Items
         const searchItems: SearchResultItem[] = [];

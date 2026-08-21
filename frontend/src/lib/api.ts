@@ -1372,6 +1372,14 @@ export async function fetchAdminAnalytics(): Promise<AdminAnalyticsData | null> 
   return null;
 }
 
+export async function submitJobForAdminApproval(jobId: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ verification_status: "PENDING_VERIFICATION" }),
+  });
+  return res.ok;
+}
+
 
 
 
