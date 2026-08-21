@@ -1341,6 +1341,13 @@ export async function fetchApprovedEmployers(): Promise<PendingEmployerVerificat
   return [];
 }
 
+export async function deleteEmployerProfile(userId: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/admin/employers/${userId}`, {
+    method: "DELETE",
+  });
+  return res.ok;
+}
+
 
 
 

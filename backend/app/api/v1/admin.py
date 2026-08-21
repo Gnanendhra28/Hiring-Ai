@@ -235,9 +235,28 @@ async def list_approved_employers(admin: User = Depends(require_platform_admin))
                 "registration_id": profile.registration_id,
                 "linkedin_url": profile.linkedin_url,
                 "verification_status": profile.verification_status,
-                "submitted_at": profile.submitted_at,
-            })
         return out
+
+@router.delete("/employers/{user_id}")
+async def delete_employer_profile(
+    user_id: uuid.UUID,
+    admin: User = Depends(require_platform_admin),
+):
+    """Deletes or deactivates an employer profile and user account by Platform Admin."""
+    async with async_session_factory() as session:
+        await set_tenant_context(session, is_platform_admin=True)
+        stmt = select(RecruiterProfile).where(RecruiterProfile.user_id == user_id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+        if profile:
+            await session.delete(profile)
+
+        user_stmt = select(User).where(User.id == user_id)
+        user_to_delete = (await session.execute(user_stmt)).scalar_one_or_none()
+        if user_to_delete and not user_to_delete.is_platform_admin:
+            user_to_delete.is_active = False
+
+        await session.commit()
+        return {"status": "success", "message": f"Successfully deleted employer profile for user '{user_id}'."}
 
 from pydantic import BaseModel, EmailStr
 from app.core.security import hash_password
