@@ -11,6 +11,7 @@ from app.db.session import async_session_factory
 from app.domains.audit.models import AuditLog
 from app.domains.identity.models import User
 from app.domains.jobs.models import Job, JobVerificationStatusEnum
+from app.domains.recruiters.models import RecruiterProfile
 
 router = APIRouter(prefix="/admin", tags=["Platform Admin"])
 
@@ -157,3 +158,52 @@ async def verify_job_posting(
         await session.begin()
         await set_tenant_context(session, organization_id=job.organization_id, is_platform_admin=True)
         return (await session.execute(stmt)).scalar_one()
+
+@router.get("/employers/pending")
+async def list_pending_employer_verifications(admin: User = Depends(require_platform_admin)):
+    """Lists all employer profiles submitted for platform admin verification."""
+    async with async_session_factory() as session:
+        await set_tenant_context(session, is_platform_admin=True)
+        stmt = (
+            select(RecruiterProfile, User)
+            .join(User, RecruiterProfile.user_id == User.id)
+            .where(RecruiterProfile.verification_status == "PENDING_VERIFICATION")
+        )
+        results = (await session.execute(stmt)).all()
+
+        out = []
+        for profile, user in results:
+            out.append({
+                "id": str(profile.id),
+                "user_id": str(user.id),
+                "full_name": user.full_name,
+                "email": user.email,
+                "job_title": profile.job_title,
+                "department": profile.department,
+                "phone_number": profile.phone_number,
+                "company_name": profile.company_name,
+                "website_url": profile.website_url,
+                "registration_id": profile.registration_id,
+                "linkedin_url": profile.linkedin_url,
+                "verification_status": profile.verification_status,
+                "submitted_at": profile.submitted_at,
+            })
+        return out
+
+@router.post("/employers/{user_id}/verify")
+async def verify_employer_profile(
+    user_id: uuid.UUID,
+    action: str = Query("APPROVE", enum=["APPROVE", "REJECT"]),
+    admin: User = Depends(require_platform_admin),
+):
+    """Approves or rejects an employer's profile verification request."""
+    async with async_session_factory() as session:
+        await set_tenant_context(session, is_platform_admin=True)
+        stmt = select(RecruiterProfile).where(RecruiterProfile.user_id == user_id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+        if not profile:
+            raise HTTPException(status_code=404, detail="Recruiter profile not found.")
+
+        profile.verification_status = "APPROVED" if action.upper() == "APPROVE" else "REJECTED"
+        await session.commit()
+        return {"status": "success", "verification_status": profile.verification_status}

@@ -1270,6 +1270,37 @@ export async function submitEmployerVerification(): Promise<RecruiterProfileData
   return null;
 }
 
+export interface PendingEmployerVerification {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  job_title?: string;
+  department?: string;
+  phone_number?: string;
+  company_name?: string;
+  website_url?: string;
+  registration_id?: string;
+  linkedin_url?: string;
+  verification_status: string;
+  submitted_at?: string;
+}
+
+export async function fetchPendingEmployers(): Promise<PendingEmployerVerification[]> {
+  const res = await apiFetch("/api/v1/admin/employers/pending");
+  if (res.ok) {
+    return await res.json();
+  }
+  return [];
+}
+
+export async function verifyEmployerProfile(userId: string, action: "APPROVE" | "REJECT"): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/admin/employers/${userId}/verify?action=${action}`, {
+    method: "POST",
+  });
+  return res.ok;
+}
+
 
 
 
