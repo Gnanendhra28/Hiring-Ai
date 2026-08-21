@@ -11,8 +11,10 @@ import {
   ChevronRight,
   Clock3,
   ExternalLink,
+  FileCheck,
   Pencil,
   Plus,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -27,6 +29,8 @@ import {
   deleteJobPost,
   fetchPendingEmployers,
   verifyEmployerProfile,
+  fetchPendingJobsAdmin,
+  verifyJobAdmin,
   JobItemData,
   PendingEmployerVerification,
 } from "@/lib/api";
@@ -77,13 +81,15 @@ export default function AdminDashboardPage() {
 
   const [jobs, setJobs] = useState<LocalJobDisplay[]>(defaultActiveJobs);
   const [pendingEmployers, setPendingEmployers] = useState<PendingEmployerVerification[]>([]);
+  const [pendingJobs, setPendingJobs] = useState<JobItemData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [verifyingEmpId, setVerifyingEmpId] = useState<string | null>(null);
+  const [verifyingJobId, setVerifyingJobId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadAdminDashboardData() {
       try {
-        // Fetch live platform jobs
+        // 1. Fetch live platform jobs
         const liveJobs = await fetchRecruiterJobs();
         if (liveJobs && liveJobs.length > 0) {
           const mapped: LocalJobDisplay[] = liveJobs.map((j) => {
@@ -105,9 +111,13 @@ export default function AdminDashboardPage() {
           setJobs(mapped);
         }
 
-        // Fetch pending employer verifications
-        const pending = await fetchPendingEmployers();
-        setPendingEmployers(pending);
+        // 2. Fetch pending employer profile verifications
+        const pendingEmps = await fetchPendingEmployers();
+        setPendingEmployers(pendingEmps);
+
+        // 3. Fetch pending job post requisitions
+        const pendingJbs = await fetchPendingJobsAdmin();
+        setPendingJobs(pendingJbs);
       } catch (err) {
         console.error("Error loading Admin Dashboard data:", err);
       } finally {
@@ -151,7 +161,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleVerifyEmployer = async (userId: string, action: "APPROVE" | "REJECT") => {
-    setVerifyingId(userId);
+    setVerifyingEmpId(userId);
     try {
       const ok = await verifyEmployerProfile(userId, action);
       if (ok) {
@@ -160,7 +170,21 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error("Error verifying employer:", err);
     } finally {
-      setVerifyingId(null);
+      setVerifyingEmpId(null);
+    }
+  };
+
+  const handleVerifyJob = async (jobId: string, action: "APPROVE" | "REJECT") => {
+    setVerifyingJobId(jobId);
+    try {
+      const ok = await verifyJobAdmin(jobId, action);
+      if (ok) {
+        setPendingJobs((prev) => prev.filter((j) => j.id !== jobId));
+      }
+    } catch (err) {
+      console.error("Error verifying job post:", err);
+    } finally {
+      setVerifyingJobId(null);
     }
   };
 
@@ -168,26 +192,25 @@ export default function AdminDashboardPage() {
 
   const totalActiveJobs = jobs.filter((j) => j.status === "ACTIVE").length;
   const totalApplications = jobs.reduce((acc, j) => acc + j.applicationsCount, 0);
-  const totalShortlisted = jobs.reduce((acc, j) => acc + j.aiShortlistedCount, 0);
 
   return (
     <div className="min-h-screen bg-[#0b1220] text-slate-100 p-6 md:p-10 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Welcome Banner Header */}
+        {/* Admin Control Banner Header */}
         <div className="bg-[#111a2c] border border-[#233047] rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-2 relative z-10">
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider flex items-center gap-1">
-                <ShieldCheck size={12} /> Platform Admin Control
+                <ShieldCheck size={12} /> Platform Admin Verification Console
               </span>
             </div>
             <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
               Welcome, {userName} 👋
             </h1>
             <p className="text-slate-400 text-xs md:text-sm max-w-2xl">
-              Platform Admin Dashboard &bull; Manage real employer verifications, approve job requisitions, and monitor candidate application metrics.
+              Inspect, verify, and approve employer/employee profile credentials and job postings created by recruiters across the platform.
             </p>
           </div>
 
@@ -207,8 +230,30 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Stat Cards Grid */}
+        {/* Verification Summary Stat Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-5 shadow-lg">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Employer Verifications</span>
+              <UserCheck size={18} className="text-emerald-400" />
+            </div>
+            <div className="text-3xl font-extrabold text-emerald-400 mt-3">{pendingEmployers.length}</div>
+            <div className="text-[11px] text-slate-400 mt-2">
+              Pending Recruiter Credentials Review
+            </div>
+          </div>
+
+          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-5 shadow-lg">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Job Verifications</span>
+              <FileCheck size={18} className="text-amber-400" />
+            </div>
+            <div className="text-3xl font-extrabold text-amber-400 mt-3">{pendingJobs.length}</div>
+            <div className="text-[11px] text-slate-400 mt-2">
+              Requisitions Awaiting Publication Approval
+            </div>
+          </div>
+
           <button
             onClick={() => router.push("/recruiter/jobs")}
             className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 text-left transition shadow-lg group cursor-pointer"
@@ -219,7 +264,7 @@ export default function AdminDashboardPage() {
             </div>
             <div className="text-3xl font-extrabold text-white mt-3">{totalActiveJobs}</div>
             <div className="text-[11px] text-sky-400 mt-2 flex items-center gap-1">
-              Click to view active jobs <ChevronRight size={12} />
+              Click to view active postings <ChevronRight size={12} />
             </div>
           </button>
 
@@ -236,42 +281,17 @@ export default function AdminDashboardPage() {
               Click to view candidate pipeline <ChevronRight size={12} />
             </div>
           </button>
-
-          <button
-            onClick={() => router.push("/recruiter/jobs/active/ranking")}
-            className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 text-left transition shadow-lg group cursor-pointer"
-          >
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">AI Shortlisted</span>
-              <Sparkles size={18} className="text-amber-400 group-hover:scale-110 transition-transform" />
-            </div>
-            <div className="text-3xl font-extrabold text-white mt-3">{totalShortlisted}</div>
-            <div className="text-[11px] text-amber-400 mt-2 flex items-center gap-1">
-              Click to view AI rankings <ChevronRight size={12} />
-            </div>
-          </button>
-
-          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-5 shadow-lg">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Employer Verifications</span>
-              <ShieldCheck size={18} className="text-emerald-400" />
-            </div>
-            <div className="text-3xl font-extrabold text-emerald-400 mt-3">{pendingEmployers.length}</div>
-            <div className="text-[11px] text-emerald-400 mt-2">
-              Pending Admin Verification Requests
-            </div>
-          </div>
         </div>
 
-        {/* Section 1: Pending Employer Profile Verification Requests */}
+        {/* TASK 1: Pending Employer / Employee Profile Verification Queue */}
         <div className="bg-[#111a2c] border border-[#233047] rounded-2xl p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <Building2 className="text-emerald-400" size={20} />
-              <h2 className="text-lg font-bold text-white">Pending Employer Profile Verifications</h2>
+              <h2 className="text-lg font-bold text-white">1. Verify Employer / Employee Profiles</h2>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              {pendingEmployers.length} Awaiting Verification
+              {pendingEmployers.length} Pending Approval
             </span>
           </div>
 
@@ -280,7 +300,7 @@ export default function AdminDashboardPage() {
               <UserCheck className="mx-auto text-slate-600" size={32} />
               <div className="text-sm font-semibold text-slate-300">No Pending Employer Profile Verifications</div>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                All submitted recruiter profile credentials have been verified by Admin.
+                All submitted recruiter profile credentials have been verified by Platform Admin.
               </p>
             </div>
           ) : (
@@ -289,8 +309,8 @@ export default function AdminDashboardPage() {
                 <thead className="bg-[#080e1a] text-slate-400 uppercase tracking-wider font-semibold border-b border-[#233047]">
                   <tr>
                     <th className="px-5 py-3">Employer / Recruiter</th>
-                    <th className="px-5 py-3">Company & Registration</th>
-                    <th className="px-5 py-3">Website & Social</th>
+                    <th className="px-5 py-3">Company & Registration ID</th>
+                    <th className="px-5 py-3">Website & LinkedIn</th>
                     <th className="px-5 py-3">Submitted Date</th>
                     <th className="px-5 py-3 text-right">Verification Action</th>
                   </tr>
@@ -326,15 +346,15 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={() => handleVerifyEmployer(emp.user_id, "APPROVE")}
-                            disabled={verifyingId === emp.user_id}
+                            disabled={verifyingEmpId === emp.user_id}
                             className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold flex items-center gap-1 shadow transition"
                           >
-                            <CheckCircle2 size={13} /> {verifyingId === emp.user_id ? "Verifying..." : "Verify Employer"}
+                            <CheckCircle2 size={13} /> {verifyingEmpId === emp.user_id ? "Verifying..." : "Verify Employer"}
                           </button>
                           <button
                             type="button"
                             onClick={() => handleVerifyEmployer(emp.user_id, "REJECT")}
-                            disabled={verifyingId === emp.user_id}
+                            disabled={verifyingEmpId === emp.user_id}
                             className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded text-xs font-medium border border-rose-500/20 transition"
                           >
                             Reject
@@ -349,14 +369,81 @@ export default function AdminDashboardPage() {
           )}
         </div>
 
-        {/* Section 2: Active Job Workspace & Requisitions Table */}
+        {/* TASK 2: Pending Job Posts Verification Queue */}
+        <div className="bg-[#111a2c] border border-[#233047] rounded-2xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <FileCheck className="text-amber-400" size={20} />
+              <h2 className="text-lg font-bold text-white">2. Verify Job Postings Created by Employees</h2>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              {pendingJobs.length} Awaiting Approval
+            </span>
+          </div>
+
+          {pendingJobs.length === 0 ? (
+            <div className="py-10 text-center border border-dashed border-slate-800 rounded-xl space-y-2">
+              <CheckCircle2 className="mx-auto text-slate-600" size={32} />
+              <div className="text-sm font-semibold text-slate-300">No Job Requisitions Awaiting Verification</div>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                All submitted recruiter job postings have been reviewed and approved for publication.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#080e1a] text-slate-400 uppercase tracking-wider font-semibold border-b border-[#233047]">
+                  <tr>
+                    <th className="px-5 py-3">Job Title & Role</th>
+                    <th className="px-5 py-3">Department & Location</th>
+                    <th className="px-5 py-3">Employment Type</th>
+                    <th className="px-5 py-3">Submitted Date</th>
+                    <th className="px-5 py-3 text-right">Job Verification Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1b263b] text-slate-200">
+                  {pendingJobs.map((j) => (
+                    <tr key={j.id} className="hover:bg-[#18253a]/50 transition">
+                      <td className="px-5 py-4 font-bold text-white text-sm">{j.title}</td>
+                      <td className="px-5 py-4 text-slate-300">{j.department || "Engineering"} &bull; {j.location || "Remote"}</td>
+                      <td className="px-5 py-4 text-slate-400">{j.employment_type || "FULL_TIME"}</td>
+                      <td className="px-5 py-4 text-slate-400">{new Date(j.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyJob(j.id, "APPROVE")}
+                            disabled={verifyingJobId === j.id}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold flex items-center gap-1 shadow transition"
+                          >
+                            <CheckCircle2 size={13} /> {verifyingJobId === j.id ? "Approving..." : "Approve & Publish Job"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyJob(j.id, "REJECT")}
+                            disabled={verifyingJobId === j.id}
+                            className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded text-xs font-medium border border-rose-500/20 transition"
+                          >
+                            Reject Job
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Section 3: Verified Platform Job Postings */}
         <div className="bg-[#111a2c] border border-[#233047] rounded-2xl p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <BriefcaseBusiness className="text-sky-400" size={20} /> Platform Job Workspace & Requisitions
+              <BriefcaseBusiness className="text-sky-400" size={20} /> Verified Platform Job Postings
             </h2>
             <Link href="/recruiter/jobs" className="text-xs text-sky-400 hover:underline">
-              View All Workspace Jobs &rarr;
+              View All Platform Jobs &rarr;
             </Link>
           </div>
 
