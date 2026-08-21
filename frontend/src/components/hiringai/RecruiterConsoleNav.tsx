@@ -28,6 +28,12 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
+import {
+  fetchRecruiterJobs,
+  fetchPendingEmployers,
+  fetchApprovedEmployers,
+  fetchPendingJobsAdmin,
+} from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthContext";
 
 const recruiterLinks = [
@@ -66,37 +72,19 @@ const initialNotifications: NotificationItem[] = [
     id: "1",
     type: "ai",
     title: "AI Match Fit Signal Ready",
-    description: "11 candidates meet or exceed the interview threshold for Senior ML Engineer.",
+    description: "Candidates meet or exceed the interview threshold across platform requisitions.",
     timestamp: "10m ago",
     read: false,
-    link: "/recruiter/jobs/1/ranking",
+    link: "/admin/approved-jobs",
   },
   {
     id: "2",
     type: "candidate",
-    title: "New Candidate Application",
-    description: "Gnanendhra Joy submitted an application with verified RAG & FastAPI evidence.",
+    title: "Employer Profile Verification",
+    description: "New recruiter profiles submitted credentials for Platform Admin verification.",
     timestamp: "32m ago",
     read: false,
-    link: "/recruiter/jobs/1/applications",
-  },
-  {
-    id: "3",
-    type: "job",
-    title: "Requisition Published",
-    description: "Requisition 'Product Designer' is now active across all candidate channels.",
-    timestamp: "2h ago",
-    read: true,
-    link: "/recruiter/jobs",
-  },
-  {
-    id: "4",
-    type: "candidate",
-    title: "Interview Slot Accepted",
-    description: "Rohan Iyer accepted the scheduled technical interview invitation.",
-    timestamp: "4h ago",
-    read: true,
-    link: "/recruiter/jobs/1/interviews",
+    link: "/admin/employers",
   },
 ];
 
@@ -109,38 +97,22 @@ interface SearchResultItem {
   link: string;
 }
 
-const searchDatabase: SearchResultItem[] = [
+const fallbackSearchDatabase: SearchResultItem[] = [
   {
     id: "c1",
     type: "candidate",
     title: "Gnanendhra Joy",
-    subtitle: "AI/ML Engineer • Python, RAG, FastAPI",
-    tag: "96% Match",
-    link: "/recruiter/jobs/1/applications",
+    subtitle: "Platform Admin & Lead Architect • mattag@iitbhilai.ac.in",
+    tag: "Admin",
+    link: "/admin/approved-employers",
   },
   {
     id: "c2",
     type: "candidate",
-    title: "Aisha Rahman",
-    subtitle: "Applied AI Engineer • LLMs, PyTorch, AWS",
-    tag: "93% Match",
-    link: "/recruiter/jobs/1/applications",
-  },
-  {
-    id: "c3",
-    type: "candidate",
-    title: "Rohan Iyer",
-    subtitle: "Machine Learning Engineer • Python, SQL, Vector DBs",
-    tag: "91% Match",
-    link: "/recruiter/jobs/1/applications",
-  },
-  {
-    id: "c4",
-    type: "candidate",
-    title: "Meera Shah",
-    subtitle: "Data Scientist • Python, NLP, MLflow",
-    tag: "88% Match",
-    link: "/recruiter/jobs/1/applications",
+    title: "Santhosha Rao",
+    subtitle: "Head of Talent Acquisition • gnanendhrakeys@gmail.com",
+    tag: "Verified Employer",
+    link: "/admin/approved-employers",
   },
   {
     id: "j1",
@@ -148,31 +120,7 @@ const searchDatabase: SearchResultItem[] = [
     title: "Senior ML Engineer",
     subtitle: "Engineering • 1,284 Applications",
     tag: "Active Job",
-    link: "/recruiter/jobs/1",
-  },
-  {
-    id: "j2",
-    type: "job",
-    title: "Product Designer",
-    subtitle: "Design • 4 candidates awaiting review",
-    tag: "Needs Review",
-    link: "/recruiter/jobs",
-  },
-  {
-    id: "j3",
-    type: "job",
-    title: "Backend Architect",
-    subtitle: "Infrastructure • Requisition open",
-    tag: "Active Job",
-    link: "/recruiter/jobs",
-  },
-  {
-    id: "o1",
-    type: "company",
-    title: "Rao Enterprise",
-    subtitle: "Hiring Organization & Workspace Team",
-    tag: "Company",
-    link: "/recruiter/organization/members",
+    link: "/admin/approved-jobs",
   },
 ];
 
@@ -185,6 +133,7 @@ export function RecruiterConsoleNav() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState<"all" | "candidate" | "job" | "company">("all");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [realSearchItems, setRealSearchItems] = useState<SearchResultItem[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Notification state
@@ -196,6 +145,117 @@ export function RecruiterConsoleNav() {
   // Profile dropdown state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  // Load Real Search Data & Real Notifications from Backend Database
+  useEffect(() => {
+    async function loadRealNavData() {
+      try {
+        const [jobs, pendingEmps, approvedEmps, pendingJbs] = await Promise.all([
+          fetchRecruiterJobs().catch(() => []),
+          fetchPendingEmployers().catch(() => []),
+          fetchApprovedEmployers().catch(() => []),
+          fetchPendingJobsAdmin().catch(() => []),
+        ]);
+
+        // Build live Real Search Items
+        const searchItems: SearchResultItem[] = [];
+
+        // 1. Live Job postings
+        jobs.forEach((j) => {
+          searchItems.push({
+            id: `job-${j.id}`,
+            type: "job",
+            title: j.title,
+            subtitle: `${j.department || "Engineering"} • ${j.applications_count || 0} candidate applications`,
+            tag: j.status === "PUBLISHED" ? "Active Job" : j.status,
+            link: pathname.startsWith("/admin") ? `/admin/approved-jobs` : `/recruiter/jobs/${j.id}`,
+          });
+        });
+
+        // 2. Live Employer/Recruiter profiles
+        const allEmployers = [...pendingEmps, ...approvedEmps];
+        const uniqueEmpsMap = new Map();
+        allEmployers.forEach((e) => uniqueEmpsMap.set(e.user_id, e));
+
+        uniqueEmpsMap.forEach((e) => {
+          searchItems.push({
+            id: `emp-${e.user_id}`,
+            type: "company",
+            title: e.company_name || e.full_name,
+            subtitle: `${e.full_name} (${e.email}) • ${e.job_title || "Recruiter"}`,
+            tag: e.verification_status === "VERIFIED" || e.verification_status === "APPROVED" ? "Verified Employer" : "Pending Approval",
+            link: pathname.startsWith("/admin") ? "/admin/approved-employers" : "/recruiter/organization/members",
+          });
+        });
+
+        // 3. Candidates / Employees
+        allEmployers.forEach((e) => {
+          searchItems.push({
+            id: `cand-${e.user_id}`,
+            type: "candidate",
+            title: e.full_name,
+            subtitle: `${e.job_title || "Recruiter / Employee"} • ${e.email}`,
+            tag: e.verification_status === "VERIFIED" || e.verification_status === "APPROVED" ? "Verified" : "Pending",
+            link: pathname.startsWith("/admin") ? "/admin/approved-employers" : "/recruiter/jobs/active/applications",
+          });
+        });
+
+        if (searchItems.length > 0) {
+          setRealSearchItems(searchItems);
+        }
+
+        // Build live Real Notifications
+        const liveNotifs: NotificationItem[] = [];
+
+        // Pending Employers Notifs
+        pendingEmps.forEach((emp) => {
+          liveNotifs.push({
+            id: `notif-emp-${emp.user_id}`,
+            type: "candidate",
+            title: "Pending Employer Verification",
+            description: `${emp.full_name} (${emp.email}) submitted credentials for ${emp.company_name || "Enterprise"}.`,
+            timestamp: "Action Required",
+            read: false,
+            link: "/admin/employers",
+          });
+        });
+
+        // Pending Jobs Notifs
+        pendingJbs.forEach((j) => {
+          liveNotifs.push({
+            id: `notif-job-${j.id}`,
+            type: "job",
+            title: "Pending Job Requisition Approval",
+            description: `Job post '${j.title}' is awaiting Platform Admin approval.`,
+            timestamp: "Awaiting Review",
+            read: false,
+            link: "/admin/jobs",
+          });
+        });
+
+        // Live AI Signal Notif
+        if (jobs.length > 0) {
+          liveNotifs.push({
+            id: "notif-ai-live",
+            type: "ai",
+            title: "AI Candidate Match Engine Active",
+            description: `${jobs.length} active platform job postings are running AI vector ranking.`,
+            timestamp: "Live Signal",
+            read: false,
+            link: "/admin/approved-jobs",
+          });
+        }
+
+        if (liveNotifs.length > 0) {
+          setNotifications(liveNotifs);
+        }
+      } catch (err) {
+        console.error("Error loading real nav data:", err);
+      }
+    }
+
+    loadRealNavData();
+  }, [pathname]);
 
   // Close popovers on click outside
   useEffect(() => {
@@ -215,8 +275,8 @@ export function RecruiterConsoleNav() {
   }, []);
 
   // Compute initials fallback
-  const userFullName = user?.full_name?.trim() || "Kavya Sharma";
-  const userEmail = user?.email || "recruiter@hiringai.com";
+  const userFullName = user?.full_name?.trim() || "Gnanendhra Joy";
+  const userEmail = user?.email || "mattag@iitbhilai.ac.in";
   const userPhoto = (user as any)?.photo_url || null;
   const orgName = memberships?.[0]?.organization_name || "Rao Enterprise";
 
@@ -228,13 +288,14 @@ export function RecruiterConsoleNav() {
     if (parts.length === 1 && parts[0].length > 0) {
       return parts[0].substring(0, 2).toUpperCase();
     }
-    return "KS";
+    return "GJ";
   };
 
   const initials = getInitials(userFullName);
 
-  // Filtered search results
-  const filteredSearch = searchDatabase.filter((item) => {
+  // Filtered real search results
+  const searchDbToUse = realSearchItems.length > 0 ? realSearchItems : fallbackSearchDatabase;
+  const filteredSearch = searchDbToUse.filter((item) => {
     const matchesCategory = searchCategory === "all" || item.type === searchCategory;
     const matchesQuery =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
