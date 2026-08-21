@@ -12,6 +12,7 @@ import {
   CalendarDays,
   ChevronDown,
   Command,
+  FileCheck,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -19,13 +20,15 @@ import {
   Search,
   Sparkles,
   User,
+  UserCheck,
+  UserPlus,
   Users,
   UsersRound,
   X,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthContext";
 
-const links = [
+const recruiterLinks = [
   { label: "Overview", href: "/recruiter/dashboard", icon: LayoutDashboard },
   { label: "Jobs", href: "/recruiter/jobs", icon: BriefcaseBusiness },
   { label: "Candidates", href: "/recruiter/jobs/active/applications", icon: UsersRound },
@@ -34,6 +37,14 @@ const links = [
   { label: "Messages", href: "/recruiter/jobs/active/communications", icon: MessageSquare },
   { label: "Analytics", href: "/recruiter/reports", icon: BarChart3 },
   { label: "Company", href: "/recruiter/organization/members", icon: Building2 },
+];
+
+const adminLinks = [
+  { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Jobs Approval", href: "/admin/jobs", icon: FileCheck },
+  { label: "Employees Approval", href: "/admin/employers", icon: UserCheck },
+  { label: "Add Admin", href: "/admin/add-admin", icon: UserPlus },
+  { label: "Analytics", href: "/recruiter/reports", icon: BarChart3 },
 ];
 
 interface NotificationItem {
@@ -493,72 +504,131 @@ export function RecruiterConsoleNav() {
                 {/* Menu Items */}
                 <div className="p-1.5 divide-y divide-[#1d2a40]">
                   <div className="py-1">
-                    {(user?.is_platform_admin || userEmail.toLowerCase() === "mattag@iitbhilai.ac.in") && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsProfileOpen(false);
-                          router.push("/admin/dashboard");
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-amber-300 hover:text-amber-200 hover:bg-[#18253a] rounded-md transition font-semibold"
-                      >
-                        <Sparkles size={14} className="text-amber-400" />
-                        <span>Switch to Admin Portal</span>
-                      </button>
+                    {pathname.startsWith("/admin") ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            router.push("/admin/jobs");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <FileCheck size={14} className="text-amber-400" />
+                          <span>Approve Jobs</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            router.push("/admin/employers");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <UserCheck size={14} className="text-emerald-400" />
+                          <span>Approve Employees</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            router.push("/admin/add-admin");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <UserPlus size={14} className="text-sky-400" />
+                          <span>Add Admin</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            setIsNotifOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <Bell size={14} className="text-amber-400" />
+                          <span>Notifications</span>
+                          {unreadCount > 0 && (
+                            <span className="ml-auto px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-sky-500 text-white">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {(user?.is_platform_admin || userEmail.toLowerCase() === "mattag@iitbhilai.ac.in") && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsProfileOpen(false);
+                              router.push("/admin/dashboard");
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-amber-300 hover:text-amber-200 hover:bg-[#18253a] rounded-md transition font-semibold"
+                          >
+                            <Sparkles size={14} className="text-amber-400" />
+                            <span>Switch to Admin Portal</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            router.push("/recruiter/profile");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <User size={14} className="text-sky-400" />
+                          <span>Edit Profile</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            router.push("/recruiter/jobs/new");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <PlusCircle size={14} className="text-emerald-400" />
+                          <span>Add New Job</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            setIsNotifOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <Bell size={14} className="text-amber-400" />
+                          <span>Notifications</span>
+                          {unreadCount > 0 && (
+                            <span className="ml-auto px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-sky-500 text-white">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            router.push("/recruiter/organization/members");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <Building2 size={14} className="text-purple-400" />
+                          <span>Company & Team</span>
+                        </button>
+                      </>
                     )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        router.push("/recruiter/profile");
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
-                    >
-                      <User size={14} className="text-sky-400" />
-                      <span>Edit Profile</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        router.push("/recruiter/jobs/new");
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
-                    >
-                      <PlusCircle size={14} className="text-emerald-400" />
-                      <span>Add New Job</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        setIsNotifOpen(true);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
-                    >
-                      <Bell size={14} className="text-amber-400" />
-                      <span>Notifications</span>
-                      {unreadCount > 0 && (
-                        <span className="ml-auto px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-sky-500 text-white">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        router.push("/recruiter/organization/members");
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
-                    >
-                      <Building2 size={14} className="text-purple-400" />
-                      <span>Company & Team</span>
-                    </button>
                   </div>
 
                   {/* Log Out */}
@@ -584,19 +654,21 @@ export function RecruiterConsoleNav() {
 
       {/* Sidebar */}
       <aside className="command-sidebar">
-        <p>Workspace</p>
-        {links.map(({ label, href, icon: Icon }) => (
+        <p>{pathname.startsWith("/admin") ? "Admin Console" : "Workspace"}</p>
+        {(pathname.startsWith("/admin") ? adminLinks : recruiterLinks).map(({ label, href, icon: Icon }) => (
           <Link key={label} href={href} className={pathname === href ? "active" : ""}>
             <Icon size={17} />
             {label}
           </Link>
         ))}
-        <div className="command-upgrade">
-          <Sparkles size={15} />
-          <strong>AI hiring signal</strong>
-          <span>84 candidates ready to review</span>
-          <Link href="/recruiter/jobs/1/ranking">Open shortlist →</Link>
-        </div>
+        {!pathname.startsWith("/admin") && (
+          <div className="command-upgrade">
+            <Sparkles size={15} />
+            <strong>AI hiring signal</strong>
+            <span>84 candidates ready to review</span>
+            <Link href="/recruiter/jobs/active/ranking">Open shortlist →</Link>
+          </div>
+        )}
       </aside>
     </>
   );

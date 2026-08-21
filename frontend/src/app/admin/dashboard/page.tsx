@@ -19,6 +19,7 @@ import {
   Sparkles,
   Trash2,
   UserCheck,
+  UserPlus,
   UsersRound,
   XCircle,
 } from "lucide-react";
@@ -216,16 +217,22 @@ export default function AdminDashboardPage() {
 
           <div className="flex items-center gap-3 relative z-10">
             <button
-              onClick={() => router.push("/recruiter/jobs")}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center gap-1.5"
+              onClick={() => router.push("/admin/jobs")}
+              className="px-3.5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow"
             >
-              View All Jobs &rarr;
+              <FileCheck size={14} /> Approve Jobs
             </button>
             <button
-              onClick={() => router.push("/recruiter/jobs/new")}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-lg transition flex items-center gap-1.5"
+              onClick={() => router.push("/admin/employers")}
+              className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow"
             >
-              <Plus size={15} /> + New Requirement
+              <UserCheck size={14} /> Approve Employees
+            </button>
+            <button
+              onClick={() => router.push("/admin/add-admin")}
+              className="px-3.5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow"
+            >
+              <UserPlus size={14} /> Add Admin
             </button>
           </div>
         </div>

@@ -1320,6 +1320,19 @@ export async function verifyJobAdmin(jobId: string, action: "APPROVE" | "REJECT"
   return res.ok;
 }
 
+export async function createAdminAccount(fullName: string, email: string, password: string): Promise<{ success: boolean; message: string }> {
+  const res = await apiFetch("/api/v1/admin/add-admin", {
+    method: "POST",
+    body: JSON.stringify({ full_name: fullName, email, password }),
+  });
+  if (res.ok) {
+    const data = await res.json();
+    return { success: true, message: data.message || "Successfully created Platform Admin account." };
+  }
+  const err = await res.json().catch(() => ({ detail: null }));
+  return { success: false, message: err.detail || "Failed to create Admin account." };
+}
+
 
 
 

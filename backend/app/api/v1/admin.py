@@ -207,3 +207,38 @@ async def verify_employer_profile(
         profile.verification_status = "APPROVED" if action.upper() == "APPROVE" else "REJECTED"
         await session.commit()
         return {"status": "success", "verification_status": profile.verification_status}
+
+from pydantic import BaseModel, EmailStr
+from app.core.security import hash_password
+
+class AddAdminRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    password: str
+
+@router.post("/add-admin")
+async def add_platform_admin(
+    payload: AddAdminRequest,
+    admin: User = Depends(require_platform_admin),
+):
+    """Provisions a new Platform Admin user account."""
+    email_clean = payload.email.lower().strip()
+    async with async_session_factory() as session:
+        await set_tenant_context(session, is_platform_admin=True)
+        stmt = select(User).where(User.email == email_clean)
+        existing = (await session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            existing.is_platform_admin = True
+            await session.commit()
+            return {"status": "success", "message": f"Updated existing user '{email_clean}' with Platform Admin privileges."}
+
+        new_admin = User(
+            email=email_clean,
+            password_hash=hash_password(payload.password),
+            full_name=payload.full_name,
+            is_platform_admin=True,
+            is_active=True,
+        )
+        session.add(new_admin)
+        await session.commit()
+        return {"status": "success", "message": f"Successfully created Platform Admin account for '{email_clean}'."}
