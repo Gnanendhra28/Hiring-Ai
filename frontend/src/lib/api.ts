@@ -1333,6 +1333,14 @@ export async function createAdminAccount(fullName: string, email: string, passwo
   return { success: false, message: err.detail || "Failed to create Admin account." };
 }
 
+export async function fetchApprovedEmployers(): Promise<PendingEmployerVerification[]> {
+  const res = await apiFetch("/api/v1/admin/employers/approved");
+  if (res.ok) {
+    return await res.json();
+  }
+  return [];
+}
+
 
 
 

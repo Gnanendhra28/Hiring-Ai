@@ -10,6 +10,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   Command,
   FileCheck,
@@ -18,6 +19,7 @@ import {
   MessageSquare,
   PlusCircle,
   Search,
+  ShieldCheck,
   Sparkles,
   User,
   UserCheck,
@@ -42,7 +44,9 @@ const recruiterLinks = [
 const adminLinks = [
   { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Jobs Approval", href: "/admin/jobs", icon: FileCheck },
+  { label: "Approved Jobs", href: "/admin/approved-jobs", icon: CheckCircle2 },
   { label: "Employees Approval", href: "/admin/employers", icon: UserCheck },
+  { label: "Approved Employees", href: "/admin/approved-employers", icon: ShieldCheck },
   { label: "Add Admin", href: "/admin/add-admin", icon: UserPlus },
   { label: "Analytics", href: "/recruiter/reports", icon: BarChart3 },
 ];
@@ -522,6 +526,18 @@ export function RecruiterConsoleNav() {
                           type="button"
                           onClick={() => {
                             setIsProfileOpen(false);
+                            router.push("/admin/approved-jobs");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <CheckCircle2 size={14} className="text-sky-400" />
+                          <span>Approved Jobs</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
                             router.push("/admin/employers");
                           }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
@@ -534,11 +550,23 @@ export function RecruiterConsoleNav() {
                           type="button"
                           onClick={() => {
                             setIsProfileOpen(false);
+                            router.push("/admin/approved-employers");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
+                        >
+                          <ShieldCheck size={14} className="text-purple-400" />
+                          <span>Approved Employees</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileOpen(false);
                             router.push("/admin/add-admin");
                           }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
                         >
-                          <UserPlus size={14} className="text-sky-400" />
+                          <UserPlus size={14} className="text-blue-400" />
                           <span>Add Admin</span>
                         </button>
 

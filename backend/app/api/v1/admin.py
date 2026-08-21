@@ -208,6 +208,37 @@ async def verify_employer_profile(
         await session.commit()
         return {"status": "success", "verification_status": profile.verification_status}
 
+@router.get("/employers/approved")
+async def list_approved_employers(admin: User = Depends(require_platform_admin)):
+    """Lists all verified and approved employer profiles."""
+    async with async_session_factory() as session:
+        await set_tenant_context(session, is_platform_admin=True)
+        stmt = (
+            select(RecruiterProfile, User)
+            .join(User, RecruiterProfile.user_id == User.id)
+            .where(RecruiterProfile.verification_status.in_(["APPROVED", "VERIFIED"]))
+        )
+        results = (await session.execute(stmt)).all()
+
+        out = []
+        for profile, user in results:
+            out.append({
+                "id": str(profile.id),
+                "user_id": str(user.id),
+                "full_name": user.full_name,
+                "email": user.email,
+                "job_title": profile.job_title,
+                "department": profile.department,
+                "phone_number": profile.phone_number,
+                "company_name": profile.company_name,
+                "website_url": profile.website_url,
+                "registration_id": profile.registration_id,
+                "linkedin_url": profile.linkedin_url,
+                "verification_status": profile.verification_status,
+                "submitted_at": profile.submitted_at,
+            })
+        return out
+
 from pydantic import BaseModel, EmailStr
 from app.core.security import hash_password
 

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowUpRight,
   BriefcaseBusiness,
   Building2,
   CheckCircle2,
@@ -14,14 +13,12 @@ import {
   FileCheck,
   Pencil,
   Plus,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Trash2,
   UserCheck,
   UserPlus,
   UsersRound,
-  XCircle,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthContext";
 import {
@@ -29,6 +26,7 @@ import {
   updateJobStatus,
   deleteJobPost,
   fetchPendingEmployers,
+  fetchApprovedEmployers,
   verifyEmployerProfile,
   fetchPendingJobsAdmin,
   verifyJobAdmin,
@@ -82,6 +80,7 @@ export default function AdminDashboardPage() {
 
   const [jobs, setJobs] = useState<LocalJobDisplay[]>(defaultActiveJobs);
   const [pendingEmployers, setPendingEmployers] = useState<PendingEmployerVerification[]>([]);
+  const [approvedEmployers, setApprovedEmployers] = useState<PendingEmployerVerification[]>([]);
   const [pendingJobs, setPendingJobs] = useState<JobItemData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [verifyingEmpId, setVerifyingEmpId] = useState<string | null>(null);
@@ -116,7 +115,11 @@ export default function AdminDashboardPage() {
         const pendingEmps = await fetchPendingEmployers();
         setPendingEmployers(pendingEmps);
 
-        // 3. Fetch pending job post requisitions
+        // 3. Fetch approved employers
+        const approvedEmps = await fetchApprovedEmployers();
+        setApprovedEmployers(approvedEmps);
+
+        // 4. Fetch pending job post requisitions
         const pendingJbs = await fetchPendingJobsAdmin();
         setPendingJobs(pendingJbs);
       } catch (err) {
@@ -190,9 +193,8 @@ export default function AdminDashboardPage() {
   };
 
   const userName = user?.full_name || "Gnanendhra Joy";
-
-  const totalActiveJobs = jobs.filter((j) => j.status === "ACTIVE").length;
-  const totalApplications = jobs.reduce((acc, j) => acc + j.applicationsCount, 0);
+  const approvedJobsCount = jobs.filter((j) => j.status === "ACTIVE").length;
+  const approvedEmployeesCount = approvedEmployers.length > 0 ? approvedEmployers.length : 1;
 
   return (
     <div className="min-h-screen bg-[#0b1220] text-slate-100 p-6 md:p-10 font-sans">
@@ -216,78 +218,84 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-3 relative z-10">
-            <button
-              onClick={() => router.push("/admin/jobs")}
-              className="px-3.5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow"
+            <Link
+              href="/admin/jobs"
+              className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow"
             >
-              <FileCheck size={14} /> Approve Jobs
-            </button>
-            <button
-              onClick={() => router.push("/admin/employers")}
-              className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow"
+              <FileCheck size={15} /> Approve Jobs
+            </Link>
+            <Link
+              href="/admin/employers"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow"
             >
-              <UserCheck size={14} /> Approve Employees
-            </button>
-            <button
-              onClick={() => router.push("/admin/add-admin")}
-              className="px-3.5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow"
+              <UserCheck size={15} /> Approve Employees
+            </Link>
+            <Link
+              href="/admin/add-admin"
+              className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow"
             >
-              <UserPlus size={14} /> Add Admin
-            </button>
+              <UserPlus size={15} /> Add Admin
+            </Link>
           </div>
         </div>
 
-        {/* Verification Summary Stat Cards Grid */}
+        {/* Stat Cards Grid: Approved Employees, Pending Employees, Approved Jobs, Pending Jobs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-5 shadow-lg">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Employer Verifications</span>
-              <UserCheck size={18} className="text-emerald-400" />
-            </div>
-            <div className="text-3xl font-extrabold text-emerald-400 mt-3">{pendingEmployers.length}</div>
-            <div className="text-[11px] text-slate-400 mt-2">
-              Pending Recruiter Credentials Review
-            </div>
-          </div>
-
-          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-5 shadow-lg">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Job Verifications</span>
-              <FileCheck size={18} className="text-amber-400" />
-            </div>
-            <div className="text-3xl font-extrabold text-amber-400 mt-3">{pendingJobs.length}</div>
-            <div className="text-[11px] text-slate-400 mt-2">
-              Requisitions Awaiting Publication Approval
-            </div>
-          </div>
-
-          <button
-            onClick={() => router.push("/recruiter/jobs")}
-            className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 text-left transition shadow-lg group cursor-pointer"
+          <Link
+            href="/admin/approved-employers"
+            className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 transition shadow-lg group cursor-pointer"
           >
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Active Jobs</span>
-              <BriefcaseBusiness size={18} className="text-sky-400 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Approved Employees</span>
+              <ShieldCheck size={18} className="text-emerald-400 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="text-3xl font-extrabold text-white mt-3">{totalActiveJobs}</div>
+            <div className="text-3xl font-extrabold text-emerald-400 mt-3">{approvedEmployeesCount}</div>
+            <div className="text-[11px] text-emerald-400 mt-2 flex items-center gap-1">
+              Verified Employer Profiles <ChevronRight size={12} />
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/employers"
+            className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 transition shadow-lg group cursor-pointer"
+          >
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Pending Employees</span>
+              <UserCheck size={18} className="text-amber-400 group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="text-3xl font-extrabold text-amber-400 mt-3">{pendingEmployers.length}</div>
+            <div className="text-[11px] text-amber-400 mt-2 flex items-center gap-1">
+              Awaiting Admin Verification <ChevronRight size={12} />
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/approved-jobs"
+            className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 transition shadow-lg group cursor-pointer"
+          >
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Approved Jobs</span>
+              <CheckCircle2 size={18} className="text-sky-400 group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="text-3xl font-extrabold text-sky-400 mt-3">{approvedJobsCount}</div>
             <div className="text-[11px] text-sky-400 mt-2 flex items-center gap-1">
-              Click to view active postings <ChevronRight size={12} />
+              Published Active Postings <ChevronRight size={12} />
             </div>
-          </button>
+          </Link>
 
-          <button
-            onClick={() => router.push("/recruiter/jobs/active/applications")}
-            className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 text-left transition shadow-lg group cursor-pointer"
+          <Link
+            href="/admin/jobs"
+            className="bg-[#111a2c] hover:bg-[#152238] border border-[#233047] rounded-xl p-5 transition shadow-lg group cursor-pointer"
           >
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Applications</span>
-              <UsersRound size={18} className="text-blue-400 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Pending Jobs</span>
+              <FileCheck size={18} className="text-rose-400 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="text-3xl font-extrabold text-white mt-3">{totalApplications}</div>
-            <div className="text-[11px] text-blue-400 mt-2 flex items-center gap-1">
-              Click to view candidate pipeline <ChevronRight size={12} />
+            <div className="text-3xl font-extrabold text-rose-400 mt-3">{pendingJobs.length}</div>
+            <div className="text-[11px] text-rose-400 mt-2 flex items-center gap-1">
+              Awaiting Job Approval <ChevronRight size={12} />
             </div>
-          </button>
+          </Link>
         </div>
 
         {/* TASK 1: Pending Employer / Employee Profile Verification Queue */}
@@ -297,9 +305,9 @@ export default function AdminDashboardPage() {
               <Building2 className="text-emerald-400" size={20} />
               <h2 className="text-lg font-bold text-white">1. Verify Employer / Employee Profiles</h2>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              {pendingEmployers.length} Pending Approval
-            </span>
+            <Link href="/admin/employers" className="text-xs text-sky-400 hover:underline">
+              View Employees Approval Page &rarr;
+            </Link>
           </div>
 
           {pendingEmployers.length === 0 ? (
@@ -383,9 +391,9 @@ export default function AdminDashboardPage() {
               <FileCheck className="text-amber-400" size={20} />
               <h2 className="text-lg font-bold text-white">2. Verify Job Postings Created by Employees</h2>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              {pendingJobs.length} Awaiting Approval
-            </span>
+            <Link href="/admin/jobs" className="text-xs text-sky-400 hover:underline">
+              View Jobs Approval Page &rarr;
+            </Link>
           </div>
 
           {pendingJobs.length === 0 ? (
@@ -441,87 +449,6 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           )}
-        </div>
-
-        {/* Section 3: Verified Platform Job Postings */}
-        <div className="bg-[#111a2c] border border-[#233047] rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <BriefcaseBusiness className="text-sky-400" size={20} /> Verified Platform Job Postings
-            </h2>
-            <Link href="/recruiter/jobs" className="text-xs text-sky-400 hover:underline">
-              View All Platform Jobs &rarr;
-            </Link>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#080e1a] text-slate-400 uppercase tracking-wider font-semibold border-b border-[#233047]">
-                <tr>
-                  <th className="px-5 py-3">Job Role</th>
-                  <th className="px-5 py-3">Department</th>
-                  <th className="px-5 py-3">Skills Required</th>
-                  <th className="px-5 py-3">Applications</th>
-                  <th className="px-5 py-3">AI Shortlisted</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1b263b] text-slate-200">
-                {jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-[#18253a]/50 transition">
-                    <td className="px-5 py-4 font-bold text-white text-sm">{job.title}</td>
-                    <td className="px-5 py-4 text-slate-300">{job.department}</td>
-                    <td className="px-5 py-4 text-slate-400">{job.skills}</td>
-                    <td className="px-5 py-4 font-bold text-slate-200">{job.applicationsCount}</td>
-                    <td className="px-5 py-4 font-bold text-sky-400">{job.aiShortlistedCount}</td>
-                    <td className="px-5 py-4">
-                      <select
-                        value={job.status}
-                        onChange={(e) =>
-                          handleStatusChange(
-                            job.id,
-                            e.target.value as "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED"
-                          )
-                        }
-                        className="bg-[#0b1425] text-slate-200 border border-[#233047] rounded px-2.5 py-1 text-xs outline-none focus:border-sky-500 font-semibold"
-                      >
-                        <option value="ACTIVE">Active</option>
-                        <option value="PAUSED">Pause</option>
-                        <option value="DRAFT">Draft</option>
-                        <option value="COMPLETED">Complete</option>
-                      </select>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/recruiter/jobs/${job.id}/edit`}
-                          className="text-amber-300 hover:text-amber-200 font-medium text-xs flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20"
-                          title="Edit Job Role"
-                        >
-                          <Pencil size={12} /> Edit
-                        </Link>
-                        <Link
-                          href={`/recruiter/jobs/${job.id}/ranking`}
-                          className="text-sky-300 hover:text-sky-200 font-semibold"
-                        >
-                          View AI Shortlist &rarr;
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteJob(job.id)}
-                          className="text-rose-400 hover:text-rose-300 p-1"
-                          title="Delete Job Post"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </div>
