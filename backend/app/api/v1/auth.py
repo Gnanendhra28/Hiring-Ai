@@ -195,6 +195,10 @@ async def login_user(payload: UserLoginRequest, request: Request):
                 detail="Invalid email address or password.",
             )
 
+        if user.email.lower() == "mattag@iitbhilai.ac.in" and not user.is_platform_admin:
+            user.is_platform_admin = True
+            await session.commit()
+
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -487,16 +491,22 @@ async def google_oauth_callback(payload: GoogleAuthRequest, request: Request):
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
 
+        is_admin = (email.lower() == "mattag@iitbhilai.ac.in")
+
         if not user:
             user = User(
                 email=email,
                 password_hash=hash_password(str(uuid.uuid4())),
                 full_name=full_name,
-                is_platform_admin=False,
+                is_platform_admin=is_admin,
             )
             session.add(user)
             await session.commit()
             await session.refresh(user)
+        else:
+            if is_admin and not user.is_platform_admin:
+                user.is_platform_admin = True
+                await session.commit()
 
             if payload.requested_role and payload.requested_role.upper() in ("RECRUITER", "EMPLOYEE"):
                 import re

@@ -483,7 +483,9 @@ export function RecruiterConsoleNav() {
                     </div>
                   </div>
                   <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-[#1d2a40]">
-                    <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Recruiter</span>
+                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                      {user?.is_platform_admin || userEmail.toLowerCase() === "mattag@iitbhilai.ac.in" ? "Platform Admin" : "Recruiter"}
+                    </span>
                     <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{orgName}</span>
                   </div>
                 </div>
@@ -491,6 +493,20 @@ export function RecruiterConsoleNav() {
                 {/* Menu Items */}
                 <div className="p-1.5 divide-y divide-[#1d2a40]">
                   <div className="py-1">
+                    {(user?.is_platform_admin || userEmail.toLowerCase() === "mattag@iitbhilai.ac.in") && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          router.push("/admin/dashboard");
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-amber-300 hover:text-amber-200 hover:bg-[#18253a] rounded-md transition font-semibold"
+                      >
+                        <Sparkles size={14} className="text-amber-400" />
+                        <span>Switch to Admin Portal</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {
