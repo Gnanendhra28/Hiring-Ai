@@ -97,6 +97,10 @@ class RecruiterProfileRequest(BaseModel):
     job_title: Optional[str] = Field(None, max_length=255)
     department: Optional[str] = Field(None, max_length=255)
     phone_number: Optional[str] = Field(None, max_length=50)
+    company_name: Optional[str] = Field(None, max_length=255)
+    website_url: Optional[str] = Field(None, max_length=500)
+    registration_id: Optional[str] = Field(None, max_length=255)
+    linkedin_url: Optional[str] = Field(None, max_length=500)
 
 class RecruiterProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -106,6 +110,12 @@ class RecruiterProfileResponse(BaseModel):
     job_title: Optional[str]
     department: Optional[str]
     phone_number: Optional[str]
+    company_name: Optional[str]
+    website_url: Optional[str]
+    registration_id: Optional[str]
+    linkedin_url: Optional[str]
+    verification_status: str
+    submitted_at: Optional[str]
     created_at: datetime
 
 class CandidateProfileRequest(BaseModel):
@@ -169,7 +179,7 @@ class JobCreateRequest(BaseModel):
     department: Optional[str] = Field(None, max_length=255)
     location: Optional[str] = Field(None, max_length=255)
     employment_type: EmploymentTypeEnum = EmploymentTypeEnum.FULL_TIME
-    status: Optional[JobStatusEnum] = JobStatusEnum.PUBLISHED
+    status: Optional[JobStatusEnum] = JobStatusEnum.DRAFT
 
 class JobUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=2, max_length=255)

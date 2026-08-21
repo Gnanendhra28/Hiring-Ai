@@ -1226,6 +1226,50 @@ export async function deleteJobPost(jobId: string): Promise<boolean> {
   return res.ok;
 }
 
+export interface RecruiterProfileData {
+  id: string;
+  user_id: string;
+  job_title?: string;
+  department?: string;
+  phone_number?: string;
+  company_name?: string;
+  website_url?: string;
+  registration_id?: string;
+  linkedin_url?: string;
+  verification_status: "UNVERIFIED" | "PENDING_VERIFICATION" | "APPROVED" | "VERIFIED";
+  submitted_at?: string;
+  created_at: string;
+}
+
+export async function fetchRecruiterProfile(): Promise<RecruiterProfileData | null> {
+  const res = await apiFetch("/api/v1/auth/recruiter/profile");
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function updateRecruiterProfile(payload: Partial<RecruiterProfileData>): Promise<RecruiterProfileData | null> {
+  const res = await apiFetch("/api/v1/auth/recruiter/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function submitEmployerVerification(): Promise<RecruiterProfileData | null> {
+  const res = await apiFetch("/api/v1/auth/recruiter/profile/submit-verification", {
+    method: "POST",
+  });
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
 
 
 

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -13,6 +14,8 @@ from app.api.v1.schemas import (
     GoogleAuthRequest,
     GoogleAuthUrlResponse,
     OrganizationMembershipResponse,
+    RecruiterProfileRequest,
+    RecruiterProfileResponse,
     TokenRefreshRequest,
     TokenResponse,
     UserLoginRequest,
@@ -20,6 +23,8 @@ from app.api.v1.schemas import (
     UserRegisterRequest,
     UserResponse,
 )
+from app.domains.audit.models import AuditLog
+from app.domains.recruiters.models import RecruiterProfile
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -314,6 +319,83 @@ async def get_user_profile(ctx: SecurityContext = Depends(get_security_context))
             user=UserResponse.model_validate(user),
             memberships=membership_responses,
         )
+
+@router.get("/recruiter/profile", response_model=RecruiterProfileResponse)
+async def get_recruiter_profile(ctx: SecurityContext = Depends(get_security_context)):
+    """Returns authenticated recruiter's profile and company verification details."""
+    async with async_session_factory() as session:
+        stmt = select(RecruiterProfile).where(RecruiterProfile.user_id == ctx.user.id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+        if not profile:
+            profile = RecruiterProfile(
+                user_id=ctx.user.id,
+                verification_status="UNVERIFIED",
+            )
+            session.add(profile)
+            await session.commit()
+            profile = (await session.execute(stmt)).scalar_one()
+        return RecruiterProfileResponse.model_validate(profile)
+
+@router.put("/recruiter/profile", response_model=RecruiterProfileResponse)
+async def update_recruiter_profile(
+    payload: RecruiterProfileRequest,
+    ctx: SecurityContext = Depends(get_security_context),
+):
+    """Updates recruiter profile and company verification details."""
+    async with async_session_factory() as session:
+        await session.begin()
+        stmt = select(RecruiterProfile).where(RecruiterProfile.user_id == ctx.user.id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+        if not profile:
+            profile = RecruiterProfile(user_id=ctx.user.id)
+            session.add(profile)
+
+        if payload.job_title is not None:
+            profile.job_title = payload.job_title
+        if payload.department is not None:
+            profile.department = payload.department
+        if payload.phone_number is not None:
+            profile.phone_number = payload.phone_number
+        if payload.company_name is not None:
+            profile.company_name = payload.company_name
+        if payload.website_url is not None:
+            profile.website_url = payload.website_url
+        if payload.registration_id is not None:
+            profile.registration_id = payload.registration_id
+        if payload.linkedin_url is not None:
+            profile.linkedin_url = payload.linkedin_url
+
+        await session.commit()
+
+        await session.begin()
+        return (await session.execute(stmt)).scalar_one()
+
+@router.post("/recruiter/profile/submit-verification", response_model=RecruiterProfileResponse)
+async def submit_recruiter_verification(ctx: SecurityContext = Depends(get_security_context)):
+    """Submits employer profile to Admin for verification."""
+    async with async_session_factory() as session:
+        await session.begin()
+        stmt = select(RecruiterProfile).where(RecruiterProfile.user_id == ctx.user.id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+        if not profile:
+            profile = RecruiterProfile(user_id=ctx.user.id)
+            session.add(profile)
+
+        profile.verification_status = "PENDING_VERIFICATION"
+        profile.submitted_at = datetime.now(timezone.utc).isoformat()
+
+        audit = AuditLog(
+            organization_id=ctx.active_organization_id,
+            user_id=ctx.user.id,
+            action="recruiter.submit_verification",
+            resource_type="recruiter_profile",
+            resource_id=str(profile.id),
+        )
+        session.add(audit)
+        await session.commit()
+
+        await session.begin()
+        return (await session.execute(stmt)).scalar_one()
 
 
 @router.get("/google/url", response_model=GoogleAuthUrlResponse)

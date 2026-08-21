@@ -53,8 +53,8 @@ async def create_job(
             department=payload.department,
             location=payload.location,
             employment_type=payload.employment_type,
-            status=payload.status or JobStatusEnum.PUBLISHED,
-            verification_status=JobVerificationStatusEnum.APPROVED,
+            status=payload.status or JobStatusEnum.DRAFT,
+            verification_status=JobVerificationStatusEnum.APPROVED if payload.status and str(payload.status).endswith("PUBLISHED") else JobVerificationStatusEnum.DRAFT,
             created_by_user_id=ctx.user.id,
         )
         session.add(job)
@@ -108,6 +108,8 @@ async def update_job(
             job.employment_type = payload.employment_type
         if payload.status is not None:
             job.status = payload.status
+            if payload.status == JobStatusEnum.PUBLISHED:
+                job.verification_status = JobVerificationStatusEnum.APPROVED
 
         # Mark active intelligence STALE if content updated
         await session.execute(

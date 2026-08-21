@@ -495,7 +495,7 @@ export function RecruiterConsoleNav() {
                       type="button"
                       onClick={() => {
                         setIsProfileOpen(false);
-                        router.push("/recruiter/organization/members");
+                        router.push("/recruiter/profile");
                       }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-[#18253a] rounded-md transition"
                     >
