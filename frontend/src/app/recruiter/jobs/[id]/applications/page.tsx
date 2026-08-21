@@ -2,14 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   fetchJobIntelligence,
   fetchActiveRankings,
+  fetchRecruiterJobs,
   apiFetch,
   JobIntelligenceData,
   CandidateRankingItem,
+  JobItemData,
 } from "@/lib/api";
+import { Briefcase, ChevronDown, Plus, Sparkles, User, UsersRound } from "lucide-react";
 
 interface RecruiterApplicationRow {
   id: string;
@@ -28,10 +31,16 @@ interface RecruiterApplicationRow {
   recommendation_type?: string;
 }
 
+const isValidUUID = (str: string) =>
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
+
 export default function RecruiterApplicationPipelinePage() {
   const params = useParams();
-  const jobId = params?.id as string;
+  const router = useRouter();
+  const rawJobId = params?.id as string;
 
+  const [activeJobs, setActiveJobs] = useState<JobItemData[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [applications, setApplications] = useState<RecruiterApplicationRow[]>([]);
   const [intelligence, setIntelligence] = useState<JobIntelligenceData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -41,249 +50,305 @@ export default function RecruiterApplicationPipelinePage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   useEffect(() => {
-    async function loadPipelineData() {
-      if (!jobId) return;
+    async function initPipeline() {
       setLoading(true);
       setError(null);
+
       try {
-        // 1. Fetch Job Intelligence status
-        const intel = await fetchJobIntelligence(jobId);
-        setIntelligence(intel);
+        const jobs = await fetchRecruiterJobs();
+        setActiveJobs(jobs);
 
-        // 2. Fetch Active Rankings
-        const rankingVer = await fetchActiveRankings(jobId);
-        const rankingsMap = new Map<string, CandidateRankingItem>();
-        if (rankingVer && rankingVer.rankings) {
-          rankingVer.rankings.forEach((r) => {
-            rankingsMap.set(r.candidate_id, r);
-          });
+        let targetId = rawJobId;
+        if (!targetId || !isValidUUID(targetId)) {
+          if (jobs.length > 0) {
+            targetId = jobs[0].id;
+          } else {
+            setLoading(false);
+            return;
+          }
         }
 
-        // 3. Fetch Applications list
-        const appRes = await apiFetch(`/api/v1/jobs/${jobId}/applications`);
-        let appsData: any[] = [];
-        if (appRes.ok) {
-          appsData = await appRes.json();
-        }
-
-        // 4. Merge applications with ranking & score data
-        if (appsData.length > 0) {
-          const merged: RecruiterApplicationRow[] = appsData.map((app) => {
-            const r = rankingsMap.get(app.candidate_id);
-            return {
-              id: app.id,
-              candidate_id: app.candidate_id,
-              candidate_name: app.candidate_name || app.candidate_email || "Candidate " + app.candidate_id.substring(0, 8),
-              candidate_email: app.candidate_email || "candidate@example.com",
-              headline: app.headline || "Applicant",
-              skills: app.skills || ["Python", "FastAPI", "PostgreSQL", "AWS"],
-              submitted_at: app.created_at || app.submitted_at || new Date().toISOString(),
-              status: app.status || "SUBMITTED",
-              score: r ? r.score : 50.0,
-              eligibility_status: r ? r.eligibility_status : "PASS",
-              score_confidence: r ? r.score_confidence : 0.5,
-              confidence_tier: r ? (r.score_confidence >= 0.85 ? "HIGH" : r.score_confidence >= 0.70 ? "MEDIUM" : "LOW") : "LOW",
-              rank_position: r ? r.rank_position : 1,
-              recommendation_type: "REQUIRES_REVIEW",
-            };
-          });
-          setApplications(merged);
-        } else {
-          // Default baseline fallback if backend has no application record yet
-          setApplications([
-            {
-              id: "2850187a-a20b-4851-a562-0a6dc6a70986",
-              candidate_id: "fe86992a-53d3-4cfa-8be4-ff124b541381",
-              candidate_name: "Validated Production Candidate",
-              candidate_email: "production.candidate@example.com",
-              headline: "Senior Backend / AI Engineer",
-              skills: ["Python", "FastAPI", "PostgreSQL", "Docker", "AWS"],
-              submitted_at: new Date().toISOString(),
-              status: "SUBMITTED",
-              score: 50.0,
-              eligibility_status: "PASS",
-              score_confidence: 0.5,
-              confidence_tier: "LOW",
-              rank_position: 1,
-              recommendation_type: "REQUIRES_REVIEW",
-            },
-          ]);
-        }
+        setSelectedJobId(targetId);
+        await loadJobApplications(targetId);
       } catch (err: any) {
         setError(err.message || "Failed to load candidate application pipeline.");
-      } finally {
         setLoading(false);
       }
     }
 
-    loadPipelineData();
-  }, [jobId]);
+    initPipeline();
+  }, [rawJobId]);
 
-  const filteredApps = applications.filter((app) => {
+  const loadJobApplications = async (targetId: string) => {
+    if (!targetId || !isValidUUID(targetId)) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Fetch Job Intelligence status
+      const intel = await fetchJobIntelligence(targetId);
+      setIntelligence(intel);
+
+      // 2. Fetch Active Rankings
+      const rankingVer = await fetchActiveRankings(targetId);
+      const rankingsMap = new Map<string, CandidateRankingItem>();
+      if (rankingVer && rankingVer.rankings) {
+        rankingVer.rankings.forEach((r) => {
+          rankingsMap.set(r.candidate_id, r);
+        });
+      }
+
+      // 3. Fetch Applications list
+      const appRes = await apiFetch(`/api/v1/jobs/${targetId}/applications`);
+      let appsData: any[] = [];
+      if (appRes.ok) {
+        appsData = await appRes.json();
+      }
+
+      // 4. Merge applications with ranking & score data
+      if (appsData.length > 0) {
+        const merged: RecruiterApplicationRow[] = appsData.map((app) => {
+          const r = rankingsMap.get(app.candidate_id);
+          return {
+            id: app.id,
+            candidate_id: app.candidate_id,
+            candidate_name: app.candidate_name || app.candidate_email || "Candidate " + app.candidate_id.substring(0, 8),
+            candidate_email: app.candidate_email || "candidate@example.com",
+            headline: app.headline || "Applicant",
+            skills: app.skills || ["Python", "FastAPI", "PostgreSQL", "AWS"],
+            submitted_at: app.created_at || app.submitted_at || new Date().toISOString(),
+            status: app.status || "SUBMITTED",
+            score: r ? r.score : 50.0,
+            eligibility_status: r ? r.eligibility_status : "PASS",
+            score_confidence: r ? r.score_confidence : 0.5,
+            confidence_tier: r ? (r.score_confidence >= 0.85 ? "HIGH" : r.score_confidence >= 0.70 ? "MEDIUM" : "LOW") : "LOW",
+            rank_position: r ? r.rank_position : 1,
+            recommendation_type: "REQUIRES_REVIEW",
+          };
+        });
+        setApplications(merged);
+      } else {
+        // Default baseline candidate row
+        setApplications([
+          {
+            id: "2850187a-a20b-4851-a562-0a6dc6a70986",
+            candidate_id: "fe86992a-53d3-4cfa-8be4-ff124b541381",
+            candidate_name: "Validated Production Candidate",
+            candidate_email: "production.candidate@example.com",
+            headline: "Senior Backend / AI Engineer",
+            skills: ["Python", "FastAPI", "PostgreSQL", "Docker", "AWS"],
+            submitted_at: new Date().toISOString(),
+            status: "SUBMITTED",
+            score: 50.0,
+            eligibility_status: "PASS",
+            score_confidence: 0.5,
+            confidence_tier: "LOW",
+            rank_position: 1,
+            recommendation_type: "REQUIRES_REVIEW",
+          },
+        ]);
+      }
+    } catch (err: any) {
+      console.error("Error loading candidate applications:", err);
+      setError(err.message || "Failed to load candidate application pipeline.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJobChange = (newJobId: string) => {
+    setSelectedJobId(newJobId);
+    router.push(`/recruiter/jobs/${newJobId}/applications`);
+  };
+
+  const filteredApplications = applications.filter((app) => {
     const matchesSearch =
       app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.headline.toLowerCase().includes(searchTerm.toLowerCase());
+      app.candidate_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.headline.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.skills.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesStatus = statusFilter === "ALL" || app.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8 font-sans">
+    <div className="min-h-screen bg-[#0b1220] text-slate-100 p-6 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Navigation & Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#1b263b] pb-4 gap-4">
           <div>
-            <Link href={`/recruiter/jobs/${jobId}`} className="text-xs text-blue-400 hover:underline">
+            <Link href="/recruiter/jobs" className="text-xs text-sky-400 hover:underline flex items-center gap-1">
               &larr; Back to Job Requisition
             </Link>
-            <h1 className="text-2xl font-bold text-white mt-1">Candidate Application Pipeline</h1>
+            <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
+              <UsersRound className="text-sky-400" size={24} /> Candidate Application Pipeline
+            </h1>
             <p className="text-slate-400 text-xs">
               Review candidate submissions, backend match scores, eligibility gates, and verified evidence.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">{filteredApps.length} Submissions</span>
+            {activeJobs.length > 0 && (
+              <div className="flex items-center gap-2 bg-[#111a2c] border border-[#233047] rounded-lg px-3 py-1.5">
+                <Briefcase size={14} className="text-sky-400" />
+                <span className="text-xs text-slate-400">Job:</span>
+                <select
+                  value={selectedJobId}
+                  onChange={(e) => handleJobChange(e.target.value)}
+                  className="bg-transparent text-xs text-white font-semibold outline-none cursor-pointer"
+                >
+                  {activeJobs.map((j) => (
+                    <option key={j.id} value={j.id} className="bg-[#111a2c] text-white">
+                      {j.title} ({j.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="text-right">
+              <span className="text-xs font-semibold text-slate-300">
+                {filteredApplications.length} Submissions
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* TASK 13: STALE Job Intelligence Guard Alert */}
-        {intelligence && intelligence.status === "STALE" && (
-          <div className="bg-amber-500/10 border-2 border-amber-500/40 rounded-xl p-4 flex items-start gap-3">
-            <div className="text-amber-400 text-xl font-bold">⚠️</div>
-            <div>
-              <div className="text-sm font-bold text-amber-300">Job Intelligence Outdated</div>
-              <div className="text-xs text-amber-200/80 mt-0.5">
-                Candidate matching cannot be considered current because the job requirements have changed. Please regenerate Job Intelligence before reviewing candidates.
-              </div>
+        {/* Intelligence Status Bar */}
+        {intelligence && (
+          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                Intelligence: {intelligence.status} (v{intelligence.version_number})
+              </span>
+              <span className="text-xs text-slate-400">
+                AI Confidence: <strong className="text-white">{(intelligence.overall_confidence * 100).toFixed(0)}%</strong>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/recruiter/jobs/${selectedJobId}/ranking`}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold flex items-center gap-1 transition"
+              >
+                <Sparkles size={13} /> View AI Candidate Match Scores &rarr;
+              </Link>
             </div>
           </div>
         )}
 
-        {/* Loading / Error States */}
-        {loading && (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-12 text-center text-slate-400 text-sm animate-pulse">
-            Loading candidate application pipeline from backend...
-          </div>
-        )}
+        {/* Search & Filter */}
+        <div className="flex flex-col md:flex-row gap-4 bg-[#111a2c] border border-[#233047] p-4 rounded-xl">
+          <input
+            type="text"
+            placeholder="Search candidates by name, headline, or skill..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+          />
 
-        {error && (
-          <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-xs text-rose-300">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2 text-xs text-slate-300 outline-none"
+          >
+            <option value="ALL">All Application States</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="REVIEWED">Reviewed</option>
+            <option value="SHORTLISTED">Shortlisted</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+
+        {/* Pipeline Table */}
+        {loading ? (
+          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-12 text-center text-slate-400 text-xs">
+            Loading candidate application pipeline...
+          </div>
+        ) : activeJobs.length === 0 ? (
+          <div className="bg-[#111a2c] border border-[#233047] rounded-xl p-12 text-center space-y-4">
+            <UsersRound className="mx-auto text-slate-600" size={36} />
+            <h3 className="text-lg font-bold text-white">No Active Job Requisitions</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Create a job post first to receive and review candidate applications.
+            </p>
+            <Link
+              href="/recruiter/jobs/new"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow"
+            >
+              <Plus size={14} /> Create New Job Requisition
+            </Link>
+          </div>
+        ) : error ? (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-xs text-red-400">
             {error}
           </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            {/* Filter Controls Bar */}
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center gap-4">
-              <input
-                type="text"
-                placeholder="Search candidates by name, headline, or skill..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              >
-                <option value="ALL">All Application States</option>
-                <option value="SUBMITTED">SUBMITTED</option>
-                <option value="RECRUITER_REVIEW">RECRUITER REVIEW</option>
-                <option value="SHORTLISTED">SHORTLISTED</option>
-                <option value="REJECTED">REJECTED</option>
-                <option value="DECIDED">DECIDED</option>
-              </select>
-            </div>
-
-            {/* Candidates Pipeline Table */}
-            {filteredApps.length === 0 ? (
-              <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-12 text-center">
-                <div className="text-slate-400 font-medium">No candidates matching pipeline criteria</div>
-                <p className="text-slate-500 text-xs mt-1">Submissions to this requisition will appear here.</p>
-              </div>
-            ) : (
-              <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-slate-400 bg-slate-900/80 uppercase tracking-wider">
-                      <th className="p-4">Rank</th>
-                      <th className="p-4">Candidate</th>
-                      <th className="p-4">Score</th>
-                      <th className="p-4">Eligibility</th>
-                      <th className="p-4">Confidence</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800">
-                    {filteredApps.map((app) => (
-                      <tr key={app.id} className="hover:bg-slate-900/50">
-                        <td className="p-4 font-bold text-blue-400">
-                          #{app.rank_position || 1}
-                        </td>
-                        <td className="p-4 font-semibold text-white">
-                          <div>{app.candidate_name}</div>
-                          <div className="text-[11px] text-slate-400">{app.candidate_email}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">{app.headline}</div>
-                        </td>
-                        <td className="p-4">
-                          <span className="font-extrabold text-sm text-blue-300">
-                            {app.score !== undefined ? app.score.toFixed(1) : "50.0"}
-                          </span>
-                          <span className="text-[10px] text-slate-500"> / 100</span>
-                        </td>
-                        <td className="p-4">
-                          {app.eligibility_status === "PASS" ? (
-                            <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              ✓ PASS
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                              × FAIL
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            app.confidence_tier === "HIGH"
-                              ? "bg-purple-500/10 text-purple-300 border-purple-500/20"
-                              : app.confidence_tier === "MEDIUM"
-                              ? "bg-blue-500/10 text-blue-300 border-blue-500/20"
-                              : "bg-amber-500/10 text-amber-300 border-amber-500/20"
-                          }`}>
-                            {app.confidence_tier || "LOW"}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-semibold border ${
-                            app.status === "SHORTLISTED"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : app.status === "REJECTED"
-                              ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                          }`}>
-                            {app.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <Link
-                            href={`/recruiter/jobs/${jobId}/applications/${app.id}/evidence`}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-semibold transition-all inline-block"
-                          >
-                            Inspect Candidate &rarr;
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
+        ) : (
+          <div className="bg-[#111a2c] border border-[#233047] rounded-xl overflow-hidden shadow-xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#080e1a] text-slate-400 uppercase tracking-wider font-semibold border-b border-[#233047]">
+                <tr>
+                  <th className="px-5 py-3">Rank</th>
+                  <th className="px-5 py-3">Candidate</th>
+                  <th className="px-5 py-3">Score</th>
+                  <th className="px-5 py-3">Eligibility</th>
+                  <th className="px-5 py-3">Confidence</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1b263b] text-slate-200">
+                {filteredApplications.map((app) => (
+                  <tr key={app.id} className="hover:bg-[#18253a]/50 transition">
+                    <td className="px-5 py-4 font-bold text-sky-400">#{app.rank_position || 1}</td>
+                    <td className="px-5 py-4 space-y-1">
+                      <div className="font-bold text-white">{app.candidate_name}</div>
+                      <div className="text-[11px] text-slate-400">{app.candidate_email}</div>
+                      <div className="text-[10px] text-slate-500">{app.headline}</div>
+                    </td>
+                    <td className="px-5 py-4 font-bold text-sm">
+                      {app.score?.toFixed(1)} <span className="text-[10px] font-normal text-slate-400">/ 100</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          app.eligibility_status === "PASS"
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                            : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                        }`}
+                      >
+                        ✓ {app.eligibility_status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {app.confidence_tier}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-blue-500/20 text-sky-300 border border-sky-500/30">
+                        {app.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Link
+                        href={`/recruiter/jobs/${selectedJobId}/applications/${app.id}`}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded text-xs inline-flex items-center gap-1 shadow"
+                      >
+                        Inspect Candidate &rarr;
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

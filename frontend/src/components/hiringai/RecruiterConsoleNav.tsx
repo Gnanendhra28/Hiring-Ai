@@ -28,10 +28,10 @@ import { useAuth } from "@/components/auth/AuthContext";
 const links = [
   { label: "Overview", href: "/recruiter/dashboard", icon: LayoutDashboard },
   { label: "Jobs", href: "/recruiter/jobs", icon: BriefcaseBusiness },
-  { label: "Candidates", href: "/recruiter/jobs/1/applications", icon: UsersRound },
-  { label: "AI matching", href: "/recruiter/jobs/1/ranking", icon: Sparkles },
-  { label: "Interviews", href: "/recruiter/jobs/1/interviews", icon: CalendarDays },
-  { label: "Messages", href: "/recruiter/jobs/1/communications", icon: MessageSquare },
+  { label: "Candidates", href: "/recruiter/jobs/active/applications", icon: UsersRound },
+  { label: "AI matching", href: "/recruiter/jobs/active/ranking", icon: Sparkles },
+  { label: "Interviews", href: "/recruiter/jobs/active/interviews", icon: CalendarDays },
+  { label: "Messages", href: "/recruiter/jobs/active/communications", icon: MessageSquare },
   { label: "Analytics", href: "/recruiter/reports", icon: BarChart3 },
   { label: "Company", href: "/recruiter/organization/members", icon: Building2 },
 ];
