@@ -77,6 +77,7 @@ async def create_job(
         return created_job
 
 @router.put("/{job_id}", response_model=JobResponse)
+@router.patch("/{job_id}", response_model=JobResponse)
 async def update_job(
     job_id: uuid.UUID,
     payload: JobUpdateRequest,
@@ -106,9 +107,11 @@ async def update_job(
             job.location = payload.location
         if payload.employment_type is not None:
             job.employment_type = payload.employment_type
+        if payload.verification_status is not None:
+            job.verification_status = payload.verification_status
         if payload.status is not None:
             job.status = payload.status
-            if payload.status == JobStatusEnum.PUBLISHED:
+            if payload.status == JobStatusEnum.PUBLISHED and payload.verification_status is None:
                 job.verification_status = JobVerificationStatusEnum.APPROVED
 
         # Mark active intelligence STALE if content updated
