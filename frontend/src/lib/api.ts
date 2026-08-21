@@ -107,6 +107,7 @@ export async function loginUser(email: string, password: string): Promise<{ acce
     }
     const data = await res.json();
     setTokens(data.access_token, data.refresh_token);
+    setOrgId("");
     return data;
   } catch (error: any) {
     if (error.name === "TypeError" || error.message.includes("fetch")) {
@@ -380,7 +381,8 @@ export async function apiFetch(
       headers.set("Authorization", `Bearer ${token}`);
     }
     const orgId = getOrgId();
-    if (orgId && !headers.has("X-Organization-ID")) {
+    const isGlobalAuthEndpoint = endpoint.includes("/auth/me") || endpoint.includes("/auth/login") || endpoint.includes("/auth/register");
+    if (orgId && !headers.has("X-Organization-ID") && !isGlobalAuthEndpoint) {
       headers.set("X-Organization-ID", orgId);
     }
   }

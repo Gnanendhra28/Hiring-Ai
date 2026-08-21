@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
+import { getUserProfile } from "@/lib/api";
 
 export default function CandidateLoginPage() {
   const router = useRouter();
@@ -30,7 +31,21 @@ export default function CandidateLoginPage() {
 
     try {
       await login(email, password);
-      router.push("/candidate/dashboard");
+      const profile = await getUserProfile();
+      const isPlatformAdmin = Boolean(profile?.user?.is_platform_admin);
+      const isRecruiter = Boolean(
+        profile?.memberships?.some(
+          (m) => m.role === "RECRUITER" || m.role === "ORGANIZATION_ADMIN"
+        )
+      );
+
+      if (isPlatformAdmin) {
+        router.push("/admin/dashboard");
+      } else if (isRecruiter) {
+        router.push("/recruiter/dashboard");
+      } else {
+        router.push("/candidate/dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "Invalid email address or password. Please try again.");
     } finally {
