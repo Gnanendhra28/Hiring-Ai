@@ -28,10 +28,10 @@ import { useAuth } from "@/components/auth/AuthContext";
 const links = [
   { label: "Overview", href: "/recruiter/dashboard", icon: LayoutDashboard },
   { label: "Jobs", href: "/recruiter/jobs", icon: BriefcaseBusiness },
-  { label: "Candidates", href: "/recruiter/jobs", icon: UsersRound },
-  { label: "AI matching", href: "/recruiter/jobs", icon: Sparkles },
-  { label: "Interviews", href: "/recruiter/jobs", icon: CalendarDays },
-  { label: "Messages", href: "/recruiter/jobs", icon: MessageSquare },
+  { label: "Candidates", href: "/recruiter/jobs/1/applications", icon: UsersRound },
+  { label: "AI matching", href: "/recruiter/jobs/1/ranking", icon: Sparkles },
+  { label: "Interviews", href: "/recruiter/jobs/1/interviews", icon: CalendarDays },
+  { label: "Messages", href: "/recruiter/jobs/1/communications", icon: MessageSquare },
   { label: "Analytics", href: "/recruiter/reports", icon: BarChart3 },
   { label: "Company", href: "/recruiter/organization/members", icon: Building2 },
 ];
@@ -579,7 +579,7 @@ export function RecruiterConsoleNav() {
           <Sparkles size={15} />
           <strong>AI hiring signal</strong>
           <span>84 candidates ready to review</span>
-          <Link href="/recruiter/jobs">Open shortlist →</Link>
+          <Link href="/recruiter/jobs/1/ranking">Open shortlist →</Link>
         </div>
       </aside>
     </>

@@ -1,5 +1,199 @@
 "use client";
+
 import Link from "next/link";
 import { ArrowUpRight, BriefcaseBusiness, CheckCircle2, ChevronRight, Clock3, Plus, Sparkles, UsersRound } from "lucide-react";
-const candidates=[{name:"Gnanendhra Joy",role:"AI/ML Engineer",match:96,skills:"Python · RAG · FastAPI",missing:"Kubernetes"},{name:"Aisha Rahman",role:"Applied AI Engineer",match:93,skills:"LLMs · PyTorch · AWS",missing:"MLOps"},{name:"Rohan Iyer",role:"Machine Learning Engineer",match:91,skills:"Python · SQL · Docker",missing:"Vector DBs"},{name:"Meera Shah",role:"Data Scientist",match:88,skills:"Python · NLP · MLflow",missing:"FastAPI"}];
-export default function RecruiterDashboardPage(){return <div className="command-page space-y-6"><section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="command-eyebrow">Hiring command center</p><h1 className="command-title">Good morning, Kavya <span className="text-base">👋</span></h1><p className="command-subtitle">Your hiring pipeline is healthy. Two roles need attention today.</p></div><div className="flex gap-2"><Link href="/recruiter/jobs" className="command-button secondary">View all jobs</Link><Link href="/recruiter/jobs/new" className="command-button"><Plus size={15}/> New requisition</Link></div></section><section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><div className="command-stat"><p>Active jobs</p><strong>12</strong><span className="text-emerald-400">↑ 2 this month</span></div><div className="command-stat"><p>Applications</p><strong>1,284</strong><span>Across all open roles</span></div><div className="command-stat"><p>AI shortlisted</p><strong>84</strong><span className="text-sky-300">6 need review today</span></div><div className="command-stat"><p>Interviews</p><strong>21</strong><span>7 scheduled this week</span></div></section><section className="command-card relative overflow-hidden p-5"><div className="absolute -right-10 -top-8 h-32 w-32 rounded-full bg-blue-500/10 blur-2xl"/><div className="relative flex flex-col gap-4 lg:flex-row lg:items-center"><div className="grid h-10 w-10 place-items-center rounded-lg bg-blue-500 text-white"><Sparkles size={19}/></div><div className="flex-1"><div className="flex items-center gap-2"><p className="text-xs font-bold text-sky-300">AI hiring signal</p><span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300">HIGH CONFIDENCE</span></div><h2 className="mt-1 text-lg font-bold text-white">11 candidates are ready to progress for Senior ML Engineer</h2><p className="mt-1 text-sm text-slate-400">Their verified experience and project evidence exceed the role&apos;s interview threshold.</p></div><Link className="command-button" href="/recruiter/jobs">Review shortlist <ChevronRight size={15}/></Link></div></section><div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_315px]"><section className="command-card overflow-hidden"><div className="flex items-center justify-between border-b border-slate-700/60 px-5 py-4"><div><h2 className="font-bold text-white">AI candidate matching</h2><p className="mt-1 text-xs text-slate-400">Senior ML Engineer · Ranked by explainable fit</p></div><Link href="/recruiter/jobs" className="text-xs font-bold text-sky-300">Open role <ArrowUpRight size={13} className="inline"/></Link></div><div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left"><thead className="bg-slate-950/20 text-[10px] uppercase tracking-wider text-slate-500"><tr><th className="px-5 py-3">Candidate</th><th className="px-4 py-3">Evidence & skills</th><th className="px-4 py-3">Gap</th><th className="px-4 py-3">AI match</th><th className="px-5 py-3 text-right">Action</th></tr></thead><tbody>{candidates.map((c,i)=><tr key={c.name} className="border-t border-slate-700/50 text-xs hover:bg-slate-800/40"><td className="px-5 py-4"><div className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded bg-slate-700 font-bold text-sky-200">{c.name.split(" ").map(x=>x[0]).join("")}</span><div><strong className="text-slate-100">{c.name}</strong><span className="mt-0.5 block text-slate-500">{c.role}</span></div></div></td><td className="px-4 py-4 text-slate-300">{c.skills}</td><td className="px-4 py-4"><span className="rounded bg-amber-500/10 px-2 py-1 text-amber-300">{c.missing}</span></td><td className="px-4 py-4"><strong className="text-base text-emerald-400">{c.match}%</strong><span className="ml-1 text-slate-500">match</span></td><td className="px-5 py-4 text-right"><button className="text-sky-300 hover:text-sky-200">Explain match</button></td></tr>)}</tbody></table></div></section><aside className="space-y-5"><section className="command-card p-5"><div className="flex items-center gap-2"><Clock3 size={16} className="text-amber-300"/><h2 className="font-bold text-white">Needs attention</h2></div><div className="mt-4 space-y-4 text-xs"><div className="border-l-2 border-amber-400 pl-3"><strong className="text-slate-200">Product Designer</strong><p className="mt-1 text-slate-500">4 candidates await shortlist review</p></div><div className="border-l-2 border-sky-400 pl-3"><strong className="text-slate-200">ML Engineer</strong><p className="mt-1 text-slate-500">3 interviews need feedback</p></div></div></section><section className="command-card p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pipeline health</p><div className="mt-5 flex items-end gap-2"><strong className="text-3xl text-white">72%</strong><span className="mb-1 text-xs text-emerald-400">↑ 8% this month</span></div><div className="mt-4 h-2 overflow-hidden rounded bg-slate-800"><span className="block h-full w-[72%] rounded bg-sky-400"/></div><p className="mt-3 text-xs leading-5 text-slate-500">Your interview conversion is above the company baseline.</p></section></aside></div></div>}
+import { useAuth } from "@/components/auth/AuthContext";
+
+const candidates = [
+  { name: "Gnanendhra Joy", role: "AI/ML Engineer", match: 96, skills: "Python · RAG · FastAPI", missing: "Kubernetes" },
+  { name: "Aisha Rahman", role: "Applied AI Engineer", match: 93, skills: "LLMs · PyTorch · AWS", missing: "MLOps" },
+  { name: "Rohan Iyer", role: "Machine Learning Engineer", match: 91, skills: "Python · SQL · Docker", missing: "Vector DBs" },
+  { name: "Meera Shah", role: "Data Scientist", match: 88, skills: "Python · NLP · MLflow", missing: "FastAPI" },
+];
+
+export default function RecruiterDashboardPage() {
+  const { user } = useAuth();
+
+  return (
+    <div className="command-page space-y-6">
+      {/* Header */}
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="command-eyebrow">Hiring command center</p>
+          <h1 className="command-title">
+            Welcome, {user?.full_name || "Santhosha Rao"} <span className="text-base">👋</span>
+          </h1>
+          <p className="command-subtitle">
+            Your hiring pipeline is healthy. 11 candidates are ready for review on Senior ML Engineer today.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/recruiter/jobs" className="command-button secondary">
+            View all jobs
+          </Link>
+          <Link href="/recruiter/jobs/new" className="command-button">
+            <Plus size={15} /> New requisition
+          </Link>
+        </div>
+      </section>
+
+      {/* Interactive Stat Cards */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Link
+          href="/recruiter/jobs"
+          className="command-stat hover:border-slate-500 hover:bg-[#18253a] transition cursor-pointer group block"
+        >
+          <p className="group-hover:text-sky-400 transition">Active jobs</p>
+          <strong>12</strong>
+          <span className="text-emerald-400">↑ 2 this month</span>
+        </Link>
+
+        <Link
+          href="/recruiter/jobs/1/applications"
+          className="command-stat hover:border-slate-500 hover:bg-[#18253a] transition cursor-pointer group block"
+        >
+          <p className="group-hover:text-sky-400 transition">Applications</p>
+          <strong>1,284</strong>
+          <span>Across all open roles</span>
+        </Link>
+
+        <Link
+          href="/recruiter/jobs/1/ranking"
+          className="command-stat hover:border-slate-500 hover:bg-[#18253a] transition cursor-pointer group block"
+        >
+          <p className="group-hover:text-sky-400 transition">AI shortlisted</p>
+          <strong>84</strong>
+          <span className="text-sky-300">6 need review today</span>
+        </Link>
+
+        <Link
+          href="/recruiter/jobs/1/interviews"
+          className="command-stat hover:border-slate-500 hover:bg-[#18253a] transition cursor-pointer group block"
+        >
+          <p className="group-hover:text-sky-400 transition">Interviews</p>
+          <strong>21</strong>
+          <span>7 scheduled this week</span>
+        </Link>
+      </section>
+
+      {/* AI Hiring Signal Card */}
+      <section className="command-card relative overflow-hidden p-5">
+        <div className="absolute -right-10 -top-8 h-32 w-32 rounded-full bg-blue-500/10 blur-2xl" />
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center">
+          <div className="grid h-10 w-10 place-items-center rounded-lg bg-blue-500 text-white">
+            <Sparkles size={19} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold text-sky-300">AI hiring signal</p>
+              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300">
+                HIGH CONFIDENCE
+              </span>
+            </div>
+            <h2 className="mt-1 text-lg font-bold text-white">
+              11 candidates are ready to progress for Senior ML Engineer
+            </h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Their verified experience and project evidence exceed the role&apos;s interview threshold.
+            </p>
+          </div>
+          <Link className="command-button" href="/recruiter/jobs/1/ranking">
+            Review shortlist <ChevronRight size={15} />
+          </Link>
+        </div>
+      </section>
+
+      {/* Table & Sidebar */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_315px]">
+        <section className="command-card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-700/60 px-5 py-4">
+            <div>
+              <h2 className="font-bold text-white">AI candidate matching</h2>
+              <p className="mt-1 text-xs text-slate-400">Senior ML Engineer · Ranked by explainable fit</p>
+            </div>
+            <Link href="/recruiter/jobs/1" className="text-xs font-bold text-sky-300">
+              Open role <ArrowUpRight size={13} className="inline" />
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left">
+              <thead className="bg-slate-950/20 text-[10px] uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="px-5 py-3">Candidate</th>
+                  <th className="px-4 py-3">Evidence & skills</th>
+                  <th className="px-4 py-3">Gap</th>
+                  <th className="px-4 py-3">AI match</th>
+                  <th className="px-5 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {candidates.map((c) => (
+                  <tr key={c.name} className="border-t border-slate-700/50 text-xs hover:bg-slate-800/40">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-8 w-8 place-items-center rounded bg-slate-700 font-bold text-sky-200">
+                          {c.name.split(" ").map((x) => x[0]).join("")}
+                        </span>
+                        <div>
+                          <strong className="text-slate-100">{c.name}</strong>
+                          <span className="mt-0.5 block text-slate-500">{c.role}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-slate-300">{c.skills}</td>
+                    <td className="px-4 py-4">
+                      <span className="rounded bg-amber-500/10 px-2 py-1 text-amber-300">{c.missing}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <strong className="text-base text-emerald-400">{c.match}%</strong>
+                      <span className="ml-1 text-slate-500">match</span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Link href="/recruiter/jobs/1/ranking" className="text-sky-300 hover:text-sky-200">
+                        Explain match
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside className="space-y-5">
+          <section className="command-card p-5">
+            <div className="flex items-center gap-2">
+              <Clock3 size={16} className="text-amber-300" />
+              <h2 className="font-bold text-white">Needs attention</h2>
+            </div>
+            <div className="mt-4 space-y-4 text-xs">
+              <Link href="/recruiter/jobs" className="block border-l-2 border-amber-400 pl-3 hover:bg-slate-800/30 py-1 transition">
+                <strong className="text-slate-200">Product Designer</strong>
+                <p className="mt-1 text-slate-500">4 candidates await shortlist review</p>
+              </Link>
+              <Link href="/recruiter/jobs/1/interviews" className="block border-l-2 border-sky-400 pl-3 hover:bg-slate-800/30 py-1 transition">
+                <strong className="text-slate-200">ML Engineer</strong>
+                <p className="mt-1 text-slate-500">3 interviews need feedback</p>
+              </Link>
+            </div>
+          </section>
+
+          <section className="command-card p-5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pipeline health</p>
+            <div className="mt-5 flex items-end gap-2">
+              <strong className="text-3xl text-white">72%</strong>
+              <span className="mb-1 text-xs text-emerald-400">↑ 8% this month</span>
+            </div>
+            <div className="mt-4 h-2 overflow-hidden rounded bg-slate-800">
+              <span className="block h-full w-[72%] rounded bg-sky-400" />
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Your interview conversion is above the company baseline.
+            </p>
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
