@@ -1,12 +1,9 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
-
 export const metadata: Metadata = {
-  title: 'Enterprise AI Hiring Platform',
-  description: 'Multi-Tenant End-to-End AI-Powered Recruitment SaaS Platform',
+  title: 'HiringAI — Find your next opportunity with AI',
+  description: 'AI-powered job matching, career guidance, and recruitment.',
 }
 
 import { AuthProvider } from '@/components/auth/AuthContext'
@@ -18,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

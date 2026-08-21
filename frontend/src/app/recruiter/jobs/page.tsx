@@ -14,21 +14,24 @@ interface JobItem {
 }
 
 export default function JobWorkspaceListPage() {
-  const [jobs] = useState<JobItem[]>([]);
+  const [jobs] = useState<JobItem[]>([
+    { id: "senior-ml", title: "Senior ML Engineer", department: "Applied AI", location: "Bengaluru", employment_type: "Full time", status: "PUBLISHED", created_at: "2026-08-18" },
+    { id: "product-designer", title: "Product Designer", department: "Product", location: "Remote", employment_type: "Full time", status: "PUBLISHED", created_at: "2026-08-16" },
+    { id: "ai-platform", title: "AI Platform Engineer", department: "Engineering", location: "Bengaluru", employment_type: "Full time", status: "DRAFT", created_at: "2026-08-20" },
+  ]);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="command-page space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700 pb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Job Workspace</h1>
-            <p className="text-slate-400 text-sm mt-1">Manage active requisitions, draft descriptions, and candidate pipelines.</p>
+            <p className="command-eyebrow">Requisition management</p><h1 className="command-title">Job workspace</h1>
+            <p className="command-subtitle">Manage active requisitions, draft descriptions, and candidate pipelines.</p>
           </div>
           <Link
             href="/recruiter/jobs/new"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-sm shadow-md transition-all self-start md:self-auto"
+            className="command-button self-start md:self-auto"
           >
             + New Requisition
           </Link>
@@ -43,7 +46,7 @@ export default function JobWorkspaceListPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 filterStatus === st
                   ? "bg-blue-600 text-white"
-                  : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800"
+                  : "bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700"
               }`}
             >
               {st}
@@ -66,10 +69,10 @@ export default function JobWorkspaceListPage() {
             </Link>
           </div>
         ) : (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden">
+          <div className="command-card overflow-hidden">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 bg-slate-900/80 uppercase tracking-wider">
+                <tr className="border-b border-slate-700 text-slate-400 bg-slate-950/30 uppercase tracking-wider">
                   <th className="p-4">Title</th>
                   <th className="p-4">Department</th>
                   <th className="p-4">Location</th>
@@ -78,11 +81,11 @@ export default function JobWorkspaceListPage() {
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-slate-700">
                 {jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-slate-900/50 transition-colors">
+                  <tr key={job.id} className="hover:bg-slate-800/50 transition-colors">
                     <td className="p-4 font-medium text-white">
-                      <Link href={`/recruiter/jobs/${job.id}`} className="hover:underline text-blue-400">
+                      <Link href={`/recruiter/jobs/${job.id}`} className="hover:underline text-sky-300">
                         {job.title}
                       </Link>
                     </td>
@@ -105,7 +108,6 @@ export default function JobWorkspaceListPage() {
             </table>
           </div>
         )}
-      </div>
     </div>
   );
 }

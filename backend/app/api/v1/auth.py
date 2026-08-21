@@ -280,14 +280,12 @@ async def get_user_profile(ctx: SecurityContext = Depends(get_security_context))
     """
     user = ctx.user
     async with async_session_factory() as session:
-        if ctx.active_organization_id:
-            await set_tenant_context(session, ctx.active_organization_id)
-        else:
-            first_org_stmt = select(OrganizationMembership.organization_id).where(OrganizationMembership.user_id == user.id)
-            first_org_res = await session.execute(first_org_stmt)
-            first_org_id = first_org_res.scalar_one_or_none()
-            if first_org_id:
-                await set_tenant_context(session, first_org_id)
+        await set_tenant_context(session, organization_id=ctx.active_organization_id, user_id=user.id, is_platform_admin=user.is_platform_admin)
+        first_org_stmt = select(OrganizationMembership.organization_id).where(OrganizationMembership.user_id == user.id)
+        first_org_res = await session.execute(first_org_stmt)
+        first_org_id = first_org_res.scalars().first()
+        if first_org_id and not ctx.active_organization_id:
+            await set_tenant_context(session, organization_id=first_org_id, user_id=user.id, is_platform_admin=user.is_platform_admin)
 
         stmt = (
             select(OrganizationMembership)
