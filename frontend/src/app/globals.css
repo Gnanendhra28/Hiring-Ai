@@ -107,7 +107,7 @@ body {
 @media (max-width:760px) { .command-header { padding:0 15px; }.command-search { display:none; }.command-sidebar { display:none; }.command-main { margin-left:0; padding:82px 15px 24px; }.command-title { font-size:23px; } }
 
 /* --- Candidate Portal Dark Mode Theme Overrides --- */
-html.dark, .dark .hiring-shell {
+html.dark, html.dark body {
   background-color: #030712 !important;
   color: #f8fafc !important;
 }
@@ -128,18 +128,15 @@ html.dark, .dark .hiring-shell {
 .dark .ai-side-card a { color: #a5b4fc !important; }
 .dark .page-title { color: #f8fafc !important; }
 .dark .page-subtitle { color: #94a3b8 !important; }
-.dark .h-card { background: #0f172a !important; border-color: #1e293b !important; color: #f8fafc !important; }
-.dark .h-card:hover { border-color: #334155 !important; }
+.dark .h-card { background: #0f172a; border-color: #1e293b; color: #f8fafc; }
+.dark .h-card:hover { border-color: #334155; }
 .dark .ai-card { background: linear-gradient(105deg, #1e1b4b, #2e1065) !important; border-color: #4c1d95 !important; }
 .dark .ai-card h2 { color: #f8fafc !important; }
 .dark .ai-card p { color: #cbd5e1 !important; }
 .dark .h-btn-secondary { background: #1e293b !important; color: #e2e8f0 !important; border-color: #334155 !important; }
 .dark .h-btn-secondary:hover { background: #334155 !important; }
-.dark .h-chip { background: #1e293b !important; color: #cbd5e1 !important; }
-.dark .h-chip.good { background: #064e3b !important; color: #6ee7b7 !important; }
-.dark .progress-track { background: #1e293b !important; }
-.dark .text-slate-900 { color: #f8fafc !important; }
-.dark .text-slate-700 { color: #cbd5e1 !important; }
-.dark .text-slate-600 { color: #94a3b8 !important; }
-.dark .text-slate-500 { color: #64748b !important; }
+.dark .h-chip { background: #1e293b; color: #cbd5e1; }
+.dark .h-chip.good { background: #064e3b; color: #6ee7b7; }
+.dark .progress-track { background: #1e293b; }
+
 
