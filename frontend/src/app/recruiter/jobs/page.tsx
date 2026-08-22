@@ -148,16 +148,21 @@ export default function JobWorkspaceListPage() {
                     {job.employment_type?.replace("_", " ").toLowerCase() || "Full time"}
                   </td>
                   <td className="p-4">
-                    <select
-                      value={job.status}
-                      onChange={(e) => handleStatusChange(job.id, e.target.value)}
-                      className="bg-[#0b1425] text-sky-300 border border-[#233047] rounded px-2.5 py-1 text-xs font-semibold outline-none focus:border-sky-500 transition cursor-pointer"
-                    >
-                      <option value="PUBLISHED">PUBLISHED</option>
-                      <option value="DRAFT">DRAFT</option>
-                      <option value="PAUSED">PAUSED</option>
-                      <option value="CLOSED">CLOSED</option>
-                    </select>
+                    {job.verification_status === "APPROVED" ? (
+                      <select
+                        value={job.status}
+                        onChange={(e) => handleStatusChange(job.id, e.target.value)}
+                        className="bg-[#0b1425] text-sky-300 border border-[#233047] rounded px-2.5 py-1 text-xs font-semibold outline-none focus:border-sky-500 transition cursor-pointer"
+                      >
+                        <option value="PUBLISHED">PUBLISHED</option>
+                        <option value="PAUSED">PAUSED</option>
+                        <option value="CLOSED">CLOSED</option>
+                      </select>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded text-[11px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                        {job.status || "DRAFT"}
+                      </span>
+                    )}
                   </td>
                   <td className="p-4">
                     {job.verification_status === "PENDING_VERIFICATION" ? (
@@ -175,22 +180,12 @@ export default function JobWorkspaceListPage() {
                         disabled={submittingJobId === job.id}
                         className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-semibold flex items-center gap-1 transition shadow"
                       >
-                        <Send size={11} /> Send to Admin for Approval
+                        <Send size={11} /> {submittingJobId === job.id ? "Sending..." : "Send to Admin for Approval"}
                       </button>
                     )}
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-3">
-                      {job.verification_status !== "PENDING_VERIFICATION" && job.verification_status !== "APPROVED" && (
-                        <button
-                          type="button"
-                          onClick={() => handleSendToAdmin(job.id, job.title)}
-                          disabled={submittingJobId === job.id}
-                          className="text-xs text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20"
-                        >
-                          <Send size={11} /> Send to Admin
-                        </button>
-                      )}
                       <Link
                         href={`/recruiter/jobs/${job.id}/edit`}
                         className="text-xs text-slate-300 hover:text-white font-medium flex items-center gap-1 bg-slate-800 px-2 py-1 rounded border border-slate-700"

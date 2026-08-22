@@ -19,7 +19,7 @@ export default function CreateJobPostingPage() {
     employment_type: "FULL_TIME",
     date_posted: todayStr,
     closing_date: "",
-    status: "PUBLISHED",
+    status: "DRAFT",
     key_skills: "Python, FastAPI, PostgreSQL, RAG",
     preferred_skills: "Kubernetes, Docker, Vector DBs, MLOps",
     good_to_have: "Kafka, Redis, GraphQL, Terraform",
