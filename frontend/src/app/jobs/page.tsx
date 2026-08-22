@@ -105,6 +105,25 @@ export default function JobsPage() {
     setCurrentPage(1);
   }, [searchQuery, selectedLocations, selectedTypes, selectedExperience, selectedSkills]);
 
+function getTimeAgo(dateInput?: string | Date) {
+  if (!dateInput) return "Recently";
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return "Recently";
+
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days > 1 ? "s" : ""} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months > 1 ? "s" : ""} ago`;
+  const years = Math.floor(days / 365);
+  return `${years} year${years > 1 ? "s" : ""} ago`;
+}
+
   useEffect(() => {
     async function loadJobs() {
       try {
@@ -126,10 +145,7 @@ export default function JobsPage() {
               : "On-site",
             experience: "3–5 Years (Mid Level)",
             status: j.status,
-            match: Math.floor(88 + Math.random() * 8),
-            posted: "Recently",
-            salary: "Competitive Package",
-            skills: ["Python", "FastAPI", "AI/ML", "PostgreSQL", "Generative AI", "RAG"],
+            posted: getTimeAgo(j.created_at),
             description: j.description,
           }));
 
@@ -722,36 +738,11 @@ export default function JobsPage() {
                               </span>
                             </p>
                           </div>
-
-                          <div className="text-right">
-                            <strong className="text-lg text-emerald-400 font-extrabold">
-                              {job.match}%
-                            </strong>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              AI MATCH
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5">
-                          {job.skills?.map((s: string) => (
-                            <span
-                              key={s}
-                              className="px-2.5 py-1 rounded-md bg-emerald-950/50 border border-emerald-900 text-emerald-300 text-xs font-semibold flex items-center gap-1"
-                            >
-                              <Check size={12} /> {s}
-                            </span>
-                          ))}
-                          {job.gap && (
-                            <span className="px-2.5 py-1 rounded-md bg-amber-950/40 border border-amber-900 text-amber-300 text-xs font-semibold">
-                              Missing: {job.gap}
-                            </span>
-                          )}
                         </div>
 
                         <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
                           <span className="text-xs text-slate-400 font-medium">
-                            {job.salary} • Posted {job.posted}
+                            Posted {job.posted}
                           </span>
                           <div className="flex gap-2">
                             <Link
