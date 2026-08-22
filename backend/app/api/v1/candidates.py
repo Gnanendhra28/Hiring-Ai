@@ -154,6 +154,17 @@ async def submit_application(
                 detail=f"Job posting '{payload.job_id}' is not open for public applications.",
             )
 
+        from app.domains.jobs.closing_date import parse_job_closing_date
+        closing_date_str, is_closed = parse_job_closing_date(job.description)
+        if is_closed:
+            job.status = JobStatusEnum.CLOSED
+            await session.commit()
+            date_info = f" passed on {closing_date_str}" if closing_date_str else ""
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Applications Closed: The application deadline for this position{date_info}. No further candidate applications will be accepted.",
+            )
+
         # 2. Check for duplicate application (candidate_id, job_id)
         stmt_existing = select(Application).where(
             Application.candidate_id == user.id,
