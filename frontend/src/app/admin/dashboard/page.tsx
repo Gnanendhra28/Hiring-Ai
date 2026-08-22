@@ -64,7 +64,13 @@ export default function AdminDashboardPage() {
         // 1. Fetch live platform jobs across all organizations
         const liveJobs = await fetchAllJobsAdmin();
         if (liveJobs && liveJobs.length > 0) {
-          const mapped: LocalJobDisplay[] = liveJobs.map((j) => {
+          const sortedJobs = [...liveJobs].sort((a, b) => {
+            const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return timeB - timeA;
+          });
+
+          const mapped: LocalJobDisplay[] = sortedJobs.map((j) => {
             let normalizedStatus: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED" = "ACTIVE";
             if (j.status === "PAUSED") normalizedStatus = "PAUSED";
             else if (j.status === "DRAFT") normalizedStatus = "DRAFT";

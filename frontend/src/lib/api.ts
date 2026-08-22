@@ -1339,6 +1339,14 @@ export async function deleteJobAdmin(jobId: string): Promise<boolean> {
   return res.ok;
 }
 
+export async function batchDeleteJobsAdmin(jobIds: string[]): Promise<boolean> {
+  const res = await apiFetch("/api/v1/admin/jobs/batch-delete", {
+    method: "POST",
+    body: JSON.stringify({ job_ids: jobIds }),
+  });
+  return res.ok;
+}
+
 export async function createAdminAccount(fullName: string, email: string, password: string): Promise<{ success: boolean; message: string }> {
   const res = await apiFetch("/api/v1/admin/add-admin", {
     method: "POST",

@@ -194,6 +194,9 @@ class JobVerifyRequest(BaseModel):
     action: str = Field(..., description="APPROVE or REJECT")
     rejection_reason: Optional[str] = Field(None, description="Required when action is REJECT")
 
+class BatchDeleteJobsRequest(BaseModel):
+    job_ids: List[uuid.UUID]
+
 class JobResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

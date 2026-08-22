@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, func, select
 
 from app.api.v1.deps import get_current_user
-from app.api.v1.schemas import JobListResponse, JobResponse, JobVerifyRequest
+from app.api.v1.schemas import BatchDeleteJobsRequest, JobListResponse, JobResponse, JobVerifyRequest
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.applications.models import Application
@@ -119,6 +119,25 @@ async def delete_job_admin(
         await session.execute(delete(Application).where(Application.job_id == job_id))
         await session.execute(delete(Job).where(Job.id == job_id))
         await session.commit()
+
+@router.post("/jobs/batch-delete")
+async def batch_delete_jobs_admin(
+    payload: BatchDeleteJobsRequest,
+    admin: User = Depends(require_platform_admin),
+):
+    """Batch deletes multiple job postings and their dependencies from the platform database."""
+    if not payload.job_ids:
+        return {"deleted_count": 0}
+
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
+
+        await session.execute(delete(JobIntelligenceVersion).where(JobIntelligenceVersion.job_id.in_(payload.job_ids)))
+        await session.execute(delete(Application).where(Application.job_id.in_(payload.job_ids)))
+        res = await session.execute(delete(Job).where(Job.id.in_(payload.job_ids)))
+        await session.commit()
+        return {"deleted_count": res.rowcount}
 
 @router.post("/jobs/{job_id}/verify", response_model=JobResponse)
 async def verify_job_posting(
