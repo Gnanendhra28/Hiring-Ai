@@ -191,6 +191,7 @@ class JobCreateRequest(BaseModel):
     location: Optional[str] = Field(None, max_length=255)
     employment_type: EmploymentTypeEnum = EmploymentTypeEnum.FULL_TIME
     status: Optional[JobStatusEnum] = JobStatusEnum.DRAFT
+    verification_status: Optional[JobVerificationStatusEnum] = None
     salary: Optional[str] = Field(None, max_length=255)
     company_website: Optional[str] = Field(None, max_length=512)
 
