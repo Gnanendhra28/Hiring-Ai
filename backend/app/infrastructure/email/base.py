@@ -30,24 +30,31 @@ class SMTPEmailAdapter(EmailProvider):
             from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
 
-            if settings.SMTP_HOST and settings.SMTP_HOST not in ("localhost", "127.0.0.1") and settings.SMTP_USER:
+            has_smtp = (
+                settings.SMTP_HOST
+                and settings.SMTP_HOST not in ("localhost", "127.0.0.1")
+                and settings.SMTP_USER
+            )
+
+            if has_smtp:
                 msg = MIMEMultipart()
                 msg["From"] = settings.EMAIL_FROM
                 msg["To"] = recipient_email
                 msg["Subject"] = subject
                 msg.attach(MIMEText(body, "plain"))
 
-                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+                port = settings.SMTP_PORT or 587
+                with smtplib.SMTP(settings.SMTP_HOST, port, timeout=10) as server:
                     if settings.SMTP_USER and settings.SMTP_PASSWORD:
                         server.starttls()
                         server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                     server.send_message(msg)
 
-                logger.info(f"[SMTP EMAIL] Sent email to={recipient_email}, subject='{subject}'")
+                logger.info(f"[SMTP EMAIL] Successfully delivered real email to={recipient_email}")
                 return {"status": "SENT", "recipient": recipient_email, "provider": "SMTP"}
             else:
-                logger.info(f"[EMAIL SERVICE] Simulated email dispatch to={recipient_email}:\nSubject: {subject}\nBody:\n{body}")
-                return {"status": "SENT", "recipient": recipient_email, "provider": "DEV_SIMULATOR"}
+                logger.info(f"[DEV EMAIL SIMULATOR] Email to={recipient_email}:\nSubject: {subject}\nBody:\n{body}")
+                return {"status": "SIMULATED", "recipient": recipient_email, "provider": "DEV_SIMULATOR"}
         except Exception as e:
             logger.error(f"[EMAIL SERVICE ERROR] Failed sending email to={recipient_email}: {e}")
             return {"status": "FAILED", "error": str(e), "recipient": recipient_email}

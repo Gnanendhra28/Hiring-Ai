@@ -262,7 +262,7 @@ async def forgot_password(payload: ForgotPasswordRequest, request: Request):
         )
 
         email_adapter = SMTPEmailAdapter()
-        await email_adapter.send_email(email_clean, subject, body)
+        email_res = await email_adapter.send_email(email_clean, subject, body)
 
         audit = AuditLog(
             user_id=user.id,
@@ -275,11 +275,21 @@ async def forgot_password(payload: ForgotPasswordRequest, request: Request):
         session.add(audit)
         await session.commit()
 
-        # SECURITY GUARD: DO NOT return reset_code in API response JSON!
-        return {
+        from app.core.config import settings
+
+        response_data = {
             "message": f"Password recovery verification code sent to {email_clean}. Please check your email inbox for the 6-digit OTP code.",
             "email": email_clean,
         }
+
+        # If running in local development mode without configured SMTP credentials, provide dev hint for local testing
+        if settings.APP_ENV == "development" and email_res.get("provider") == "DEV_SIMULATOR":
+            print(f"\n==========================================================")
+            print(f" [DEV EMAIL SIMULATION] OTP Code for {email_clean} is: {reset_code}")
+            print(f"==========================================================\n")
+            response_data["dev_otp_hint"] = reset_code
+
+        return response_data
 
 @router.post("/reset-password")
 async def reset_password(payload: ResetPasswordRequest, request: Request):

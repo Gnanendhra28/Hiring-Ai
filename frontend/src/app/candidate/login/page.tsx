@@ -25,6 +25,7 @@ export default function CandidateLoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
 
   // Status & Feedback States
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export default function CandidateLoginPage() {
       if (res.success) {
         setResetEmail(targetEmail);
         setResetCode("");
+        setDevOtpHint(res.dev_otp_hint || null);
         setSuccessMsg(res.message);
         setStep("RESET_PASSWORD");
       } else {
@@ -421,6 +423,19 @@ export default function CandidateLoginPage() {
                   A 6-digit OTP code has been sent to <span className="text-sky-300 font-mono font-bold">{resetEmail}</span>. Please check your Gmail/Email inbox.
                 </p>
               </div>
+
+              {devOtpHint && (
+                <div className="p-3.5 mb-5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+                  <div className="font-bold flex items-center gap-1.5 mb-1 text-amber-400">
+                    <span>💡 Local Dev Mode (No SMTP Configured)</span>
+                  </div>
+                  <div>
+                    Real email sending requires Gmail SMTP settings in backend <code className="bg-amber-950/80 px-1 rounded text-amber-200">.env</code>.
+                    <br />
+                    Your generated test OTP code is: <span className="font-mono font-bold text-amber-200 text-sm tracking-wider">{devOtpHint}</span>
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleResetSubmit} className="space-y-4">
                 <div>
