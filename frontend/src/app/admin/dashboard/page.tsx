@@ -25,6 +25,7 @@ import {
   fetchRecruiterJobs,
   updateJobStatus,
   deleteJobPost,
+  deleteJobAdmin,
   fetchPendingEmployers,
   fetchApprovedEmployers,
   verifyEmployerProfile,
@@ -128,10 +129,10 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteJob = async (jobId: string) => {
-    if (!confirm("Are you sure you want to delete this job posting from the platform?")) return;
+    if (!confirm("Are you sure you want to completely delete this job posting from the portal?")) return;
     setJobs((prev) => prev.filter((j) => j.id !== jobId));
     try {
-      await deleteJobPost(jobId);
+      await deleteJobAdmin(jobId);
     } catch (err) {
       console.error("Failed to delete job:", err);
     }

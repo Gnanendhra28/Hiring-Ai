@@ -1332,6 +1332,13 @@ export async function verifyJobAdmin(jobId: string, action: "APPROVE" | "REJECT"
   return res.ok;
 }
 
+export async function deleteJobAdmin(jobId: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/admin/jobs/${jobId}`, {
+    method: "DELETE",
+  });
+  return res.ok;
+}
+
 export async function createAdminAccount(fullName: string, email: string, password: string): Promise<{ success: boolean; message: string }> {
   const res = await apiFetch("/api/v1/admin/add-admin", {
     method: "POST",

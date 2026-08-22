@@ -17,6 +17,7 @@ import {
   fetchAllJobsAdmin,
   updateJobStatus,
   deleteJobPost,
+  deleteJobAdmin,
   JobItemData,
 } from "@/lib/api";
 
@@ -102,10 +103,10 @@ export default function ApprovedJobsPage() {
   };
 
   const handleDeleteJob = async (jobId: string) => {
-    if (!confirm("Are you sure you want to delete this job posting from the platform?")) return;
+    if (!confirm("Are you sure you want to completely delete this job posting from the portal?")) return;
     setJobs((prev) => prev.filter((j) => j.id !== jobId));
     try {
-      await deleteJobPost(jobId);
+      await deleteJobAdmin(jobId);
     } catch (err) {
       console.error("Failed to delete job:", err);
     }
@@ -170,21 +171,17 @@ export default function ApprovedJobsPage() {
                     <td className="px-5 py-4 font-bold text-slate-200">{job.applicationsCount}</td>
                     <td className="px-5 py-4 font-bold text-sky-400">{job.aiShortlistedCount}</td>
                     <td className="px-5 py-4">
-                      <select
-                        value={job.status}
-                        onChange={(e) =>
-                          handleStatusChange(
-                            job.id,
-                            e.target.value as "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED"
-                          )
-                        }
-                        className="bg-[#0b1425] text-slate-200 border border-[#233047] rounded px-2.5 py-1 text-xs outline-none focus:border-sky-500 font-semibold"
-                      >
-                        <option value="ACTIVE">Active</option>
-                        <option value="PAUSED">Pause</option>
-                        <option value="DRAFT">Draft</option>
-                        <option value="COMPLETED">Complete</option>
-                      </select>
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                        job.status === "ACTIVE"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : job.status === "PAUSED"
+                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          : job.status === "DRAFT"
+                          ? "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                          : "bg-red-500/10 text-red-400 border-red-500/20"
+                      }`}>
+                        {job.status === "ACTIVE" ? "Active" : job.status === "PAUSED" ? "Paused" : job.status === "DRAFT" ? "Draft" : "Closed"}
+                      </span>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

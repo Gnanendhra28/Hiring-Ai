@@ -94,10 +94,27 @@ async def get_admin_job_detail(
         stmt = select(Job).where(Job.id == job_id)
         job = (await session.execute(stmt)).scalar_one_or_none()
 
+        return job
+
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job_admin(
+    job_id: uuid.UUID,
+    admin: User = Depends(require_platform_admin),
+):
+    """Permanently deletes a job posting from the platform database."""
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
+
+        stmt = select(Job).where(Job.id == job_id)
+        job = (await session.execute(stmt)).scalar_one_or_none()
+
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
 
-        return job
+        await set_tenant_context(session, organization_id=job.organization_id, is_platform_admin=True)
+        await session.delete(job)
+        await session.commit()
 
 @router.post("/jobs/{job_id}/verify", response_model=JobResponse)
 async def verify_job_posting(
