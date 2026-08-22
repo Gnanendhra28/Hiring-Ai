@@ -2,14 +2,16 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from app.api.v1.deps import get_current_user
 from app.api.v1.schemas import JobListResponse, JobResponse, JobVerifyRequest
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
+from app.domains.applications.models import Application
 from app.domains.audit.models import AuditLog
 from app.domains.identity.models import User
+from app.domains.job_intelligence.models import JobIntelligenceVersion
 from app.domains.jobs.models import Job, JobVerificationStatusEnum
 from app.domains.recruiters.models import RecruiterProfile
 
@@ -101,7 +103,7 @@ async def delete_job_admin(
     job_id: uuid.UUID,
     admin: User = Depends(require_platform_admin),
 ):
-    """Permanently deletes a job posting from the platform database."""
+    """Permanently deletes a job posting and its dependencies from the platform database."""
     async with async_session_factory() as session:
         await session.begin()
         await set_tenant_context(session, is_platform_admin=True)
@@ -113,7 +115,9 @@ async def delete_job_admin(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
 
         await set_tenant_context(session, organization_id=job.organization_id, is_platform_admin=True)
-        await session.delete(job)
+        await session.execute(delete(JobIntelligenceVersion).where(JobIntelligenceVersion.job_id == job_id))
+        await session.execute(delete(Application).where(Application.job_id == job_id))
+        await session.execute(delete(Job).where(Job.id == job_id))
         await session.commit()
 
 @router.post("/jobs/{job_id}/verify", response_model=JobResponse)

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from slugify import slugify
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 
 from app.api.v1.deps import get_security_context, require_role, SecurityContext
 from app.api.v1.schemas import (
@@ -154,7 +154,9 @@ async def delete_job(
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
 
-        await session.delete(job)
+        await session.execute(delete(JobIntelligenceVersion).where(JobIntelligenceVersion.job_id == job_id))
+        await session.execute(delete(Application).where(Application.job_id == job_id))
+        await session.execute(delete(Job).where(Job.id == job_id))
 
         audit = AuditLog(
             organization_id=ctx.active_organization_id,
