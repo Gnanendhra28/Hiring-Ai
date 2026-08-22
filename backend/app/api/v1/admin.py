@@ -55,7 +55,7 @@ async def list_pending_jobs(
 async def list_all_platform_jobs(
     verification_status: Optional[JobVerificationStatusEnum] = Query(None, alias="verification_status"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(100, ge=1, le=1000),
     admin: User = Depends(require_platform_admin),
 ):
     """Lists all job requisitions across all tenant organizations for platform administration."""

@@ -38,10 +38,19 @@ export default function ApprovedJobsPage() {
   useEffect(() => {
     async function loadApprovedJobs() {
       try {
-        const liveJobs = await fetchAllJobsAdmin();
+        let liveJobs = await fetchAllJobsAdmin("APPROVED");
+        if (!liveJobs || liveJobs.length === 0) {
+          const allJobs = await fetchAllJobsAdmin();
+          liveJobs = allJobs.filter(
+            (j) =>
+              j.verification_status === "APPROVED" ||
+              j.verification_status === "VERIFIED" ||
+              j.status === "PUBLISHED"
+          );
+        }
+
         if (liveJobs && liveJobs.length > 0) {
-          const approvedOnly = liveJobs.filter((j) => j.verification_status === "APPROVED");
-          const mapped: LocalJobDisplay[] = approvedOnly.map((j) => {
+          const mapped: LocalJobDisplay[] = liveJobs.map((j) => {
             let normalizedStatus: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED" = "ACTIVE";
             if (j.status === "PAUSED") normalizedStatus = "PAUSED";
             else if (j.status === "DRAFT") normalizedStatus = "DRAFT";

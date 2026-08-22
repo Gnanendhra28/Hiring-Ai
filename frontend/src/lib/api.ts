@@ -1312,8 +1312,11 @@ export async function fetchPendingJobsAdmin(): Promise<JobItemData[]> {
   return [];
 }
 
-export async function fetchAllJobsAdmin(): Promise<JobItemData[]> {
-  const res = await apiFetch("/api/v1/admin/jobs");
+export async function fetchAllJobsAdmin(verificationStatus?: string): Promise<JobItemData[]> {
+  const url = verificationStatus
+    ? `/api/v1/admin/jobs?page_size=500&verification_status=${verificationStatus}`
+    : "/api/v1/admin/jobs?page_size=500";
+  const res = await apiFetch(url);
   if (res.ok) {
     const data = await res.json();
     return data.items || [];
