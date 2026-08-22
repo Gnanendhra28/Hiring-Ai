@@ -309,15 +309,16 @@ async def get_job(
             await set_tenant_context(session, ctx.active_organization_id)
             stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
         else:
-            stmt = select(Job).where(
-                (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
-            )
+            stmt = select(Job)
 
         try:
             val_uuid = uuid.UUID(job_id)
             stmt = stmt.where(Job.id == val_uuid)
         except ValueError:
-            stmt = stmt.where(Job.slug == job_id)
+            stmt = stmt.where(
+                Job.slug == job_id,
+                (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
+            )
 
         job = (await session.execute(stmt)).scalar_one_or_none()
 
