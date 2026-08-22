@@ -23,7 +23,8 @@ export default function CreateJobPostingPage() {
     status: "DRAFT",
     key_skills: "Python, FastAPI, PostgreSQL, RAG",
     preferred_skills: "Kubernetes, Docker, Vector DBs, MLOps",
-    good_to_have: "Kafka, Redis, GraphQL, Terraform",
+    good_to_have:
+      "• Experience working on payment platforms, fintech products, or financial technology solutions\n• Knowledge of Kubernetes, messaging systems, or distributed systems\n• Familiarity with CI/CD pipelines, monitoring, and observability tools\n• Experience working with high-volume transaction processing systems\n• Understanding of security, scalability, and reliability requirements in fintech applications",
     responsibilities:
       "• Design, build, and deploy production-grade AI & RAG microservices\n• Lead API design and high-throughput vector search pipelines\n• Collaborate with product engineering to optimize candidate matching algorithms",
     about_company:
@@ -65,11 +66,7 @@ ${formData.preferred_skills
   .join("\n")}
 
 ## Good to Have Knowledge
-${formData.good_to_have
-  .split(",")
-  .map((s) => `- ${s.trim()}`)
-  .filter(Boolean)
-  .join("\n")}`;
+${formData.good_to_have}`;
 
     setFormData((prev) => ({ ...prev, description: compiledMarkdown }));
   }, [
@@ -393,16 +390,16 @@ ${formData.good_to_have
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Good to Have Knowledge In
+                  Good to Have Knowledge In (Bullet points)
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Problem-solving, System Design, Cloud Architecture"
+                <textarea
+                  rows={4}
+                  placeholder="• Experience working on payment platforms, fintech products..."
                   value={formData.good_to_have}
                   onChange={(e) =>
                     setFormData({ ...formData, good_to_have: e.target.value })
                   }
-                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
             </div>
