@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCheck, MessageSquare, Send, Sparkles, User } from "lucide-react";
+import { Send } from "lucide-react";
 
 export default function MessagesPage() {
   const [activeThreadId, setActiveThreadId] = useState("thread-1");
@@ -83,7 +83,7 @@ export default function MessagesPage() {
       {/* Messages Layout Grid */}
       <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)] h-[600px]">
         {/* Left Threads Sidebar */}
-        <div className="h-card p-3 flex flex-col space-y-2 overflow-y-auto">
+        <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col space-y-2 overflow-y-auto">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
             Active Conversations
           </p>
@@ -114,9 +114,9 @@ export default function MessagesPage() {
         </div>
 
         {/* Right Active Chat Window */}
-        <div className="h-card flex flex-col justify-between overflow-hidden">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col justify-between overflow-hidden">
           {/* Thread Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold grid place-items-center text-sm">
                 {activeThread.recruiterName[0]}
@@ -125,7 +125,7 @@ export default function MessagesPage() {
                 <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                   {activeThread.recruiterName}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                   {activeThread.role} • {activeThread.organization}
                 </p>
               </div>
@@ -133,7 +133,7 @@ export default function MessagesPage() {
           </div>
 
           {/* Messages Stream */}
-          <div className="p-6 space-y-4 overflow-y-auto flex-1 bg-slate-50/30 dark:bg-slate-950/30">
+          <div className="p-6 space-y-4 overflow-y-auto flex-1 bg-slate-50/50 dark:bg-slate-950/40">
             {activeThread.messages.map((m) => (
               <div
                 key={m.id}
@@ -144,8 +144,8 @@ export default function MessagesPage() {
                 <div
                   className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed ${
                     m.sender === "candidate"
-                      ? "bg-indigo-600 text-white rounded-br-none"
-                      : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-none shadow-xs"
+                      ? "bg-indigo-600 text-white rounded-br-none shadow-xs"
+                      : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-bl-none shadow-xs font-medium"
                   }`}
                 >
                   {m.text}
@@ -160,13 +160,13 @@ export default function MessagesPage() {
           {/* Chat Input */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
             <input
-              className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none focus:border-indigo-500"
+              className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none focus:border-indigo-500"
               placeholder="Type your response to the recruiter..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
             />
-            <button onClick={handleSendMessage} className="h-btn px-4">
+            <button onClick={handleSendMessage} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all">
               <Send size={15} /> Send
             </button>
           </div>

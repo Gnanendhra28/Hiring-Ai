@@ -98,12 +98,12 @@ export default function CandidateApplicationsPage() {
           <p className="page-subtitle">Track your recruitment pipeline stages and match scores across all submitted positions.</p>
         </div>
 
-        <Link href="/jobs" className="h-btn">
+        <Link href="/jobs" className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all">
           + Explore Open Positions
         </Link>
       </section>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs - Crisp in both Bright and Dark UI */}
       <div className="flex items-center gap-2">
         {(["all", "active", "completed"] as const).map((tab) => (
           <button
@@ -112,7 +112,7 @@ export default function CandidateApplicationsPage() {
             className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${
               filter === tab
                 ? "bg-indigo-600 text-white shadow-xs"
-                : "h-chip bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
             }`}
           >
             {tab} Submissions ({applications.length})
@@ -123,14 +123,17 @@ export default function CandidateApplicationsPage() {
       {/* Applications List */}
       <div className="space-y-4">
         {filteredApps.map((app) => (
-          <article key={app.id} className="h-card p-6 transition-all hover:shadow-md">
+          <article
+            key={app.id}
+            className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs hover:shadow-md transition-all"
+          >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="h-chip bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold">
+                  <span className="px-3 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
                     {app.organizationName}
                   </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 font-medium">
                     <Clock size={13} /> Submitted on {app.submittedAt}
                   </span>
                 </div>
@@ -139,15 +142,15 @@ export default function CandidateApplicationsPage() {
                   {app.jobTitle}
                 </h3>
 
-                <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 font-medium">
                   <MapPin size={13} /> {app.location}
                 </p>
 
                 <div className="flex items-center gap-2 text-xs pt-1">
-                  <span className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-900 flex items-center gap-1">
+                  <span className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-900 flex items-center gap-1">
                     <CheckCircle2 size={13} /> {app.status}
                   </span>
-                  <span className="text-slate-500 dark:text-slate-400 font-medium">
+                  <span className="text-slate-600 dark:text-slate-400 font-semibold">
                     {app.stage}
                   </span>
                 </div>
@@ -166,7 +169,7 @@ export default function CandidateApplicationsPage() {
 
                 <Link
                   href={`/jobs/${app.id}`}
-                  className="h-btn h-btn-secondary text-xs"
+                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition-all flex items-center gap-1"
                 >
                   View Details <ArrowUpRight size={14} />
                 </Link>
