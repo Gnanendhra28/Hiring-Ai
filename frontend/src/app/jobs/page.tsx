@@ -758,10 +758,10 @@ export default function JobsPage() {
                               href={`/jobs/${job.id}`}
                               className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition-all"
                             >
-                              View job
+                              View
                             </Link>
                             <Link
-                              href={`/jobs/${job.id}`}
+                              href={`/career?jobId=${job.id}`}
                               className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all"
                             >
                               <Sparkles size={14} /> Apply with AI
