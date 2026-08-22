@@ -109,62 +109,32 @@ export default function JobsPage() {
     async function loadJobs() {
       try {
         const res = await apiFetch("/api/v1/jobs");
-        let apiItems: any[] = [];
         if (res.ok) {
           const data = await res.json();
-          apiItems = data.items || [];
+          const apiItems = data.items || [];
+
+          const formattedRealJobs = apiItems.map((j: any) => ({
+            id: j.slug || j.id,
+            title: j.title,
+            company: j.department || "Enterprise Requisition",
+            location: j.location || "Remote",
+            employment_type: j.employment_type || "FULL_TIME",
+            work_mode: j.location?.toLowerCase().includes("remote")
+              ? "Remote"
+              : j.location?.toLowerCase().includes("hybrid")
+              ? "Hybrid"
+              : "On-site",
+            experience: "3–5 Years (Mid Level)",
+            status: j.status,
+            match: Math.floor(88 + Math.random() * 8),
+            posted: "Recently",
+            salary: "Competitive Package",
+            skills: ["Python", "FastAPI", "AI/ML", "PostgreSQL", "Generative AI", "RAG"],
+            description: j.description,
+          }));
+
+          setJobs(formattedRealJobs);
         }
-
-        const formattedApiJobs = apiItems.map((j: any) => ({
-          id: j.slug || j.id,
-          title: j.title,
-          company: j.department || "Enterprise Requisition",
-          location: j.location || "Remote",
-          employment_type: j.employment_type || "FULL_TIME",
-          work_mode: j.location?.toLowerCase().includes("remote")
-            ? "Remote"
-            : j.location?.toLowerCase().includes("hybrid")
-            ? "Hybrid"
-            : "On-site",
-          experience: "3–5 Years (Mid Level)",
-          status: j.status,
-          match: Math.floor(88 + Math.random() * 8),
-          posted: "Recently",
-          salary: "Competitive Package",
-          skills: ["Python", "FastAPI", "AI/ML", "PostgreSQL", "Generative AI", "RAG"],
-          description: j.description,
-        }));
-
-        // Synthetic positions to demonstrate 15-per-page pagination
-        const extraJobs = [
-          { id: "generative-ai-engineer", title: "Generative AI Engineer", company: "PG - Artificial Intelligence", location: "Bengaluru, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 94, posted: "2d ago", salary: "₹18L – ₹26L", skills: ["Python", "Generative AI", "FastAPI", "RAG"], gap: "Kubernetes" },
-          { id: "backend-engineer-python", title: "Backend Engineer – Python", company: "UG/PG - Computer Science", location: "Remote · India", work_mode: "Remote", experience: "1–3 Years (Junior)", match: 91, posted: "3d ago", salary: "₹20L – ₹30L", skills: ["LLMs", "Python", "Docker", "PostgreSQL"], gap: "AWS" },
-          { id: "machine-learning-engineer", title: "Machine Learning Engineer", company: "Artificial Intelligence", location: "Pune, India", work_mode: "On-site", experience: "5–8 Years (Senior)", match: 87, posted: "Today", salary: "₹22L – ₹32L", skills: ["Python", "MLflow", "Docker", "SQL"], gap: "Terraform" },
-          { id: "ai-ml-engineer-rag", title: "AI/ML Engineer – RAG Systems", company: "Enterprise Tech", location: "Bengaluru, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 95, posted: "Just now", salary: "₹24L – ₹34L", skills: ["Python", "RAG", "PostgreSQL", "FastAPI"], gap: "Docker" },
-          { id: "lead-ai-architect", title: "Lead AI Systems Architect", company: "Aster Labs", location: "Hyderabad, India", work_mode: "On-site", experience: "8–12 Years (Lead/Staff)", match: 93, posted: "1d ago", salary: "₹35L – ₹50L", skills: ["PyTorch", "Python", "Generative AI", "SQL"], gap: "Kubernetes" },
-          { id: "senior-mlops-engineer", title: "Senior MLOps & Infrastructure Engineer", company: "Northstar Health", location: "Remote · India", work_mode: "Remote", experience: "5–8 Years (Senior)", match: 90, posted: "2d ago", salary: "₹28L – ₹40L", skills: ["Docker", "Python", "SQL", "MLflow"], gap: "AWS" },
-          { id: "nlp-research-scientist", title: "NLP & LLM Research Scientist", company: "AI Horizons", location: "Bengaluru, India", work_mode: "Hybrid", experience: "5–8 Years (Senior)", match: 92, posted: "3d ago", salary: "₹30L – ₹45L", skills: ["LLMs", "PyTorch", "Python", "Generative AI"], gap: "FastAPI" },
-          { id: "staff-fullstack-ai-dev", title: "Staff Fullstack AI Developer", company: "Core Systems", location: "Mumbai, India", work_mode: "On-site", experience: "8–12 Years (Lead/Staff)", match: 89, posted: "4d ago", salary: "₹32L – ₹48L", skills: ["React", "TypeScript", "Python", "FastAPI"], gap: "RAG" },
-          { id: "computer-vision-engineer", title: "Computer Vision Engineer", company: "VisionX Labs", location: "Chennai, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 88, posted: "5d ago", salary: "₹20L – ₹30L", skills: ["PyTorch", "Python", "Docker", "Machine Learning"], gap: "SQL" },
-          { id: "applied-ai-specialist", title: "Applied AI Integration Specialist", company: "Enterprise AI", location: "Delhi NCR", work_mode: "On-site", experience: "1–3 Years (Junior)", match: 91, posted: "Just now", salary: "₹16L – ₹24L", skills: ["Python", "FastAPI", "Generative AI", "SQL"], gap: "RAG" },
-          { id: "principal-data-engineer", title: "Principal Data & AI Pipeline Engineer", company: "Scale Cloud", location: "Remote · India", work_mode: "Remote", experience: "12–15+ Years (Executive/Principal)", match: 94, posted: "1d ago", salary: "₹45L – ₹65L", skills: ["PostgreSQL", "SQL", "Python", "Docker"], gap: "FastAPI" },
-          { id: "generative-media-dev", title: "Generative Media Developer", company: "Creative Tech", location: "Bengaluru, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 86, posted: "2d ago", salary: "₹22L – ₹32L", skills: ["Python", "Generative AI", "PyTorch", "React"], gap: "Docker" },
-          { id: "ai-safety-evaluator", title: "AI Safety & Alignment Specialist", company: "Trust AI Labs", location: "Pune, India", work_mode: "On-site", experience: "3–5 Years (Mid Level)", match: 89, posted: "3d ago", salary: "₹25L – ₹36L", skills: ["LLMs", "Python", "Machine Learning", "FastAPI"], gap: "SQL" },
-          { id: "quantum-ml-researcher", title: "Quantum ML Researcher", company: "Future Quantum", location: "Hyderabad, India", work_mode: "Hybrid", experience: "5–8 Years (Senior)", match: 87, posted: "4d ago", salary: "₹38L – ₹55L", skills: ["Python", "PyTorch", "Machine Learning", "Docker"], gap: "PostgreSQL" },
-          { id: "cloud-native-ai-dev", title: "Cloud Native AI Microservices Engineer", company: "Cloud Matrix", location: "Remote · India", work_mode: "Remote", experience: "3–5 Years (Mid Level)", match: 93, posted: "5d ago", salary: "₹24L – ₹35L", skills: ["FastAPI", "Python", "Docker", "PostgreSQL"], gap: "PyTorch" },
-          { id: "vector-db-architect", title: "Vector DB & Search Architect", company: "PGVector Corp", location: "Bengaluru, India", work_mode: "Hybrid", experience: "8–12 Years (Lead/Staff)", match: 95, posted: "6d ago", salary: "₹36L – ₹52L", skills: ["RAG", "PostgreSQL", "Python", "FastAPI"], gap: "React" },
-          { id: "embedded-edge-ai-dev", title: "Embedded Edge AI Engineer", company: "IoT Systems", location: "Chennai, India", work_mode: "On-site", experience: "3–5 Years (Mid Level)", match: 85, posted: "1 week ago", salary: "₹18L – ₹28L", skills: ["Python", "Machine Learning", "Docker", "SQL"], gap: "FastAPI" },
-          { id: "agentic-ai-workflow-dev", title: "Agentic AI Workflow Engineer", company: "Autonomous AI", location: "Bengaluru, India", work_mode: "Hybrid", experience: "5–8 Years (Senior)", match: 96, posted: "Just now", salary: "₹32L – ₹46L", skills: ["Python", "Generative AI", "RAG", "LLMs"], gap: "React" },
-        ];
-
-        // Combine API jobs first, then extra jobs without duplicates
-        const existingSlugs = new Set(formattedApiJobs.map((j) => j.id));
-        const combined = [
-          ...formattedApiJobs,
-          ...extraJobs.filter((j) => !existingSlugs.has(j.id)),
-        ];
-
-        setJobs(combined);
       } catch (err) {
         console.error("Error loading jobs:", err);
       } finally {
