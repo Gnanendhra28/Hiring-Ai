@@ -102,6 +102,36 @@ export default function PublicJobDetailPage() {
     }
   };
 
+  // Load initial saved status on mount
+  useEffect(() => {
+    const targetId = job?.id || slug;
+    if (!targetId) return;
+    const savedIdsStr = localStorage.getItem("hiring_ai_saved_job_ids") || "[]";
+    const savedIds: string[] = JSON.parse(savedIdsStr);
+    if (savedIds.includes(targetId)) {
+      setSaved(true);
+    }
+  }, [job, slug]);
+
+  const handleSaveJob = () => {
+    const targetId = job?.id || slug;
+    if (!targetId) return;
+    const savedIdsStr = localStorage.getItem("hiring_ai_saved_job_ids") || "[]";
+    const savedIds: string[] = JSON.parse(savedIdsStr);
+
+    if (saved) {
+      const updated = savedIds.filter((id) => id !== targetId);
+      localStorage.setItem("hiring_ai_saved_job_ids", JSON.stringify(updated));
+      setSaved(false);
+    } else {
+      if (!savedIds.includes(targetId)) {
+        savedIds.push(targetId);
+        localStorage.setItem("hiring_ai_saved_job_ids", JSON.stringify(savedIds));
+      }
+      setSaved(true);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 p-8 flex items-center justify-center font-sans">
@@ -264,7 +294,7 @@ export default function PublicJobDetailPage() {
 
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setSaved(!saved)}
+                onClick={handleSaveJob}
                 className={`px-5 py-2.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${
                   saved
                     ? "bg-indigo-950 border-indigo-700 text-indigo-300"

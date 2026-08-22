@@ -237,3 +237,29 @@ async def list_my_applications(user: User = Depends(get_current_user)):
         apps = list(result.scalars().all())
 
         return [ApplicationResponse.model_validate(a) for a in apps]
+
+@router.patch("/applications/{app_id}/close", response_model=ApplicationResponse)
+async def close_candidate_application(
+    app_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+):
+    """Allows candidate to withdraw / close an active job application."""
+    async with async_session_factory() as session:
+        await session.begin()
+        await set_tenant_context(session, user_id=user.id)
+
+        stmt = select(Application).where(
+            Application.id == app_id,
+            Application.candidate_id == user.id,
+        )
+        app = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not app:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found.")
+
+        app.status = ApplicationStatusEnum.WITHDRAWN
+        await session.commit()
+
+        await session.begin()
+        await set_tenant_context(session, user_id=user.id)
+        return (await session.execute(stmt)).scalar_one()
