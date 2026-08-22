@@ -108,6 +108,19 @@ export async function loginUser(email: string, password: string): Promise<{ acce
     const data = await res.json();
     setTokens(data.access_token, data.refresh_token);
     setOrgId("");
+
+    try {
+      const meRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        if (meData.memberships && meData.memberships.length > 0 && meData.memberships[0].organization_id) {
+          setOrgId(meData.memberships[0].organization_id);
+        }
+      }
+    } catch {}
+
     return data;
   } catch (error: any) {
     if (error.name === "TypeError" || error.message.includes("fetch")) {

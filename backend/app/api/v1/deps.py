@@ -8,7 +8,7 @@ from app.core.security import decode_token
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.identity.models import User
-from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership, RoleEnum
+from app.domains.organizations.models import MembershipStatusEnum, Organization, OrganizationMembership, RoleEnum
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -128,8 +128,7 @@ async def get_security_context(
             OrganizationMembership.organization_id == requested_org_id,
             OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
         )
-        result = await session.execute(stmt)
-        membership = result.scalar_one_or_none()
+        membership = (await session.execute(stmt)).scalar_one_or_none()
 
         if not membership:
             raise HTTPException(
