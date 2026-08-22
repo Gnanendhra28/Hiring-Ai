@@ -56,8 +56,15 @@ export default function ApprovedJobsPage() {
         }
 
         if (liveJobs && liveJobs.length > 0) {
+          const approvedOnly = liveJobs.filter(
+            (j) =>
+              j.verification_status === "APPROVED" ||
+              j.verification_status === "VERIFIED" ||
+              j.status === "PUBLISHED"
+          );
+
           // Sort recently posted jobs at top (descending by created_at)
-          const sortedJobs = [...liveJobs].sort((a, b) => {
+          const sortedJobs = [...approvedOnly].sort((a, b) => {
             const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
             const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
             return timeB - timeA;

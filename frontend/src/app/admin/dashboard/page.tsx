@@ -61,8 +61,18 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadAdminDashboardData() {
       try {
-        // 1. Fetch live platform jobs across all organizations
-        const liveJobs = await fetchAllJobsAdmin();
+        // 1. Fetch live platform approved jobs across all organizations
+        let liveJobs = await fetchAllJobsAdmin("APPROVED");
+        if (!liveJobs || liveJobs.length === 0) {
+          const allJobs = await fetchAllJobsAdmin();
+          liveJobs = allJobs.filter(
+            (j) =>
+              j.verification_status === "APPROVED" ||
+              j.verification_status === "VERIFIED" ||
+              j.status === "PUBLISHED"
+          );
+        }
+
         if (liveJobs && liveJobs.length > 0) {
           const sortedJobs = [...liveJobs].sort((a, b) => {
             const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -173,7 +183,7 @@ export default function AdminDashboardPage() {
   };
 
   const userName = user?.full_name || "Gnanendhra Joy";
-  const approvedJobsCount = jobs.filter((j) => j.status === "ACTIVE").length;
+  const approvedJobsCount = jobs.length;
   const approvedEmployeesCount = approvedEmployers.length > 0 ? approvedEmployers.length : 1;
 
   return (
