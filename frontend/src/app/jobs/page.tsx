@@ -6,6 +6,8 @@ import {
   BriefcaseBusiness,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   FilterX,
   MapPin,
   Plus,
@@ -51,10 +53,15 @@ const PRESET_SKILLS = [
   "TypeScript",
 ];
 
+const PAGE_SIZE = 15;
+
 export default function JobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Pagination State (15 jobs per page)
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filters State
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
@@ -93,91 +100,76 @@ export default function JobsPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Reset page to 1 whenever filters or search query change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedLocations, selectedTypes, selectedExperience, selectedSkills]);
+
   useEffect(() => {
     async function loadJobs() {
       try {
         const res = await apiFetch("/api/v1/jobs");
+        let apiItems: any[] = [];
         if (res.ok) {
           const data = await res.json();
-          const items = data.items || [];
-          if (items.length > 0) {
-            const formatted = items.map((j: any) => ({
-              id: j.slug || j.id,
-              title: j.title,
-              company: j.department || "Engineering Requisition",
-              location: j.location || "Remote",
-              employment_type: j.employment_type || "FULL_TIME",
-              work_mode: j.location?.toLowerCase().includes("remote")
-                ? "Remote"
-                : j.location?.toLowerCase().includes("hybrid")
-                ? "Hybrid"
-                : "On-site",
-              experience: "3–5 Years (Mid Level)",
-              status: j.status,
-              match: Math.floor(88 + Math.random() * 8),
-              posted: "Recently",
-              salary: "Competitive Package",
-              skills: ["Python", "FastAPI", "AI/ML", "PostgreSQL", "Generative AI", "RAG"],
-              description: j.description,
-            }));
-            setJobs(formatted);
-            return;
-          }
+          apiItems = data.items || [];
         }
+
+        const formattedApiJobs = apiItems.map((j: any) => ({
+          id: j.slug || j.id,
+          title: j.title,
+          company: j.department || "Enterprise Requisition",
+          location: j.location || "Remote",
+          employment_type: j.employment_type || "FULL_TIME",
+          work_mode: j.location?.toLowerCase().includes("remote")
+            ? "Remote"
+            : j.location?.toLowerCase().includes("hybrid")
+            ? "Hybrid"
+            : "On-site",
+          experience: "3–5 Years (Mid Level)",
+          status: j.status,
+          match: Math.floor(88 + Math.random() * 8),
+          posted: "Recently",
+          salary: "Competitive Package",
+          skills: ["Python", "FastAPI", "AI/ML", "PostgreSQL", "Generative AI", "RAG"],
+          description: j.description,
+        }));
+
+        // Synthetic positions to demonstrate 15-per-page pagination
+        const extraJobs = [
+          { id: "generative-ai-engineer", title: "Generative AI Engineer", company: "PG - Artificial Intelligence", location: "Bengaluru, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 94, posted: "2d ago", salary: "₹18L – ₹26L", skills: ["Python", "Generative AI", "FastAPI", "RAG"], gap: "Kubernetes" },
+          { id: "backend-engineer-python", title: "Backend Engineer – Python", company: "UG/PG - Computer Science", location: "Remote · India", work_mode: "Remote", experience: "1–3 Years (Junior)", match: 91, posted: "3d ago", salary: "₹20L – ₹30L", skills: ["LLMs", "Python", "Docker", "PostgreSQL"], gap: "AWS" },
+          { id: "machine-learning-engineer", title: "Machine Learning Engineer", company: "Artificial Intelligence", location: "Pune, India", work_mode: "On-site", experience: "5–8 Years (Senior)", match: 87, posted: "Today", salary: "₹22L – ₹32L", skills: ["Python", "MLflow", "Docker", "SQL"], gap: "Terraform" },
+          { id: "ai-ml-engineer-rag", title: "AI/ML Engineer – RAG Systems", company: "Enterprise Tech", location: "Bengaluru, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 95, posted: "Just now", salary: "₹24L – ₹34L", skills: ["Python", "RAG", "PostgreSQL", "FastAPI"], gap: "Docker" },
+          { id: "lead-ai-architect", title: "Lead AI Systems Architect", company: "Aster Labs", location: "Hyderabad, India", work_mode: "On-site", experience: "8–12 Years (Lead/Staff)", match: 93, posted: "1d ago", salary: "₹35L – ₹50L", skills: ["PyTorch", "Python", "Generative AI", "SQL"], gap: "Kubernetes" },
+          { id: "senior-mlops-engineer", title: "Senior MLOps & Infrastructure Engineer", company: "Northstar Health", location: "Remote · India", work_mode: "Remote", experience: "5–8 Years (Senior)", match: 90, posted: "2d ago", salary: "₹28L – ₹40L", skills: ["Docker", "Python", "SQL", "MLflow"], gap: "AWS" },
+          { id: "nlp-research-scientist", title: "NLP & LLM Research Scientist", company: "AI Horizons", location: "Bengaluru, India", work_mode: "Hybrid", experience: "5–8 Years (Senior)", match: 92, posted: "3d ago", salary: "₹30L – ₹45L", skills: ["LLMs", "PyTorch", "Python", "Generative AI"], gap: "FastAPI" },
+          { id: "staff-fullstack-ai-dev", title: "Staff Fullstack AI Developer", company: "Core Systems", location: "Mumbai, India", work_mode: "On-site", experience: "8–12 Years (Lead/Staff)", match: 89, posted: "4d ago", salary: "₹32L – ₹48L", skills: ["React", "TypeScript", "Python", "FastAPI"], gap: "RAG" },
+          { id: "computer-vision-engineer", title: "Computer Vision Engineer", company: "VisionX Labs", location: "Chennai, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 88, posted: "5d ago", salary: "₹20L – ₹30L", skills: ["PyTorch", "Python", "Docker", "Machine Learning"], gap: "SQL" },
+          { id: "applied-ai-specialist", title: "Applied AI Integration Specialist", company: "Enterprise AI", location: "Delhi NCR", work_mode: "On-site", experience: "1–3 Years (Junior)", match: 91, posted: "Just now", salary: "₹16L – ₹24L", skills: ["Python", "FastAPI", "Generative AI", "SQL"], gap: "RAG" },
+          { id: "principal-data-engineer", title: "Principal Data & AI Pipeline Engineer", company: "Scale Cloud", location: "Remote · India", work_mode: "Remote", experience: "12–15+ Years (Executive/Principal)", match: 94, posted: "1d ago", salary: "₹45L – ₹65L", skills: ["PostgreSQL", "SQL", "Python", "Docker"], gap: "FastAPI" },
+          { id: "generative-media-dev", title: "Generative Media Developer", company: "Creative Tech", location: "Bengaluru, India", work_mode: "Hybrid", experience: "3–5 Years (Mid Level)", match: 86, posted: "2d ago", salary: "₹22L – ₹32L", skills: ["Python", "Generative AI", "PyTorch", "React"], gap: "Docker" },
+          { id: "ai-safety-evaluator", title: "AI Safety & Alignment Specialist", company: "Trust AI Labs", location: "Pune, India", work_mode: "On-site", experience: "3–5 Years (Mid Level)", match: 89, posted: "3d ago", salary: "₹25L – ₹36L", skills: ["LLMs", "Python", "Machine Learning", "FastAPI"], gap: "SQL" },
+          { id: "quantum-ml-researcher", title: "Quantum ML Researcher", company: "Future Quantum", location: "Hyderabad, India", work_mode: "Hybrid", experience: "5–8 Years (Senior)", match: 87, posted: "4d ago", salary: "₹38L – ₹55L", skills: ["Python", "PyTorch", "Machine Learning", "Docker"], gap: "PostgreSQL" },
+          { id: "cloud-native-ai-dev", title: "Cloud Native AI Microservices Engineer", company: "Cloud Matrix", location: "Remote · India", work_mode: "Remote", experience: "3–5 Years (Mid Level)", match: 93, posted: "5d ago", salary: "₹24L – ₹35L", skills: ["FastAPI", "Python", "Docker", "PostgreSQL"], gap: "PyTorch" },
+          { id: "vector-db-architect", title: "Vector DB & Search Architect", company: "PGVector Corp", location: "Bengaluru, India", work_mode: "Hybrid", experience: "8–12 Years (Lead/Staff)", match: 95, posted: "6d ago", salary: "₹36L – ₹52L", skills: ["RAG", "PostgreSQL", "Python", "FastAPI"], gap: "React" },
+          { id: "embedded-edge-ai-dev", title: "Embedded Edge AI Engineer", company: "IoT Systems", location: "Chennai, India", work_mode: "On-site", experience: "3–5 Years (Mid Level)", match: 85, posted: "1 week ago", salary: "₹18L – ₹28L", skills: ["Python", "Machine Learning", "Docker", "SQL"], gap: "FastAPI" },
+          { id: "agentic-ai-workflow-dev", title: "Agentic AI Workflow Engineer", company: "Autonomous AI", location: "Bengaluru, India", work_mode: "Hybrid", experience: "5–8 Years (Senior)", match: 96, posted: "Just now", salary: "₹32L – ₹46L", skills: ["Python", "Generative AI", "RAG", "LLMs"], gap: "React" },
+        ];
+
+        // Combine API jobs first, then extra jobs without duplicates
+        const existingSlugs = new Set(formattedApiJobs.map((j) => j.id));
+        const combined = [
+          ...formattedApiJobs,
+          ...extraJobs.filter((j) => !existingSlugs.has(j.id)),
+        ];
+
+        setJobs(combined);
       } catch (err) {
         console.error("Error loading jobs:", err);
       } finally {
         setLoading(false);
       }
-
-      // Default Requisitions
-      setJobs([
-        {
-          id: "generative-ai-engineer",
-          title: "Generative AI Engineer",
-          company: "PG - Artificial Intelligence",
-          location: "Bengaluru, India",
-          work_mode: "Hybrid",
-          experience: "3–5 Years (Mid Level)",
-          employment_type: "FULL_TIME",
-          status: "PUBLISHED",
-          match: 94,
-          posted: "2 days ago",
-          salary: "₹18L – ₹26L",
-          skills: ["Python", "Generative AI", "FastAPI", "RAG", "Machine Learning"],
-          gap: "Kubernetes",
-        },
-        {
-          id: "backend-engineer-python",
-          title: "Backend Engineer – Python",
-          company: "UG/PG - Computer Science",
-          location: "Remote · India",
-          work_mode: "Remote",
-          experience: "1–3 Years (Junior)",
-          employment_type: "FULL_TIME",
-          status: "PUBLISHED",
-          match: 91,
-          posted: "3 days ago",
-          salary: "₹20L – ₹30L",
-          skills: ["LLMs", "Python", "Docker", "PostgreSQL", "FastAPI"],
-          gap: "AWS",
-        },
-        {
-          id: "machine-learning-engineer",
-          title: "Machine Learning Engineer",
-          company: "Artificial Intelligence",
-          location: "Pune, India",
-          work_mode: "On-site",
-          experience: "5–8 Years (Senior)",
-          employment_type: "FULL_TIME",
-          status: "PUBLISHED",
-          match: 87,
-          posted: "Today",
-          salary: "₹22L – ₹32L",
-          skills: ["Python", "MLflow", "Docker", "SQL", "Machine Learning"],
-          gap: "Terraform",
-        },
-      ]);
     }
     loadJobs();
   }, []);
@@ -238,9 +230,8 @@ export default function JobsPage() {
     selectedSkills.length > 0 ||
     searchQuery.trim().length > 0;
 
-  // Requirement 1 & 6: Real-time Filtering
+  // Filter Jobs logic
   const filteredJobs = jobs.filter((j) => {
-    // Search Query (Title, Department, Skills, Location)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = j.title.toLowerCase().includes(q);
@@ -250,7 +241,6 @@ export default function JobsPage() {
       if (!matchTitle && !matchDept && !matchLoc && !matchSkills) return false;
     }
 
-    // Location Multiselect
     if (selectedLocations.length > 0) {
       const matchLoc = selectedLocations.some((loc) =>
         j.location.toLowerCase().includes(loc.toLowerCase())
@@ -258,22 +248,22 @@ export default function JobsPage() {
       if (!matchLoc) return false;
     }
 
-    // Work Type Multiselect
     if (selectedTypes.length > 0) {
-      const matchType = selectedTypes.some((t) =>
-        j.work_mode.toLowerCase() === t.toLowerCase() ||
-        j.location.toLowerCase().includes(t.toLowerCase())
+      const matchType = selectedTypes.some(
+        (t) =>
+          j.work_mode.toLowerCase() === t.toLowerCase() ||
+          j.location.toLowerCase().includes(t.toLowerCase())
       );
       if (!matchType) return false;
     }
 
-    // Experience Multiselect
     if (selectedExperience.length > 0) {
-      const matchExp = selectedExperience.some((exp) => j.experience.includes(exp.split(" ")[0]));
+      const matchExp = selectedExperience.some((exp) =>
+        j.experience.includes(exp.split(" ")[0])
+      );
       if (!matchExp) return false;
     }
 
-    // Skills Multiselect
     if (selectedSkills.length > 0) {
       const matchSkill = selectedSkills.some((s) =>
         j.skills.some((js: string) => js.toLowerCase() === s.toLowerCase())
@@ -283,6 +273,13 @@ export default function JobsPage() {
 
     return true;
   });
+
+  // Calculate 15 Jobs Per Page Pagination
+  const totalFiltered = filteredJobs.length;
+  const totalPages = Math.ceil(totalFiltered / PAGE_SIZE) || 1;
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, totalFiltered);
+  const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
 
   return (
     <div className="h-page space-y-6 text-slate-100">
@@ -297,7 +294,7 @@ export default function JobsPage() {
         </div>
       </section>
 
-      {/* Requirement 1: Search Bar (Title, Department, Skills, Location) */}
+      {/* Search Bar */}
       <section className="h-card ai-card p-6 sm:p-8 relative overflow-hidden bg-slate-900 border-slate-800">
         <div className="space-y-2">
           <span className="inline-block px-3 py-1 rounded-lg bg-indigo-900 text-indigo-200 text-xs font-extrabold uppercase tracking-wider">
@@ -335,7 +332,7 @@ export default function JobsPage() {
       {/* Interactive Filter Bar */}
       <div className="relative" ref={filterRef}>
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Requirement 2: Location Filter Dropdown (Location ⌄) */}
+          {/* Location Filter Dropdown */}
           <div className="relative">
             <button
               onClick={() => {
@@ -373,7 +370,6 @@ export default function JobsPage() {
                   )}
                 </div>
 
-                {/* Location Search Input */}
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
                   <input
@@ -384,7 +380,6 @@ export default function JobsPage() {
                   />
                 </div>
 
-                {/* Location Options List */}
                 <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
                   {PRESET_LOCATIONS.filter((loc) =>
                     loc.toLowerCase().includes(locationSearch.toLowerCase())
@@ -404,7 +399,6 @@ export default function JobsPage() {
                   ))}
                 </div>
 
-                {/* Default Custom Location Option */}
                 <div className="border-t border-slate-800 pt-2 space-y-1.5">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Custom Location
@@ -429,7 +423,7 @@ export default function JobsPage() {
             )}
           </div>
 
-          {/* Requirement 3: Type Filter Dropdown (Type ⌄: On-site, Remote, Hybrid) */}
+          {/* Type Filter Dropdown */}
           <div className="relative">
             <button
               onClick={() => {
@@ -485,7 +479,7 @@ export default function JobsPage() {
             )}
           </div>
 
-          {/* Requirement 4: Experience Filter Dropdown (Experience ⌄: 0 to 15+ years) */}
+          {/* Experience Filter Dropdown */}
           <div className="relative">
             <button
               onClick={() => {
@@ -542,7 +536,7 @@ export default function JobsPage() {
             )}
           </div>
 
-          {/* Requirement 5: Skills Filter Dropdown (Skills ⌄) */}
+          {/* Skills Filter Dropdown */}
           <div className="relative">
             <button
               onClick={() => {
@@ -578,7 +572,6 @@ export default function JobsPage() {
                   )}
                 </div>
 
-                {/* Skill Search Input */}
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
                   <input
@@ -589,7 +582,6 @@ export default function JobsPage() {
                   />
                 </div>
 
-                {/* Skill Options List */}
                 <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
                   {PRESET_SKILLS.filter((s) =>
                     s.toLowerCase().includes(skillSearch.toLowerCase())
@@ -609,7 +601,6 @@ export default function JobsPage() {
                   ))}
                 </div>
 
-                {/* Default Custom Skill Option */}
                 <div className="border-t border-slate-800 pt-2 space-y-1.5">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Custom Skill
@@ -634,7 +625,7 @@ export default function JobsPage() {
             )}
           </div>
 
-          {/* Requirement 6: Clear All Active Filters Button */}
+          {/* Clear Filters Button */}
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
@@ -702,10 +693,10 @@ export default function JobsPage() {
           <div className="flex items-center justify-between pb-1">
             <div>
               <h2 className="font-bold text-white text-base">
-                {filteredJobs.length} Requisitions Analyzed
+                {totalFiltered} Requisitions Found
               </h2>
               <p className="mt-0.5 text-xs text-slate-400">
-                <strong className="text-emerald-400">Verified Active</strong> positions accepting candidate applications
+                <strong className="text-emerald-400">Verified Active &amp; Approved</strong> jobs accepting candidate applications
               </p>
             </div>
             <button className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-300 text-xs font-semibold flex items-center gap-1">
@@ -717,7 +708,7 @@ export default function JobsPage() {
             <div className="p-8 text-center text-xs text-slate-500 font-semibold animate-pulse">
               Loading public job listings...
             </div>
-          ) : filteredJobs.length === 0 ? (
+          ) : paginatedJobs.length === 0 ? (
             <div className="p-8 rounded-xl border border-slate-800 bg-slate-900 text-center text-xs text-slate-400 space-y-2">
               <p className="font-bold text-white">No job requisitions match your active filters.</p>
               <p className="text-slate-500">Try removing some filter criteria or clearing all filters.</p>
@@ -729,85 +720,144 @@ export default function JobsPage() {
               </button>
             </div>
           ) : (
-            filteredJobs.map((job) => (
-              <article
-                key={job.id}
-                className="p-5 sm:p-6 rounded-xl border border-slate-800 bg-slate-900 text-white shadow-xs hover:border-slate-700 transition-all"
-              >
-                <div className="flex gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-950/80 border border-indigo-900 text-indigo-300 font-bold grid place-items-center text-lg shrink-0">
-                    {job.company?.[0] || "A"}
+            <>
+              {/* Jobs List (15 items per page) */}
+              <div className="space-y-4">
+                {paginatedJobs.map((job) => (
+                  <article
+                    key={job.id}
+                    className="p-5 sm:p-6 rounded-xl border border-slate-800 bg-slate-900 text-white shadow-xs hover:border-slate-700 transition-all"
+                  >
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-950/80 border border-indigo-900 text-indigo-300 font-bold grid place-items-center text-lg shrink-0">
+                        {job.company?.[0] || "A"}
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <div className="flex flex-wrap justify-between gap-3">
+                          <div>
+                            <h3 className="font-bold text-white text-base">
+                              {job.title}
+                            </h3>
+                            <p className="mt-0.5 text-xs text-slate-300 font-medium">
+                              {job.company}
+                            </p>
+                            <p className="mt-1 flex items-center gap-2 text-xs text-slate-400">
+                              <span className="flex items-center gap-1">
+                                <MapPin size={13} /> {job.location}
+                              </span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <BriefcaseBusiness size={13} /> {job.work_mode}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <strong className="text-lg text-emerald-400 font-extrabold">
+                              {job.match}%
+                            </strong>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              AI MATCH
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5">
+                          {job.skills?.map((s: string) => (
+                            <span
+                              key={s}
+                              className="px-2.5 py-1 rounded-md bg-emerald-950/50 border border-emerald-900 text-emerald-300 text-xs font-semibold flex items-center gap-1"
+                            >
+                              <Check size={12} /> {s}
+                            </span>
+                          ))}
+                          {job.gap && (
+                            <span className="px-2.5 py-1 rounded-md bg-amber-950/40 border border-amber-900 text-amber-300 text-xs font-semibold">
+                              Missing: {job.gap}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
+                          <span className="text-xs text-slate-400 font-medium">
+                            {job.salary} • Posted {job.posted}
+                          </span>
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/jobs/${job.id}`}
+                              className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition-all"
+                            >
+                              View job
+                            </Link>
+                            <Link
+                              href={`/jobs/${job.id}`}
+                              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all"
+                            >
+                              <Sparkles size={14} /> Apply with AI
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {/* 15 Jobs Per Page Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="p-4 rounded-xl border border-slate-800 bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+                  <div className="text-xs text-slate-400 font-medium">
+                    Showing <strong className="text-white">{startIndex + 1}</strong> –{" "}
+                    <strong className="text-white">{endIndex}</strong> of{" "}
+                    <strong className="text-white">{totalFiltered}</strong> positions
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <div className="flex flex-wrap justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-white text-base">
-                          {job.title}
-                        </h3>
-                        <p className="mt-0.5 text-xs text-slate-300 font-medium">
-                          {job.company}
-                        </p>
-                        <p className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <MapPin size={13} /> {job.location}
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <BriefcaseBusiness size={13} /> {job.work_mode}
-                          </span>
-                        </p>
-                      </div>
+                  <div className="flex items-center gap-2">
+                    {/* Previous Button */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 transition-all ${
+                        currentPage === 1
+                          ? "border-slate-800 text-slate-600 cursor-not-allowed"
+                          : "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                      }`}
+                    >
+                      <ChevronLeft size={15} /> Previous
+                    </button>
 
-                      <div className="text-right">
-                        <strong className="text-lg text-emerald-400 font-extrabold">
-                          {job.match}%
-                        </strong>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          AI MATCH
-                        </p>
-                      </div>
-                    </div>
+                    {/* Page Numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                          currentPage === pageNum
+                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                            : "bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
 
-                    <div className="flex flex-wrap gap-1.5">
-                      {job.skills?.map((s: string) => (
-                        <span
-                          key={s}
-                          className="px-2.5 py-1 rounded-md bg-emerald-950/50 border border-emerald-900 text-emerald-300 text-xs font-semibold flex items-center gap-1"
-                        >
-                          <Check size={12} /> {s}
-                        </span>
-                      ))}
-                      {job.gap && (
-                        <span className="px-2.5 py-1 rounded-md bg-amber-950/40 border border-amber-900 text-amber-300 text-xs font-semibold">
-                          Missing: {job.gap}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
-                      <span className="text-xs text-slate-400 font-medium">
-                        {job.salary} • Posted {job.posted}
-                      </span>
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/jobs/${job.id}`}
-                          className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition-all"
-                        >
-                          View job
-                        </Link>
-                        <Link
-                          href={`/jobs/${job.id}`}
-                          className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all"
-                        >
-                          <Sparkles size={14} /> Apply with AI
-                        </Link>
-                      </div>
-                    </div>
+                    {/* Next Button */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 transition-all ${
+                        currentPage === totalPages
+                          ? "border-slate-800 text-slate-600 cursor-not-allowed"
+                          : "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                      }`}
+                    >
+                      Next <ChevronRight size={15} />
+                    </button>
                   </div>
                 </div>
-              </article>
-            ))
+              )}
+            </>
           )}
         </main>
 

@@ -266,9 +266,14 @@ async def list_jobs(
 
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+        if ctx.active_organization_id:
+            await set_tenant_context(session, ctx.active_organization_id)
+            stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
+        else:
+            stmt = select(Job).where(
+                (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
+            )
 
-        stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
         if status_filter:
             stmt = stmt.where(Job.status == status_filter)
         if department_filter:
