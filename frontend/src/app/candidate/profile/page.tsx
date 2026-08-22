@@ -666,7 +666,7 @@ export default function CandidateProfilePage() {
                     }}
                     className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
                   >
-                    + Add
+                    + Add Project
                   </button>
                 </div>
 
@@ -674,25 +674,62 @@ export default function CandidateProfilePage() {
                   <div className="space-y-3">
                     {profile.projects.map((proj: any, idx: number) => (
                       <div key={idx} className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-start">
-                        <div>
+                        <div className="space-y-1">
                           <h4 className="text-sm font-bold text-white">{proj.title}</h4>
                           {proj.link && (
-                            <a href={proj.link} target="_blank" rel="noreferrer" className="text-xs text-sky-400 underline mt-0.5 inline-block">
+                            <a href={proj.link} target="_blank" rel="noreferrer" className="text-xs text-sky-400 underline inline-block">
                               {proj.link}
                             </a>
                           )}
-                          <p className="text-xs text-slate-300 mt-2">{proj.description}</p>
+                          {proj.description && <p className="text-xs text-slate-300 leading-relaxed pt-1 whitespace-pre-wrap">{proj.description}</p>}
+                          {(proj.tech_stack || proj.skills_used || proj.skills) && (
+                            <div className="flex flex-wrap gap-1.5 pt-2">
+                              {(typeof (proj.tech_stack || proj.skills_used || proj.skills) === "string"
+                                ? (proj.tech_stack || proj.skills_used || proj.skills).split(",")
+                                : proj.tech_stack || proj.skills_used || proj.skills
+                              ).map((sk: string, sIdx: number) => {
+                                const clean = sk.trim();
+                                if (!clean) return null;
+                                return (
+                                  <span
+                                    key={sIdx}
+                                    className="px-2.5 py-0.5 rounded-lg bg-sky-950/60 border border-sky-800/80 text-sky-300 text-[10px] font-semibold"
+                                  >
+                                    ★ {clean}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                        <button
-                          onClick={() => {
-                            const updated = [...(profile.projects || [])];
-                            updated.splice(idx, 1);
-                            saveProfileData({ projects: updated }, "Project removed.");
-                          }}
-                          className="text-slate-500 hover:text-rose-400 text-xs"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center space-x-2 shrink-0 ml-4">
+                          <button
+                            onClick={() => {
+                              setEditingItem({
+                                ...proj,
+                                title: proj.title || "",
+                                link: proj.link || "",
+                                description: proj.description || "",
+                                tech_stack: proj.tech_stack || proj.skills_used || proj.skills || "",
+                              });
+                              setEditingIndex(idx);
+                              setActiveModal("project");
+                            }}
+                            className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
+                          >
+                            ✏ Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              const updated = [...(profile.projects || [])];
+                              updated.splice(idx, 1);
+                              saveProfileData({ projects: updated }, "Project removed.");
+                            }}
+                            className="text-slate-500 hover:text-rose-400 text-xs font-bold"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1272,11 +1309,13 @@ export default function CandidateProfilePage() {
         </div>
       )}
 
-      {/* Modal 7: Edit Project */}
+      {/* Modal 7: Add / Edit Project */}
       {activeModal === "project" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Add Project</h3>
+            <h3 className="text-lg font-bold text-white">
+              {editingIndex !== null ? "Edit Project" : "Add Project"}
+            </h3>
             <div className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-400 font-mono mb-1">Project Title</label>
@@ -1304,7 +1343,17 @@ export default function CandidateProfilePage() {
                   rows={3}
                   value={editingItem?.description || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                  placeholder="Describe your project, technologies used, and key outcomes..."
+                  placeholder="Describe your project, core features, and key outcomes..."
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Technologies &amp; Skills Used</label>
+                <input
+                  type="text"
+                  value={editingItem?.tech_stack || editingItem?.skills_used || editingItem?.skills || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, tech_stack: e.target.value })}
+                  placeholder="e.g. React, Next.js, Python, FastAPI, PostgreSQL, Docker"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -1318,10 +1367,18 @@ export default function CandidateProfilePage() {
               </button>
               <button
                 onClick={() => {
-                  const updated = [...(profile?.projects || []), editingItem];
-                  saveProfileData({ projects: updated }, "Project added.");
+                  const updated = [...(profile?.projects || [])];
+                  if (editingIndex !== null && editingIndex >= 0) {
+                    updated[editingIndex] = editingItem;
+                  } else {
+                    updated.push(editingItem);
+                  }
+                  saveProfileData(
+                    { projects: updated },
+                    editingIndex !== null ? "Project entry updated successfully." : "Project entry added successfully."
+                  );
                 }}
-                disabled={saving}
+                disabled={saving || !editingItem?.title}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Project"}
