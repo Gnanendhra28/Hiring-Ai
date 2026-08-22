@@ -358,7 +358,7 @@ export default function CandidateProfilePage() {
                 )}
               </div>
 
-              {/* SECTION 2: Experience (formerly Career Preferences) */}
+              {/* SECTION 2: Experience (Work / Past Experience Records) */}
               <div id="experience" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
@@ -367,48 +367,52 @@ export default function CandidateProfilePage() {
                   </h3>
                   <button
                     onClick={() => {
-                      setEditingItem(profile?.career_preferences || {});
+                      setEditingItem({ designation: "", company: "", start_date: "", end_date: "Present", description: "" });
+                      setEditingIndex(null);
                       setActiveModal("experience");
                     }}
                     className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
                   >
-                    Edit
+                    + Add Experience
                   </button>
                 </div>
 
-                {profile?.career_preferences && Object.keys(profile.career_preferences).length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-                      <span className="text-slate-500 font-mono block mb-1">PREFERRED ROLE / EXPERIENCE</span>
-                      <span className="text-white font-medium">
-                        {profile.career_preferences.job_type || "Software Engineering, AI Development"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-                      <span className="text-slate-500 font-mono block mb-1">PREFERRED LOCATIONS</span>
-                      <span className="text-white font-medium">
-                        {profile.career_preferences.locations || "Bengaluru, Hyderabad, Remote"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-                      <span className="text-slate-500 font-mono block mb-1">AVAILABILITY</span>
-                      <span className="text-white font-medium">
-                        {profile.career_preferences.availability || "Immediate / 15 Days"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-                      <span className="text-slate-500 font-mono block mb-1">WORK MODE</span>
-                      <span className="text-white font-medium">
-                        {profile.career_preferences.work_mode || "Hybrid / Remote"}
-                      </span>
-                    </div>
+                {profile?.experience && profile.experience.length > 0 ? (
+                  <div className="space-y-3">
+                    {profile.experience.map((exp: any, idx: number) => (
+                      <div key={idx} className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-start">
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-bold text-white">{exp.designation || exp.title}</h4>
+                          <p className="text-xs font-semibold text-sky-400">{exp.company}</p>
+                          <p className="text-[11px] font-mono text-slate-400">
+                            {exp.start_date} {exp.end_date ? `– ${exp.end_date}` : "– Present"}
+                          </p>
+                          {exp.description && (
+                            <p className="text-xs text-slate-300 leading-relaxed pt-1.5 whitespace-pre-wrap">
+                              {exp.description}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            const updated = [...(profile.experience || [])];
+                            updated.splice(idx, 1);
+                            saveProfileData({ experience: updated }, "Experience entry removed.");
+                          }}
+                          className="text-slate-500 hover:text-rose-400 text-xs font-bold shrink-0 ml-4"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-slate-500 text-xs italic py-2">
-                    No experience preferences added yet.{" "}
+                    No work experience added yet.{" "}
                     <button
                       onClick={() => {
-                        setEditingItem({});
+                        setEditingItem({ designation: "", company: "", start_date: "", end_date: "Present", description: "" });
+                        setEditingIndex(null);
                         setActiveModal("experience");
                       }}
                       className="text-sky-400 underline font-normal"
@@ -863,49 +867,61 @@ export default function CandidateProfilePage() {
         </div>
       )}
 
-      {/* Modal 2: Edit Experience (formerly Career Preferences) */}
+      {/* Modal 2: Add Work Experience */}
       {activeModal === "experience" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Edit Experience Preferences</h3>
+            <h3 className="text-lg font-bold text-white">Add Work Experience</h3>
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Preferred Role / Experience</label>
+                <label className="block text-slate-400 font-mono mb-1">Job Title / Designation</label>
                 <input
                   type="text"
-                  value={editingItem?.job_type || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, job_type: e.target.value })}
-                  placeholder="e.g. Software Engineering, AI Development"
+                  value={editingItem?.designation || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, designation: e.target.value })}
+                  placeholder="e.g. Senior Software Engineer / AI Developer"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Preferred Locations</label>
+                <label className="block text-slate-400 font-mono mb-1">Company Name</label>
                 <input
                   type="text"
-                  value={editingItem?.locations || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, locations: e.target.value })}
-                  placeholder="e.g. Bengaluru, Hyderabad, Remote"
+                  value={editingItem?.company || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, company: e.target.value })}
+                  placeholder="e.g. OneHaul Logistics / Tech Corp"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
-              <div>
-                <label className="block text-slate-400 font-mono mb-1">Availability</label>
-                <input
-                  type="text"
-                  value={editingItem?.availability || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, availability: e.target.value })}
-                  placeholder="e.g. Immediate / 15 Days"
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-mono mb-1">Start Date</label>
+                  <input
+                    type="text"
+                    value={editingItem?.start_date || ""}
+                    onChange={(e) => setEditingItem({ ...editingItem, start_date: e.target.value })}
+                    placeholder="e.g. Jan 2024"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-mono mb-1">End Date</label>
+                  <input
+                    type="text"
+                    value={editingItem?.end_date || ""}
+                    onChange={(e) => setEditingItem({ ...editingItem, end_date: e.target.value })}
+                    placeholder="e.g. Present or Dec 2025"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Work Mode</label>
-                <input
-                  type="text"
-                  value={editingItem?.work_mode || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, work_mode: e.target.value })}
-                  placeholder="e.g. Hybrid / Remote"
+                <label className="block text-slate-400 font-mono mb-1">Role Description & Key Achievements</label>
+                <textarea
+                  rows={4}
+                  value={editingItem?.description || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                  placeholder="Describe your core responsibilities, projects handled, and achievements..."
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -918,8 +934,11 @@ export default function CandidateProfilePage() {
                 Cancel
               </button>
               <button
-                onClick={() => saveProfileData({ career_preferences: editingItem }, "Experience preferences updated.")}
-                disabled={saving}
+                onClick={() => {
+                  const updated = [...(profile?.experience || []), editingItem];
+                  saveProfileData({ experience: updated }, "Work experience added successfully.");
+                }}
+                disabled={saving || !editingItem?.designation || !editingItem?.company}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Experience"}
