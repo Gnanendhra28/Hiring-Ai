@@ -20,6 +20,7 @@ import {
   updateJobStatus,
   deleteJobPost,
   fetchPendingJobsAdmin,
+  fetchAllJobsAdmin,
   verifyJobAdmin,
   JobItemData,
 } from "@/lib/api";
@@ -34,39 +35,9 @@ interface LocalJobDisplay {
   status: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED";
 }
 
-const defaultActiveJobs: LocalJobDisplay[] = [
-  {
-    id: "1",
-    title: "Senior ML Engineer",
-    department: "Engineering",
-    skills: "Python · RAG · FastAPI",
-    applicationsCount: 1284,
-    aiShortlistedCount: 84,
-    status: "ACTIVE",
-  },
-  {
-    id: "2",
-    title: "Product Designer",
-    department: "Design",
-    skills: "Figma · UI/UX · Design Systems",
-    applicationsCount: 42,
-    aiShortlistedCount: 11,
-    status: "ACTIVE",
-  },
-  {
-    id: "3",
-    title: "Backend Architect",
-    department: "Infrastructure",
-    skills: "Node.js · PostgreSQL · Docker",
-    applicationsCount: 18,
-    aiShortlistedCount: 5,
-    status: "ACTIVE",
-  },
-];
-
 export default function AdminJobsApprovalPage() {
   const router = useRouter();
-  const [jobs, setJobs] = useState<LocalJobDisplay[]>(defaultActiveJobs);
+  const [jobs, setJobs] = useState<LocalJobDisplay[]>([]);
   const [pendingJobs, setPendingJobs] = useState<JobItemData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [verifyingJobId, setVerifyingJobId] = useState<string | null>(null);
@@ -74,7 +45,11 @@ export default function AdminJobsApprovalPage() {
   useEffect(() => {
     async function loadJobsData() {
       try {
-        const liveJobs = await fetchRecruiterJobs();
+        const [liveJobs, pendingJbs] = await Promise.all([
+          fetchAllJobsAdmin().catch(() => []),
+          fetchPendingJobsAdmin().catch(() => []),
+        ]);
+
         if (liveJobs && liveJobs.length > 0) {
           const mapped: LocalJobDisplay[] = liveJobs.map((j) => {
             let normalizedStatus: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED" = "ACTIVE";
@@ -87,16 +62,17 @@ export default function AdminJobsApprovalPage() {
               title: j.title,
               department: j.department || "Engineering",
               skills: j.skills?.join(" · ") || `${j.department || "Tech"} · AI · Cloud`,
-              applicationsCount: j.applications_count || Math.floor(Math.random() * 50) + 10,
-              aiShortlistedCount: j.ai_shortlisted_count || Math.floor(Math.random() * 15) + 3,
+              applicationsCount: j.applications_count || 0,
+              aiShortlistedCount: j.ai_shortlisted_count || 0,
               status: normalizedStatus,
             };
           });
           setJobs(mapped);
+        } else {
+          setJobs([]);
         }
 
-        const pendingJbs = await fetchPendingJobsAdmin();
-        setPendingJobs(pendingJbs);
+        setPendingJobs(pendingJbs || []);
       } catch (err) {
         console.error("Error loading jobs approval data:", err);
       } finally {

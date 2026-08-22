@@ -29,6 +29,7 @@ import {
   fetchApprovedEmployers,
   verifyEmployerProfile,
   fetchPendingJobsAdmin,
+  fetchAllJobsAdmin,
   verifyJobAdmin,
   JobItemData,
   PendingEmployerVerification,
@@ -44,41 +45,11 @@ interface LocalJobDisplay {
   status: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED";
 }
 
-const defaultActiveJobs: LocalJobDisplay[] = [
-  {
-    id: "1",
-    title: "Senior ML Engineer",
-    department: "Engineering",
-    skills: "Python · RAG · FastAPI",
-    applicationsCount: 1284,
-    aiShortlistedCount: 84,
-    status: "ACTIVE",
-  },
-  {
-    id: "2",
-    title: "Product Designer",
-    department: "Design",
-    skills: "Figma · UI/UX · Design Systems",
-    applicationsCount: 42,
-    aiShortlistedCount: 11,
-    status: "ACTIVE",
-  },
-  {
-    id: "3",
-    title: "Backend Architect",
-    department: "Infrastructure",
-    skills: "Node.js · PostgreSQL · Docker",
-    applicationsCount: 18,
-    aiShortlistedCount: 5,
-    status: "ACTIVE",
-  },
-];
-
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [jobs, setJobs] = useState<LocalJobDisplay[]>(defaultActiveJobs);
+  const [jobs, setJobs] = useState<LocalJobDisplay[]>([]);
   const [pendingEmployers, setPendingEmployers] = useState<PendingEmployerVerification[]>([]);
   const [approvedEmployers, setApprovedEmployers] = useState<PendingEmployerVerification[]>([]);
   const [pendingJobs, setPendingJobs] = useState<JobItemData[]>([]);
@@ -89,8 +60,8 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadAdminDashboardData() {
       try {
-        // 1. Fetch live platform jobs
-        const liveJobs = await fetchRecruiterJobs();
+        // 1. Fetch live platform jobs across all organizations
+        const liveJobs = await fetchAllJobsAdmin();
         if (liveJobs && liveJobs.length > 0) {
           const mapped: LocalJobDisplay[] = liveJobs.map((j) => {
             let normalizedStatus: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED" = "ACTIVE";
@@ -103,12 +74,14 @@ export default function AdminDashboardPage() {
               title: j.title,
               department: j.department || "Engineering",
               skills: j.skills?.join(" · ") || `${j.department || "Tech"} · AI · Cloud`,
-              applicationsCount: j.applications_count || Math.floor(Math.random() * 50) + 10,
-              aiShortlistedCount: j.ai_shortlisted_count || Math.floor(Math.random() * 15) + 3,
+              applicationsCount: j.applications_count || 0,
+              aiShortlistedCount: j.ai_shortlisted_count || 0,
               status: normalizedStatus,
             };
           });
           setJobs(mapped);
+        } else {
+          setJobs([]);
         }
 
         // 2. Fetch pending employer profile verifications

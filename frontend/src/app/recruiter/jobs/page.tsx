@@ -10,47 +10,8 @@ import {
   JobItemData,
 } from "@/lib/api";
 
-const defaultSampleJobs: JobItemData[] = [
-  {
-    id: "senior-ml",
-    title: "Senior ML Engineer",
-    slug: "senior-ml-engineer",
-    description: "",
-    department: "Applied AI",
-    location: "Bengaluru",
-    employment_type: "Full time",
-    status: "PUBLISHED",
-    verification_status: "APPROVED",
-    created_at: "2026-08-18",
-  },
-  {
-    id: "product-designer",
-    title: "Product Designer",
-    slug: "product-designer",
-    description: "",
-    department: "Product",
-    location: "Remote",
-    employment_type: "Full time",
-    status: "PUBLISHED",
-    verification_status: "APPROVED",
-    created_at: "2026-08-16",
-  },
-  {
-    id: "ai-platform",
-    title: "AI Platform Engineer",
-    slug: "ai-platform-engineer",
-    description: "",
-    department: "Engineering",
-    location: "Bengaluru",
-    employment_type: "Full time",
-    status: "DRAFT",
-    verification_status: "PENDING_VERIFICATION",
-    created_at: "2026-08-20",
-  },
-];
-
 export default function JobWorkspaceListPage() {
-  const [jobs, setJobs] = useState<JobItemData[]>(defaultSampleJobs);
+  const [jobs, setJobs] = useState<JobItemData[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [submittingJobId, setSubmittingJobId] = useState<string | null>(null);
@@ -59,9 +20,7 @@ export default function JobWorkspaceListPage() {
   const loadJobs = async () => {
     try {
       const liveJobs = await fetchRecruiterJobs();
-      if (liveJobs && liveJobs.length > 0) {
-        setJobs(liveJobs);
-      }
+      setJobs(liveJobs || []);
     } catch (err) {
       console.error("Failed to load live jobs:", err);
     } finally {

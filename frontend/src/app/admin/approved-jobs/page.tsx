@@ -14,7 +14,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import {
-  fetchRecruiterJobs,
+  fetchAllJobsAdmin,
   updateJobStatus,
   deleteJobPost,
   JobItemData,
@@ -30,47 +30,18 @@ interface LocalJobDisplay {
   status: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED";
 }
 
-const defaultApprovedJobs: LocalJobDisplay[] = [
-  {
-    id: "1",
-    title: "Senior ML Engineer",
-    department: "Engineering",
-    skills: "Python · RAG · FastAPI",
-    applicationsCount: 1284,
-    aiShortlistedCount: 84,
-    status: "ACTIVE",
-  },
-  {
-    id: "2",
-    title: "Product Designer",
-    department: "Design",
-    skills: "Figma · UI/UX · Design Systems",
-    applicationsCount: 42,
-    aiShortlistedCount: 11,
-    status: "ACTIVE",
-  },
-  {
-    id: "3",
-    title: "Backend Architect",
-    department: "Infrastructure",
-    skills: "Node.js · PostgreSQL · Docker",
-    applicationsCount: 18,
-    aiShortlistedCount: 5,
-    status: "ACTIVE",
-  },
-];
-
 export default function ApprovedJobsPage() {
   const router = useRouter();
-  const [jobs, setJobs] = useState<LocalJobDisplay[]>(defaultApprovedJobs);
+  const [jobs, setJobs] = useState<LocalJobDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadApprovedJobs() {
       try {
-        const liveJobs = await fetchRecruiterJobs();
+        const liveJobs = await fetchAllJobsAdmin();
         if (liveJobs && liveJobs.length > 0) {
-          const mapped: LocalJobDisplay[] = liveJobs.map((j) => {
+          const approvedOnly = liveJobs.filter((j) => j.verification_status === "APPROVED");
+          const mapped: LocalJobDisplay[] = approvedOnly.map((j) => {
             let normalizedStatus: "ACTIVE" | "PAUSED" | "DRAFT" | "COMPLETED" = "ACTIVE";
             if (j.status === "PAUSED") normalizedStatus = "PAUSED";
             else if (j.status === "DRAFT") normalizedStatus = "DRAFT";
@@ -81,12 +52,14 @@ export default function ApprovedJobsPage() {
               title: j.title,
               department: j.department || "Engineering",
               skills: j.skills?.join(" · ") || `${j.department || "Tech"} · AI · Cloud`,
-              applicationsCount: j.applications_count || Math.floor(Math.random() * 50) + 10,
-              aiShortlistedCount: j.ai_shortlisted_count || Math.floor(Math.random() * 15) + 3,
+              applicationsCount: j.applications_count || 0,
+              aiShortlistedCount: j.ai_shortlisted_count || 0,
               status: normalizedStatus,
             };
           });
           setJobs(mapped);
+        } else {
+          setJobs([]);
         }
       } catch (err) {
         console.error("Error loading approved jobs:", err);

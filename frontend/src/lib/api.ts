@@ -1312,6 +1312,15 @@ export async function fetchPendingJobsAdmin(): Promise<JobItemData[]> {
   return [];
 }
 
+export async function fetchAllJobsAdmin(): Promise<JobItemData[]> {
+  const res = await apiFetch("/api/v1/admin/jobs");
+  if (res.ok) {
+    const data = await res.json();
+    return data.items || [];
+  }
+  return [];
+}
+
 export async function verifyJobAdmin(jobId: string, action: "APPROVE" | "REJECT", rejectionReason?: string): Promise<boolean> {
   const res = await apiFetch(`/api/v1/admin/jobs/${jobId}/verify`, {
     method: "POST",
