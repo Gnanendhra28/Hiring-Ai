@@ -381,8 +381,10 @@ export async function apiFetch(
       headers.set("Authorization", `Bearer ${token}`);
     }
     const orgId = getOrgId();
-    const isGlobalAuthEndpoint = endpoint.includes("/auth/me") || endpoint.includes("/auth/login") || endpoint.includes("/auth/register");
-    if (orgId && !headers.has("X-Organization-ID") && !isGlobalAuthEndpoint) {
+    const isCandidateOrGlobalEndpoint =
+      endpoint.includes("/auth/") ||
+      endpoint.includes("/candidate");
+    if (orgId && !headers.has("X-Organization-ID") && !isCandidateOrGlobalEndpoint) {
       headers.set("X-Organization-ID", orgId);
     }
   }

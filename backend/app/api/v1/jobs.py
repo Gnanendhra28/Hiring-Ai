@@ -269,7 +269,7 @@ async def list_jobs(
     """Lists jobs in active organization tenant context or public candidate listings."""
     async with async_session_factory() as session:
         await session.begin()
-        if ctx.active_organization_id:
+        if ctx.active_organization_id and ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]:
             await set_tenant_context(session, ctx.active_organization_id)
             stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
         else:
@@ -305,7 +305,7 @@ async def get_job(
     """Fetches single job details by UUID or slug for recruiters or public candidates."""
     async with async_session_factory() as session:
         await session.begin()
-        if ctx.active_organization_id:
+        if ctx.active_organization_id and ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]:
             await set_tenant_context(session, ctx.active_organization_id)
             stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
         else:

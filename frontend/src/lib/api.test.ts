@@ -57,12 +57,12 @@ describe("Frontend API Client & Auth Refresh Interceptor", () => {
     );
     global.fetch = fetchMock;
 
-    const res = await apiFetch("/api/v1/jobs");
+    const res = await apiFetch("/api/v1/recruiter/jobs");
     expect(res.status).toBe(200);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toContain("/api/v1/jobs");
+    expect(url).toContain("/api/v1/recruiter/jobs");
     const headers = options.headers as Headers;
     expect(headers.get("Authorization")).toBe("Bearer test_access_token");
     expect(headers.get("X-Organization-ID")).toBe("test_org_123");
