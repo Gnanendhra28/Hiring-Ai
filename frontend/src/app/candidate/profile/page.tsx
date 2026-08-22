@@ -392,6 +392,25 @@ export default function CandidateProfilePage() {
                               {exp.description}
                             </p>
                           )}
+                          {(exp.skills_used || exp.skills) && (
+                            <div className="flex flex-wrap gap-1.5 pt-2">
+                              {(typeof (exp.skills_used || exp.skills) === "string"
+                                ? (exp.skills_used || exp.skills).split(",")
+                                : exp.skills_used || exp.skills
+                              ).map((sk: string, sIdx: number) => {
+                                const clean = sk.trim();
+                                if (!clean) return null;
+                                return (
+                                  <span
+                                    key={sIdx}
+                                    className="px-2.5 py-0.5 rounded-lg bg-sky-950/60 border border-sky-800/80 text-sky-300 text-[10px] font-semibold"
+                                  >
+                                    ★ {clean}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => {
@@ -922,6 +941,16 @@ export default function CandidateProfilePage() {
                   value={editingItem?.description || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
                   placeholder="Describe your core responsibilities, projects handled, and achievements..."
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Key Skills &amp; Technologies Used</label>
+                <input
+                  type="text"
+                  value={editingItem?.skills_used || editingItem?.skills || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, skills_used: e.target.value })}
+                  placeholder="e.g. Python, FastAPI, RAG, PostgreSQL, Docker"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
