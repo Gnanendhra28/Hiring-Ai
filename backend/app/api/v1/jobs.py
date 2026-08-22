@@ -29,58 +29,24 @@ router = APIRouter(prefix="/jobs", tags=["Job Workspace"])
 @router.post("/", response_model=JobResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_job(
     payload: JobCreateRequest,
-    ctx: SecurityContext = Depends(get_security_context),
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """Creates a new Job Posting in DRAFT or PENDING_VERIFICATION state awaiting verification."""
+    if not ctx.active_organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Header X-Organization-ID is required to create a job.",
+        )
+
+    job_slug = payload.slug or slugify(payload.title)
+    full_slug = f"{job_slug}-{uuid.uuid4().hex[:6]}"
+
     async with async_session_factory() as session:
         await session.begin()
-
-        org_id = ctx.active_organization_id
-        user_role = ctx.role
-
-        if not org_id or not user_role or user_role not in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER, RoleEnum.PLATFORM_ADMIN]:
-            from app.domains.organizations.models import MembershipStatusEnum, Organization, OrganizationMembership
-            stmt_mem = select(OrganizationMembership).where(
-                OrganizationMembership.user_id == ctx.user.id,
-                OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
-                OrganizationMembership.role.in_([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]),
-            )
-            membership = (await session.execute(stmt_mem)).scalars().first()
-            if membership:
-                org_id = membership.organization_id
-                user_role = membership.role
-            elif ctx.user.is_platform_admin:
-                stmt_org = select(Organization).where(Organization.is_active.is_(True))
-                default_org = (await session.execute(stmt_org)).scalars().first()
-                if not default_org:
-                    default_org = Organization(
-                        name="Enterprise Talent OS",
-                        slug=f"enterprise-talent-os-{uuid.uuid4().hex[:6]}",
-                        is_active=True,
-                    )
-                    session.add(default_org)
-                    await session.flush()
-                org_id = default_org.id
-                user_role = RoleEnum.PLATFORM_ADMIN
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Role Access Denied: Action requires recruiter or employer organization membership.",
-                )
-
-        if not ctx.user.is_platform_admin and user_role not in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Role Access Denied: Action requires recruiter or employer organization membership.",
-            )
-
-        await set_tenant_context(session, org_id)
-
-        job_slug = payload.slug or slugify(payload.title)
-        full_slug = f"{job_slug}-{uuid.uuid4().hex[:6]}"
+        await set_tenant_context(session, ctx.active_organization_id)
 
         job = Job(
-            organization_id=org_id,
+            organization_id=ctx.active_organization_id,
             title=payload.title,
             slug=full_slug,
             description=payload.description,
@@ -96,7 +62,7 @@ async def create_job(
         session.add(job)
 
         audit = AuditLog(
-            organization_id=org_id,
+            organization_id=ctx.active_organization_id,
             user_id=ctx.user.id,
             action="job.create",
             resource_type="job",
@@ -106,7 +72,7 @@ async def create_job(
         await session.commit()
 
         await session.begin()
-        await set_tenant_context(session, org_id)
+        await set_tenant_context(session, ctx.active_organization_id)
         stmt = select(Job).where(Job.id == job.id)
         created_job = (await session.execute(stmt)).scalar_one()
 

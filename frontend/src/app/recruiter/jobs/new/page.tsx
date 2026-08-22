@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, FileText } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getOrgId, setOrgId } from "@/lib/api";
 
 export default function CreateJobPostingPage() {
   const router = useRouter();
@@ -92,6 +92,20 @@ ${formData.good_to_have}`;
     setError(null);
 
     try {
+      let currentOrgId = getOrgId();
+      if (!currentOrgId) {
+        try {
+          const meRes = await apiFetch("/api/v1/auth/me");
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            if (meData.memberships && meData.memberships.length > 0 && meData.memberships[0].organization_id) {
+              currentOrgId = meData.memberships[0].organization_id;
+              if (currentOrgId) setOrgId(currentOrgId);
+            }
+          }
+        } catch {}
+      }
+
       const formattedLocation = `${formData.location} (${formData.work_mode})`;
 
       const payload = {
