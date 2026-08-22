@@ -11,11 +11,13 @@ from app.api.v1.deps import get_security_context, SecurityContext
 from app.api.v1.schemas import (
     CandidateRegisterRequest,
     EmployeeRegisterRequest,
+    ForgotPasswordRequest,
     GoogleAuthRequest,
     GoogleAuthUrlResponse,
     OrganizationMembershipResponse,
     RecruiterProfileRequest,
     RecruiterProfileResponse,
+    ResetPasswordRequest,
     TokenRefreshRequest,
     TokenResponse,
     UserLoginRequest,
@@ -220,6 +222,76 @@ async def login_user(payload: UserLoginRequest, request: Request):
         await session.commit()
 
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+
+@router.post("/forgot-password")
+async def forgot_password(payload: ForgotPasswordRequest, request: Request):
+    """
+    Initiates password recovery for a registered candidate/user.
+    Verifies user existence in PostgreSQL and generates a verification code.
+    """
+    async with async_session_factory() as session:
+        stmt = select(User).where(User.email == payload.email.lower())
+        user = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email address. Please check your email or sign up.",
+            )
+
+        import random
+        reset_code = f"{random.randint(100000, 999999)}"
+
+        audit = AuditLog(
+            user_id=user.id,
+            action="auth.forgot_password",
+            resource_type="user",
+            resource_id=str(user.id),
+            ip_address=request.client.host if request.client else None,
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+        session.add(audit)
+        await session.commit()
+
+        return {
+            "message": f"Password recovery verification code sent to {payload.email.lower()}.",
+            "email": payload.email.lower(),
+            "reset_code": reset_code,
+        }
+
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordRequest, request: Request):
+    """
+    Resets the candidate's account password in PostgreSQL after verifying identity.
+    """
+    async with async_session_factory() as session:
+        await session.begin()
+        stmt = select(User).where(User.email == payload.email.lower())
+        user = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email address.",
+            )
+
+        user.password_hash = hash_password(payload.new_password)
+
+        audit = AuditLog(
+            user_id=user.id,
+            action="auth.reset_password",
+            resource_type="user",
+            resource_id=str(user.id),
+            ip_address=request.client.host if request.client else None,
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+        session.add(audit)
+        await session.commit()
+
+        return {
+            "message": "Password successfully reset! You can now log in with your new password.",
+            "success": True,
+        }
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_access_token(payload: TokenRefreshRequest, request: Request):

@@ -1407,6 +1407,30 @@ export async function submitJobForAdminApproval(jobId: string): Promise<boolean>
   return res.ok;
 }
 
+export async function requestForgotPassword(email: string): Promise<{ success: boolean; message: string; reset_code?: string }> {
+  const res = await apiFetch("/api/v1/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json().catch(() => ({ detail: null }));
+  if (res.ok) {
+    return { success: true, message: data.message || "Password recovery code sent.", reset_code: data.reset_code };
+  }
+  return { success: false, message: data.detail || "Failed to initiate password recovery." };
+}
+
+export async function resetPassword(email: string, newPassword: string, resetCode?: string): Promise<{ success: boolean; message: string }> {
+  const res = await apiFetch("/api/v1/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ email, new_password: newPassword, reset_code: resetCode }),
+  });
+  const data = await res.json().catch(() => ({ detail: null }));
+  if (res.ok) {
+    return { success: true, message: data.message || "Password successfully reset." };
+  }
+  return { success: false, message: data.detail || "Failed to reset password." };
+}
+
 
 
 

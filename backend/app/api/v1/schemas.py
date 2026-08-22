@@ -33,6 +33,14 @@ class UserLoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    reset_code: Optional[str] = None
+    new_password: str = Field(..., min_length=6)
+
 class TokenRefreshRequest(BaseModel):
     refresh_token: str
 

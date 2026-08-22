@@ -117,7 +117,9 @@ ${formData.good_to_have
 
       router.push("/recruiter/jobs");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create job posting.");
+      setError(
+        err instanceof Error ? err.message : "Failed to create job posting.",
+      );
     } finally {
       setLoading(false);
     }
@@ -133,10 +135,14 @@ ${formData.good_to_have
               Create New Requisition
             </h1>
             <p className="text-slate-400 text-xs mt-1">
-              Define job specifications, key skills, responsibilities, required experience, and tenant requirements.
+              Define job specifications, key skills, responsibilities, required
+              experience, and tenant requirements.
             </p>
           </div>
-          <Link href="/recruiter/jobs" className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+          <Link
+            href="/recruiter/jobs"
+            className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+          >
             <ArrowLeft size={14} /> Cancel
           </Link>
         </div>
@@ -148,7 +154,10 @@ ${formData.good_to_have
         )}
 
         {/* Form Container */}
-        <form onSubmit={handleSubmit} className="bg-[#111a2c] border border-[#233047] rounded-xl p-6 md:p-8 space-y-6 shadow-xl">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-[#111a2c] border border-[#233047] rounded-xl p-6 md:p-8 space-y-6 shadow-xl"
+        >
           {/* Section 1: Basic Information */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2">
@@ -164,7 +173,9 @@ ${formData.good_to_have
                 required
                 placeholder="e.g. Staff Backend Engineer - Python"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
               />
             </div>
@@ -176,9 +187,11 @@ ${formData.good_to_have
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Engineering"
+                  placeholder="e.g. UG/PG - ANY DEPARTMENT"
                   value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, department: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
@@ -189,9 +202,11 @@ ${formData.good_to_have
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. San Francisco, CA or Bengaluru, KA"
+                  placeholder="e.g. Bengaluru, KA"
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
@@ -204,7 +219,9 @@ ${formData.good_to_have
                 </label>
                 <select
                   value={formData.work_mode}
-                  onChange={(e) => setFormData({ ...formData, work_mode: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, work_mode: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 >
                   <option value="Hybrid">Hybrid</option>
@@ -219,7 +236,12 @@ ${formData.good_to_have
                 </label>
                 <select
                   value={formData.employment_type}
-                  onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      employment_type: e.target.value,
+                    })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 >
                   <option value="FULL_TIME">Full-time</option>
@@ -237,7 +259,9 @@ ${formData.good_to_have
                   type="text"
                   placeholder="e.g. 3-5 Years or 5+ yrs"
                   value={formData.experience}
-                  onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, experience: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
@@ -248,7 +272,9 @@ ${formData.good_to_have
                 </label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 >
                   <option value="DRAFT">Draft</option>
@@ -265,7 +291,9 @@ ${formData.good_to_have
                 <input
                   type="date"
                   value={formData.date_posted}
-                  onChange={(e) => setFormData({ ...formData, date_posted: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, date_posted: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
@@ -277,7 +305,9 @@ ${formData.good_to_have
                 <input
                   type="date"
                   value={formData.closing_date}
-                  onChange={(e) => setFormData({ ...formData, closing_date: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, closing_date: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
@@ -297,9 +327,11 @@ ${formData.good_to_have
               <input
                 type="text"
                 required
-                placeholder="e.g. Python, FastAPI, PostgreSQL, RAG"
+                placeholder="e.g. Python,SQL,react,FastAPI"
                 value={formData.key_skills}
-                onChange={(e) => setFormData({ ...formData, key_skills: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, key_skills: e.target.value })
+                }
                 className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
               />
             </div>
@@ -311,9 +343,14 @@ ${formData.good_to_have
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Kubernetes, Docker, Vector DBs, MLOps"
+                  placeholder="e.g. Kubernetes, Docker, Vector DBs, Github"
                   value={formData.preferred_skills}
-                  onChange={(e) => setFormData({ ...formData, preferred_skills: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      preferred_skills: e.target.value,
+                    })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
@@ -324,9 +361,11 @@ ${formData.good_to_have
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Kafka, Redis, GraphQL, Terraform"
+                  placeholder="e.g. Problem-solving, System Design, Cloud Architecture"
                   value={formData.good_to_have}
-                  onChange={(e) => setFormData({ ...formData, good_to_have: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, good_to_have: e.target.value })
+                  }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
@@ -347,7 +386,9 @@ ${formData.good_to_have
                 rows={4}
                 placeholder="• List key duties..."
                 value={formData.responsibilities}
-                onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, responsibilities: e.target.value })
+                }
                 className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-sm text-white focus:outline-none focus:border-sky-500 transition"
               />
             </div>
@@ -360,7 +401,9 @@ ${formData.good_to_have
                 rows={3}
                 placeholder="Brief description of your organization..."
                 value={formData.about_company}
-                onChange={(e) => setFormData({ ...formData, about_company: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, about_company: e.target.value })
+                }
                 className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-sm text-white focus:outline-none focus:border-sky-500 transition"
               />
             </div>
@@ -369,15 +412,21 @@ ${formData.good_to_have
           {/* Section 4: Compiled Job Description (Markdown Review & Edit) */}
           <div className="space-y-3 pt-4 border-t border-slate-800">
             <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><FileText size={14} /> 4. Compiled Job Description (Complete Description Review & Edit)</span>
-              <span className="text-[10px] text-slate-400 font-normal">Auto-assembled & fully customizable Markdown</span>
+              <span className="flex items-center gap-1.5">
+                <FileText size={14} /> 4. Compiled Job Description{" "}
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">
+                Auto-assembled & fully customizable Markdown
+              </span>
             </h3>
 
             <textarea
               required
               rows={8}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               className="w-full bg-[#070d18] border border-[#1b263b] rounded-lg p-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-sky-500 transition leading-relaxed"
             />
           </div>
