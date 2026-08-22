@@ -55,6 +55,8 @@ async def create_job(
             employment_type=payload.employment_type,
             status=JobStatusEnum.DRAFT,
             verification_status=JobVerificationStatusEnum.DRAFT,
+            salary=payload.salary,
+            company_website=payload.company_website,
             created_by_user_id=ctx.user.id,
         )
         session.add(job)
@@ -107,6 +109,10 @@ async def update_job(
             job.location = payload.location
         if payload.employment_type is not None:
             job.employment_type = payload.employment_type
+        if payload.salary is not None:
+            job.salary = payload.salary
+        if payload.company_website is not None:
+            job.company_website = payload.company_website
         if payload.verification_status is not None:
             if ctx.user.is_platform_admin or payload.verification_status in [JobVerificationStatusEnum.DRAFT, JobVerificationStatusEnum.PENDING_VERIFICATION]:
                 job.verification_status = payload.verification_status

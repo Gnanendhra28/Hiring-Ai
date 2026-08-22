@@ -189,6 +189,8 @@ class JobCreateRequest(BaseModel):
     location: Optional[str] = Field(None, max_length=255)
     employment_type: EmploymentTypeEnum = EmploymentTypeEnum.FULL_TIME
     status: Optional[JobStatusEnum] = JobStatusEnum.DRAFT
+    salary: Optional[str] = Field(None, max_length=255)
+    company_website: Optional[str] = Field(None, max_length=512)
 
 class JobUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=2, max_length=255)
@@ -198,6 +200,8 @@ class JobUpdateRequest(BaseModel):
     employment_type: Optional[EmploymentTypeEnum] = None
     status: Optional[JobStatusEnum] = None
     verification_status: Optional[JobVerificationStatusEnum] = None
+    salary: Optional[str] = Field(None, max_length=255)
+    company_website: Optional[str] = Field(None, max_length=512)
 
 class JobVerifyRequest(BaseModel):
     action: str = Field(..., description="APPROVE or REJECT")
@@ -222,6 +226,8 @@ class JobResponse(BaseModel):
     rejection_reason: Optional[str]
     verified_at: Optional[datetime]
     created_by_user_id: Optional[uuid.UUID]
+    salary: Optional[str] = None
+    company_website: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -236,6 +242,8 @@ class PublicJobResponse(BaseModel):
     location: Optional[str]
     employment_type: EmploymentTypeEnum
     description: str
+    salary: Optional[str] = None
+    company_website: Optional[str] = None
     created_at: datetime
 
 class JobListResponse(BaseModel):

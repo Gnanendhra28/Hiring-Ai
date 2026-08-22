@@ -149,7 +149,7 @@ export default function PublicJobDetailPage() {
                   <Briefcase size={14} className="text-slate-400" /> 0 - 3 years
                 </span>
                 <span className="text-slate-600">|</span>
-                <span className="text-slate-300 font-semibold">₹ Not Disclosed</span>
+                <span className="text-slate-300 font-semibold">{job?.salary || "₹ Not Disclosed"}</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-300 pt-1 font-medium">
@@ -267,12 +267,12 @@ export default function PublicJobDetailPage() {
             <p className="pt-1 text-slate-400 font-medium flex items-center gap-1">
               Website:{" "}
               <a
-                href="https://www.avenuesai.com"
+                href={job?.company_website || "https://www.avenuesai.com"}
                 target="_blank"
                 rel="noreferrer"
                 className="text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
               >
-                https://www.avenuesai.com <ExternalLink size={12} />
+                {job?.company_website || "https://www.avenuesai.com"} <ExternalLink size={12} />
               </a>
             </p>
           </div>

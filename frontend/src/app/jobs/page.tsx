@@ -145,6 +145,8 @@ function getTimeAgo(dateInput?: string | Date) {
               : "On-site",
             experience: "3–5 Years (Mid Level)",
             status: j.status,
+            salary: j.salary,
+            company_website: j.company_website,
             posted: getTimeAgo(j.created_at),
             description: j.description,
           }));
@@ -742,7 +744,7 @@ function getTimeAgo(dateInput?: string | Date) {
 
                         <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
                           <span className="text-xs text-slate-400 font-medium">
-                            Posted {job.posted}
+                            {job.salary ? `${job.salary} • ` : ""}Posted {job.posted}
                           </span>
                           <div className="flex gap-2">
                             <Link

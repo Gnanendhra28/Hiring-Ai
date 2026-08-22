@@ -28,6 +28,8 @@ export default function CreateJobPostingPage() {
       "• Design, build, and deploy production-grade AI & RAG microservices\n• Lead API design and high-throughput vector search pipelines\n• Collaborate with product engineering to optimize candidate matching algorithms",
     about_company:
       "AuraHire AI is an enterprise talent intelligence platform powering automated candidate matching, explainable scoring, and end-to-end recruitment workflows.",
+    salary: "",
+    company_website: "",
     description: "",
   });
 
@@ -102,6 +104,8 @@ ${formData.good_to_have
         employment_type: formData.employment_type,
         status: formData.status,
         verification_status: "PENDING_VERIFICATION",
+        salary: formData.salary,
+        company_website: formData.company_website,
         description: formData.description,
       };
 
@@ -307,6 +311,38 @@ ${formData.good_to_have
                   value={formData.closing_date}
                   onChange={(e) =>
                     setFormData({ ...formData, closing_date: e.target.value })
+                  }
+                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Salary / Compensation Range (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. ₹12 - ₹18 LPA or $120k - $150k"
+                  value={formData.salary || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, salary: e.target.value })
+                  }
+                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Company Website URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="e.g. https://www.avenuesai.com"
+                  value={formData.company_website || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, company_website: e.target.value })
                   }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
