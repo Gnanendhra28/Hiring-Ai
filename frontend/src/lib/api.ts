@@ -1314,8 +1314,8 @@ export async function fetchPendingJobsAdmin(): Promise<JobItemData[]> {
 
 export async function fetchAllJobsAdmin(verificationStatus?: string): Promise<JobItemData[]> {
   const url = verificationStatus
-    ? `/api/v1/admin/jobs?page_size=500&verification_status=${verificationStatus}`
-    : "/api/v1/admin/jobs?page_size=500";
+    ? `/api/v1/admin/jobs?page_size=5000&verification_status=${verificationStatus}`
+    : "/api/v1/admin/jobs?page_size=5000";
   const res = await apiFetch(url);
   if (res.ok) {
     const data = await res.json();
