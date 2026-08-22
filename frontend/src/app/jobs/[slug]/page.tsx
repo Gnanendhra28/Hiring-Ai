@@ -112,10 +112,72 @@ export default function PublicJobDetailPage() {
     );
   }
 
-  const companyName = job?.department || "Avenues AI Limited";
-  const title = job?.title || "Software Development Engineer";
-  const location = job?.location || "Bengaluru";
+  const companyName = job?.department || "Enterprise Requisition";
+  const title = job?.title || "Requisition Specification";
+  const location = job?.location || "Remote";
   const rawDescription = job?.description || "";
+
+  // Parse strictly real description data provided by employee
+  const renderRealStructuredDescription = (rawDesc: string) => {
+    if (!rawDesc) {
+      return <p className="text-xs text-slate-400">No description provided by employee.</p>;
+    }
+
+    // Split description by section headers (e.g. "## ")
+    const rawSections = rawDesc.split(/(?=^##\s+)/m).filter((s) => s.trim().length > 0);
+
+    return (
+      <div className="space-y-8">
+        {rawSections.map((sec, idx) => {
+          const lines = sec.split("\n").filter((l) => l.trim().length > 0);
+          let headerText = "";
+          let bodyLines: string[] = [];
+
+          if (lines[0]?.startsWith("## ")) {
+            headerText = lines[0].replace(/^##\s+/, "").trim();
+            bodyLines = lines.slice(1);
+          } else {
+            bodyLines = lines;
+          }
+
+          const isListSection = bodyLines.some((l) =>
+            /^[•\-\*\d+\.]/.test(l.trim())
+          );
+
+          return (
+            <div key={idx} className="space-y-3">
+              {headerText && (
+                <h3 className="text-sm font-bold text-white border-b border-slate-800/60 pb-1">
+                  {headerText}
+                </h3>
+              )}
+
+              {isListSection ? (
+                <ul className="space-y-2 text-xs text-slate-300 leading-relaxed">
+                  {bodyLines.map((line, lIdx) => {
+                    const cleaned = line.replace(/^[•\-\*\d+\.]\s*/, "").trim();
+                    if (!cleaned) return null;
+                    return (
+                      <li key={lIdx} className="flex items-start gap-2">
+                        <span className="text-slate-400 font-bold">•</span>
+                        <span>{cleaned}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="space-y-2 text-xs text-slate-300 leading-relaxed font-normal">
+                  {bodyLines.map((line, lIdx) => (
+                    <p key={lIdx}>{line.trim()}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8 font-sans">
@@ -127,7 +189,7 @@ export default function PublicJobDetailPage() {
           <ArrowLeft size={15} /> View All Jobs
         </Link>
 
-        {/* IMAGE 1 REFERENCE: Top Job Header Card */}
+        {/* Top Job Header Card */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1.5 min-w-0 flex-1">
@@ -160,7 +222,7 @@ export default function PublicJobDetailPage() {
 
             {/* Company Logo Badge on Right */}
             <div className="w-16 h-16 rounded-2xl bg-indigo-950 border border-indigo-800 text-indigo-300 font-extrabold text-2xl grid place-items-center shrink-0 shadow-md">
-              {companyName[0] || "A"}
+              {companyName[0] || "E"}
             </div>
           </div>
 
@@ -176,11 +238,11 @@ export default function PublicJobDetailPage() {
           {/* Card Divider */}
           <hr className="border-slate-800" />
 
-          {/* Bottom Card Footer Row: Posted metadata & Action Buttons */}
+          {/* Bottom Card Footer Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-medium">
               <span>
-                Posted: <strong className="text-slate-200">2 days ago</strong>
+                Posted: <strong className="text-slate-200">Recently</strong>
               </span>
               <span className="text-slate-700">|</span>
               <span>
@@ -248,198 +310,46 @@ export default function PublicJobDetailPage() {
           )}
         </div>
 
-        {/* IMAGE 2 & 3 REFERENCE: Main Structured Job Description Body */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-8 shadow-2xl">
+        {/* Main Structured Job Description Body - STRICTLY REAL DATA FROM POSTGRESQL */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-6 shadow-2xl">
           {/* Section Heading */}
-          <div className="space-y-1">
+          <div className="space-y-1 border-b border-slate-800 pb-4">
             <h2 className="text-xl font-bold text-white">Job description</h2>
             <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
             <p className="text-xs text-slate-400 font-medium">Location: {location}</p>
+            {job?.company_website && (
+              <p className="pt-1 text-xs text-slate-400 font-medium flex items-center gap-1">
+                Website:{" "}
+                <a
+                  href={job.company_website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
+                >
+                  {job.company_website} <ExternalLink size={12} />
+                </a>
+              </p>
+            )}
           </div>
 
-          {/* Overview Paragraph */}
-          <div className="space-y-2 text-xs text-slate-300 leading-relaxed font-normal">
-            <p>
-              <strong className="text-white">{companyName}</strong>, formerly known as{" "}
-              <strong className="text-white">Infibeam Avenues Limited</strong>, is looking for a{" "}
-              <strong className="text-white">{title}</strong> to work on scalable fintech, payment platforms, and enterprise-grade software systems. The role involves designing, developing, and maintaining high-performance applications and backend services that power large-scale digital payment and financial technology ecosystems.
-            </p>
-            <p className="pt-1 text-slate-400 font-medium flex items-center gap-1">
-              Website:{" "}
-              <a
-                href={job?.company_website || "https://www.avenuesai.com"}
-                target="_blank"
-                rel="noreferrer"
-                className="text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
-              >
-                {job?.company_website || "https://www.avenuesai.com"} <ExternalLink size={12} />
-              </a>
-            </p>
-          </div>
+          {/* Render Real Employee Description Sections */}
+          {renderRealStructuredDescription(rawDescription)}
 
-          {/* Roles & Responsibilities */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white">Roles &amp; Responsibilities</h3>
-            <ul className="space-y-2 text-xs text-slate-300 leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Design, develop, and maintain scalable backend/fullstack applications</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Build and manage microservices-based architectures</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Develop secure, high-performance APIs and payment-related services</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Work on software architecture, system design, and performance optimization</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Collaborate with cross-functional teams to deliver reliable software solutions</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Troubleshoot production issues and improve system reliability and scalability</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Write clean, maintainable, and efficient code following engineering best practices</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Participate in code reviews, technical discussions, and architectural decisions</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Required Skills & Qualifications */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white">Required Skills &amp; Qualifications</h3>
-            <ul className="space-y-2 text-xs text-slate-300 leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Strong experience in Java/Python/PHP and similar backend technologies</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>BE/B.Tech in Computer Science, Information Technology, or a related field, preferably from reputed institutes</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Good knowledge of FastAPI / Spring Boot, Microservices Architecture, and REST APIs</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Exposure to frontend technologies such as JavaScript, React, or similar technologies</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Experience with Docker and cloud/deployment environments</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Strong understanding of databases, system design, and scalable application development</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Understanding of SDLC, debugging, performance optimization, and production support</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Good to Have */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white">Good to Have</h3>
-            <ul className="space-y-2 text-xs text-slate-300 leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Experience working on payment platforms, fintech products, or financial technology solutions</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Knowledge of Kubernetes, messaging systems, or distributed systems</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Familiarity with CI/CD pipelines, monitoring, and observability tools</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Experience working with high-volume transaction processing systems</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-slate-400 font-bold">•</span>
-                <span>Understanding of security, scalability, and reliability requirements in fintech applications</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Role Metadata Specification Table (IMAGE 3) */}
+          {/* Role Metadata Specification Table */}
           <div className="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 py-1">
               <span className="font-semibold text-slate-400">Role:</span>
-              <span className="font-semibold text-white">Back End Developer</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 py-1">
-              <span className="font-semibold text-slate-400">Industry Type:</span>
-              <span className="font-semibold text-white">FinTech / Payments / AI Systems</span>
+              <span className="font-semibold text-white">{title}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 py-1">
               <span className="font-semibold text-slate-400">Department:</span>
-              <span className="font-semibold text-white">Engineering - Software &amp; QA</span>
+              <span className="font-semibold text-white">{companyName}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 py-1">
               <span className="font-semibold text-slate-400">Employment Type:</span>
-              <span className="font-semibold text-white">Full Time, Permanent</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 py-1">
-              <span className="font-semibold text-slate-400">Role Category:</span>
-              <span className="font-semibold text-white">Software Development</span>
+              <span className="font-semibold text-white">{job?.employment_type || "Full Time, Permanent"}</span>
             </div>
           </div>
-
-          {/* Education */}
-          <div className="space-y-1 border-t border-slate-800 pt-6">
-            <h4 className="text-xs font-bold text-white">Education</h4>
-            <p className="text-xs text-slate-300 font-medium">
-              <strong className="text-slate-200">UG:</strong> B.Tech / B.E. in Computer Science and Engineering (CSE), Information Technology
-            </p>
-          </div>
-
-          {/* Key Skills */}
-          <div className="space-y-3 border-t border-slate-800 pt-6">
-            <div className="space-y-1">
-              <h4 className="text-xs font-bold text-white">Key Skills</h4>
-              <p className="text-[11px] text-slate-400">Skills highlighted with &lsquo;★&rsquo; are preferred keyskills</p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 pt-1">
-              {["★ Java", "★ Backend Development", "★ Python", "★ FastAPI", "C++", "Docker", "PostgreSQL", "REST APIs"].map((skill) => (
-                <span
-                  key={skill}
-                  className="px-4 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-slate-200 text-xs font-semibold hover:border-indigo-500 transition-all"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Raw Description Appendix */}
-          {rawDescription && (
-            <div className="border-t border-slate-800/80 pt-6 space-y-2">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                Full Employer Specification Note
-              </h4>
-              <div className="whitespace-pre-line text-xs font-mono text-slate-400 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 leading-relaxed">
-                {rawDescription}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
