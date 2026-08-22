@@ -12,7 +12,7 @@ from app.domains.applications.models import Application
 from app.domains.audit.models import AuditLog
 from app.domains.identity.models import User
 from app.domains.job_intelligence.models import JobIntelligenceVersion
-from app.domains.jobs.models import Job, JobVerificationStatusEnum
+from app.domains.jobs.models import Job, JobStatusEnum, JobVerificationStatusEnum
 from app.domains.recruiters.models import RecruiterProfile
 
 router = APIRouter(prefix="/admin", tags=["Platform Admin"])
@@ -175,6 +175,7 @@ async def verify_job_posting(
 
         if action_upper == "APPROVE":
             job.verification_status = JobVerificationStatusEnum.APPROVED
+            job.status = JobStatusEnum.PUBLISHED
             job.rejection_reason = None
             audit_action = "job.approved"
         else:
