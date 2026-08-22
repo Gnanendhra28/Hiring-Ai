@@ -35,6 +35,7 @@ class UserLoginRequest(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
+    portal_type: Optional[str] = None
 
 class ResetPasswordRequest(BaseModel):
     email: EmailStr

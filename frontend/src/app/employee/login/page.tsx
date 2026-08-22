@@ -81,7 +81,7 @@ export default function EmployeeLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await requestForgotPassword(targetEmail);
+      const res = await requestForgotPassword(targetEmail, "EMPLOYEE");
       if (res.success) {
         setResetEmail(targetEmail);
         setResetCode("");

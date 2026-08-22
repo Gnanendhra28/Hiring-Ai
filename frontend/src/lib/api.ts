@@ -1407,10 +1407,13 @@ export async function submitJobForAdminApproval(jobId: string): Promise<boolean>
   return res.ok;
 }
 
-export async function requestForgotPassword(email: string): Promise<{ success: boolean; message: string; dev_otp_hint?: string }> {
+export async function requestForgotPassword(
+  email: string,
+  portalType?: "CANDIDATE" | "EMPLOYEE"
+): Promise<{ success: boolean; message: string; dev_otp_hint?: string }> {
   const res = await apiFetch("/api/v1/auth/forgot-password", {
     method: "POST",
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, portal_type: portalType }),
   });
   const data = await res.json().catch(() => ({ detail: null }));
   if (res.ok) {

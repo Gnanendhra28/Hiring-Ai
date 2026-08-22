@@ -81,7 +81,7 @@ export default function CandidateLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await requestForgotPassword(targetEmail);
+      const res = await requestForgotPassword(targetEmail, "CANDIDATE");
       if (res.success) {
         setResetEmail(targetEmail);
         setResetCode("");

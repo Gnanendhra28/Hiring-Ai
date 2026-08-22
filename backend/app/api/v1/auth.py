@@ -228,19 +228,37 @@ RESET_CODES_DB = {}
 @router.post("/forgot-password")
 async def forgot_password(payload: ForgotPasswordRequest, request: Request):
     """
-    Initiates password recovery for a registered candidate/user.
-    Verifies user existence in PostgreSQL, generates a 6-digit OTP code,
-    stores it securely in memory/cache, and sends the code to candidate's email.
+    Initiates password recovery with strict Portal Role Isolation enforcement.
+    Prevents Candidates from resetting via Employee portal and Vice-Versa.
     """
     async with async_session_factory() as session:
         email_clean = payload.email.lower().strip()
-        stmt = select(User).where(User.email == email_clean)
+        stmt = (
+            select(User)
+            .options(selectinload(User.memberships))
+            .where(User.email == email_clean)
+        )
         user = (await session.execute(stmt)).scalar_one_or_none()
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No account found with this email address. Please check your email or sign up.",
+            )
+
+        is_employee = user.is_platform_admin or len(user.memberships) > 0
+        portal = (payload.portal_type or "").upper().strip()
+
+        if portal == "CANDIDATE" and is_employee:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This email address belongs to an Employee/Recruiter account. Please use the Employee Portal login page to reset your password.",
+            )
+
+        if portal == "EMPLOYEE" and not is_employee:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This email address belongs to a Candidate account. Please use the Candidate Portal login page to reset your password.",
             )
 
         import random
