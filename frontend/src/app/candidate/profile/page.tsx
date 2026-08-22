@@ -412,16 +412,36 @@ export default function CandidateProfilePage() {
                             </div>
                           )}
                         </div>
-                        <button
-                          onClick={() => {
-                            const updated = [...(profile.experience || [])];
-                            updated.splice(idx, 1);
-                            saveProfileData({ experience: updated }, "Experience entry removed.");
-                          }}
-                          className="text-slate-500 hover:text-rose-400 text-xs font-bold shrink-0 ml-4"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center space-x-2 shrink-0 ml-4">
+                          <button
+                            onClick={() => {
+                              setEditingItem({
+                                ...exp,
+                                designation: exp.designation || exp.title || "",
+                                company: exp.company || "",
+                                start_date: exp.start_date || "",
+                                end_date: exp.end_date || "Present",
+                                description: exp.description || "",
+                                skills_used: exp.skills_used || exp.skills || "",
+                              });
+                              setEditingIndex(idx);
+                              setActiveModal("experience");
+                            }}
+                            className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
+                          >
+                            ✏ Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              const updated = [...(profile.experience || [])];
+                              updated.splice(idx, 1);
+                              saveProfileData({ experience: updated }, "Experience entry removed.");
+                            }}
+                            className="text-slate-500 hover:text-rose-400 text-xs font-bold"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -890,7 +910,9 @@ export default function CandidateProfilePage() {
       {activeModal === "experience" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Add Work Experience</h3>
+            <h3 className="text-lg font-bold text-white">
+              {editingIndex !== null ? "Edit Work Experience" : "Add Work Experience"}
+            </h3>
             <div className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-400 font-mono mb-1">Job Title / Designation</label>
@@ -935,7 +957,7 @@ export default function CandidateProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Role Description & Key Achievements</label>
+                <label className="block text-slate-400 font-mono mb-1">Role Description &amp; Key Achievements</label>
                 <textarea
                   rows={4}
                   value={editingItem?.description || ""}
@@ -964,8 +986,16 @@ export default function CandidateProfilePage() {
               </button>
               <button
                 onClick={() => {
-                  const updated = [...(profile?.experience || []), editingItem];
-                  saveProfileData({ experience: updated }, "Work experience added successfully.");
+                  const updated = [...(profile?.experience || [])];
+                  if (editingIndex !== null && editingIndex >= 0) {
+                    updated[editingIndex] = editingItem;
+                  } else {
+                    updated.push(editingItem);
+                  }
+                  saveProfileData(
+                    { experience: updated },
+                    editingIndex !== null ? "Work experience updated successfully." : "Work experience added successfully."
+                  );
                 }}
                 disabled={saving || !editingItem?.designation || !editingItem?.company}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
