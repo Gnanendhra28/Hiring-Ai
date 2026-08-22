@@ -25,7 +25,6 @@ export default function CandidateLoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [receivedCode, setReceivedCode] = useState<string | null>(null);
 
   // Status & Feedback States
   const [error, setError] = useState<string | null>(null);
@@ -84,10 +83,7 @@ export default function CandidateLoginPage() {
       const res = await requestForgotPassword(targetEmail);
       if (res.success) {
         setResetEmail(targetEmail);
-        if (res.reset_code) {
-          setReceivedCode(res.reset_code);
-          setResetCode(res.reset_code);
-        }
+        setResetCode("");
         setSuccessMsg(res.message);
         setStep("RESET_PASSWORD");
       } else {
@@ -422,18 +418,9 @@ export default function CandidateLoginPage() {
                 </div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Create new password</h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Verification code generated for <span className="text-sky-300 font-mono font-bold">{resetEmail}</span>.
+                  A 6-digit OTP code has been sent to <span className="text-sky-300 font-mono font-bold">{resetEmail}</span>. Please check your Gmail/Email inbox.
                 </p>
               </div>
-
-              {receivedCode && (
-                <div className="p-3.5 mb-5 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs flex items-center justify-between">
-                  <span>Verification Code:</span>
-                  <span className="font-mono font-black text-sm tracking-widest text-sky-400 bg-sky-950/60 px-2.5 py-1 rounded border border-sky-500/40">
-                    {receivedCode}
-                  </span>
-                </div>
-              )}
 
               <form onSubmit={handleResetSubmit} className="space-y-4">
                 <div>

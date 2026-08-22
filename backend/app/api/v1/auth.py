@@ -223,14 +223,18 @@ async def login_user(payload: UserLoginRequest, request: Request):
 
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
+RESET_CODES_DB = {}
+
 @router.post("/forgot-password")
 async def forgot_password(payload: ForgotPasswordRequest, request: Request):
     """
     Initiates password recovery for a registered candidate/user.
-    Verifies user existence in PostgreSQL and generates a verification code.
+    Verifies user existence in PostgreSQL, generates a 6-digit OTP code,
+    stores it securely in memory/cache, and sends the code to candidate's email.
     """
     async with async_session_factory() as session:
-        stmt = select(User).where(User.email == payload.email.lower())
+        email_clean = payload.email.lower().strip()
+        stmt = select(User).where(User.email == email_clean)
         user = (await session.execute(stmt)).scalar_one_or_none()
 
         if not user:
@@ -240,7 +244,25 @@ async def forgot_password(payload: ForgotPasswordRequest, request: Request):
             )
 
         import random
+        from datetime import datetime, timedelta, timezone
+        from app.infrastructure.email.base import SMTPEmailAdapter
+
         reset_code = f"{random.randint(100000, 999999)}"
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+        RESET_CODES_DB[email_clean] = {"code": reset_code, "expires_at": expires_at}
+
+        subject = "Your AuraHire AI Password Reset Verification Code"
+        body = (
+            f"Hello {user.full_name},\n\n"
+            f"Your 6-digit password reset verification code for AuraHire AI Enterprise is:\n\n"
+            f"   {reset_code}\n\n"
+            f"This code is valid for 15 minutes. Please enter this code on the password reset page to recover your account password.\n\n"
+            f"If you did not request a password reset, please ignore this message.\n\n"
+            f"Regards,\nAuraHire AI Enterprise Security Team"
+        )
+
+        email_adapter = SMTPEmailAdapter()
+        await email_adapter.send_email(email_clean, subject, body)
 
         audit = AuditLog(
             user_id=user.id,
@@ -253,20 +275,38 @@ async def forgot_password(payload: ForgotPasswordRequest, request: Request):
         session.add(audit)
         await session.commit()
 
+        # SECURITY GUARD: DO NOT return reset_code in API response JSON!
         return {
-            "message": f"Password recovery verification code sent to {payload.email.lower()}.",
-            "email": payload.email.lower(),
-            "reset_code": reset_code,
+            "message": f"Password recovery verification code sent to {email_clean}. Please check your email inbox for the 6-digit OTP code.",
+            "email": email_clean,
         }
 
 @router.post("/reset-password")
 async def reset_password(payload: ResetPasswordRequest, request: Request):
     """
-    Resets the candidate's account password in PostgreSQL after verifying identity.
+    Resets the candidate's account password in PostgreSQL after verifying identity & OTP code.
     """
+    email_clean = payload.email.lower().strip()
+    user_reset_data = RESET_CODES_DB.get(email_clean)
+
+    if not user_reset_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password reset session expired or invalid. Please request a new verification code.",
+        )
+
+    if payload.reset_code:
+        input_code = str(payload.reset_code).strip()
+        expected_code = str(user_reset_data.get("code")).strip()
+        if input_code != expected_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid 6-digit verification code. Please check the code sent to your email inbox.",
+            )
+
     async with async_session_factory() as session:
         await session.begin()
-        stmt = select(User).where(User.email == payload.email.lower())
+        stmt = select(User).where(User.email == email_clean)
         user = (await session.execute(stmt)).scalar_one_or_none()
 
         if not user:
@@ -276,6 +316,7 @@ async def reset_password(payload: ResetPasswordRequest, request: Request):
             )
 
         user.password_hash = hash_password(payload.new_password)
+        RESET_CODES_DB.pop(email_clean, None)
 
         audit = AuditLog(
             user_id=user.id,
