@@ -20,7 +20,7 @@ class CandidateProfile(Base, UUIDMixin, TimestampMixin):
     headline: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    photo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    photo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     degree: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     college: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     skills: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True, default=list)

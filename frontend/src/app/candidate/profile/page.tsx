@@ -116,20 +116,39 @@ export default function CandidateProfilePage() {
     }
   };
 
-  // Photo upload handler
+  // Photo upload handler with Canvas avatar resizing for crisp display & fast saving
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image size should be less than 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image size should be less than 10MB.");
       return;
     }
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setHeaderForm((prev) => ({ ...prev, photo_url: base64String }));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const size = 300; // 300x300 avatar resolution
+        canvas.width = size;
+        canvas.height = size;
+
+        if (ctx) {
+          // Center crop to square avatar
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+          const resizedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          setHeaderForm((prev) => ({ ...prev, photo_url: resizedDataUrl }));
+        } else {
+          setHeaderForm((prev) => ({ ...prev, photo_url: event.target?.result as string }));
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
