@@ -87,6 +87,20 @@ async def get_security_context(
     NEVER trusts X-Organization-ID without membership verification.
     """
     if not x_organization_id:
+        async with async_session_factory() as session:
+            await session.begin()
+            stmt = select(OrganizationMembership).where(
+                OrganizationMembership.user_id == user.id,
+                OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
+            )
+            result = await session.execute(stmt)
+            membership = result.scalars().first()
+            if membership:
+                return SecurityContext(
+                    user=user,
+                    active_organization_id=membership.organization_id,
+                    role=membership.role,
+                )
         return SecurityContext(user=user)
 
     try:
