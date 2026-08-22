@@ -10,15 +10,13 @@ import {
 } from "@/lib/api";
 
 type SectionType =
-  | "preferences"
+  | "summary"
+  | "experience"
   | "education"
   | "skills"
   | "languages"
-  | "internships"
   | "projects"
-  | "summary"
   | "accomplishments"
-  | "employment"
   | "resume";
 
 export default function CandidateProfilePage() {
@@ -37,6 +35,7 @@ export default function CandidateProfilePage() {
 
   // Form states for profile header edit
   const [headerForm, setHeaderForm] = useState({
+    full_name: "",
     headline: "",
     location: "",
     phone: "",
@@ -54,6 +53,7 @@ export default function CandidateProfilePage() {
         if (data) {
           setProfile(data);
           setHeaderForm({
+            full_name: (data as any).full_name || user?.full_name || "",
             headline: data.headline || "",
             location: data.location || "",
             phone: data.phone || "",
@@ -69,7 +69,7 @@ export default function CandidateProfilePage() {
       }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -80,16 +80,15 @@ export default function CandidateProfilePage() {
   const calculateCompletion = (p: CandidateProfileData | null): number => {
     if (!p) return 0;
     let score = 0;
-    let total = 9;
+    let total = 7;
 
-    if (user?.full_name && user?.email) score++;
+    const displayName = (p as any).full_name || user?.full_name;
+    if (displayName && user?.email) score++;
     if (p.headline || p.location || p.phone) score++;
-    if (p.degree || p.college || (p.education && p.education.length > 0)) score++;
-    if (p.skills && p.skills.length > 0) score++;
     if (p.summary && p.summary.trim().length > 10) score++;
     if (p.career_preferences && Object.keys(p.career_preferences).length > 0) score++;
-    if (p.projects && p.projects.length > 0) score++;
-    if (p.employment && p.employment.length > 0 || (p.internships && p.internships.length > 0)) score++;
+    if (p.degree || p.college || (p.education && p.education.length > 0)) score++;
+    if (p.skills && p.skills.length > 0) score++;
     if (p.resume_url || p.resume_filename) score++;
 
     return Math.round((score / total) * 100);
@@ -105,11 +104,34 @@ export default function CandidateProfilePage() {
       setActiveModal(null);
       setEditingItem(null);
       setEditingIndex(null);
+
+      // Trigger Navbar refresh for instant photo/name update
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("candidate_profile_updated"));
+      }
     } catch (err: any) {
       setError(err.message || "Failed to save changes.");
     } finally {
       setSaving(false);
     }
+  };
+
+  // Photo upload handler
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size should be less than 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setHeaderForm((prev) => ({ ...prev, photo_url: base64String }));
+    };
+    reader.readAsDataURL(file);
   };
 
   // Quick Links Scroll Handler
@@ -136,6 +158,7 @@ export default function CandidateProfilePage() {
   }
 
   const completionPct = calculateCompletion(profile);
+  const currentName = (profile as any)?.full_name || user?.full_name || "Candidate Name";
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-6">
@@ -223,14 +246,14 @@ export default function CandidateProfilePage() {
                     {profile?.photo_url ? (
                       <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <span>{user?.full_name ? user.full_name.charAt(0).toUpperCase() : "C"}</span>
+                      <span>{currentName.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h2 className="text-2xl font-black text-white">{user?.full_name || "Candidate Name"}</h2>
+                    <h2 className="text-2xl font-black text-white">{currentName}</h2>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono">
                       Verified
                     </span>
@@ -257,7 +280,18 @@ export default function CandidateProfilePage() {
               {/* Action & Completion */}
               <div className="flex flex-col items-end space-y-3 self-stretch sm:self-auto justify-between sm:justify-start">
                 <button
-                  onClick={() => setActiveModal("header")}
+                  onClick={() => {
+                    setHeaderForm({
+                      full_name: currentName,
+                      headline: profile?.headline || "",
+                      location: profile?.location || "",
+                      phone: profile?.phone || "",
+                      degree: profile?.degree || "",
+                      college: profile?.college || "",
+                      photo_url: profile?.photo_url || "",
+                    });
+                    setActiveModal("header");
+                  }}
                   className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-lg shadow-sky-500/20 transition-all flex items-center gap-1.5"
                 >
                   ✏ Edit Profile
@@ -288,15 +322,13 @@ export default function CandidateProfilePage() {
               </div>
               <nav className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1 pb-2 lg:pb-0 scrollbar-none">
                 {[
-                  { id: "preferences", label: "Career Preferences", icon: "🎯" },
+                  { id: "summary", label: "Profile Summary", icon: "📝" },
+                  { id: "experience", label: "Experience", icon: "💼" },
                   { id: "education", label: "Education", icon: "🎓" },
                   { id: "skills", label: "Key Skills", icon: "⚡" },
                   { id: "languages", label: "Languages", icon: "🗣" },
-                  { id: "internships", label: "Internships", icon: "💼" },
                   { id: "projects", label: "Projects", icon: "🚀" },
-                  { id: "summary", label: "Profile Summary", icon: "📝" },
                   { id: "accomplishments", label: "Accomplishments", icon: "🏆" },
-                  { id: "employment", label: "Employment", icon: "🏢" },
                   { id: "resume", label: "Resume", icon: "📄" },
                 ].map((item) => (
                   <button
@@ -313,17 +345,55 @@ export default function CandidateProfilePage() {
 
             {/* Sections Column */}
             <div className="lg:col-span-3 space-y-6">
-              {/* SECTION 1: Career Preferences */}
-              <div id="preferences" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+              {/* SECTION 1: Profile Summary (TOP SUMMARY) */}
+              <div id="summary" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <span>🎯</span>
-                    <span>Career Preferences</span>
+                    <span>📝</span>
+                    <span>Profile Summary</span>
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setEditingItem(profile?.summary || "");
+                      setActiveModal("summary");
+                    }}
+                    className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                {profile?.summary ? (
+                  <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    {profile.summary}
+                  </p>
+                ) : (
+                  <div className="text-slate-500 text-xs italic py-2">
+                    No profile summary added yet.{" "}
+                    <button
+                      onClick={() => {
+                        setEditingItem("");
+                        setActiveModal("summary");
+                      }}
+                      className="text-sky-400 underline font-normal"
+                    >
+                      Add summary
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 2: Experience (formerly Career Preferences) */}
+              <div id="experience" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <span>💼</span>
+                    <span>Experience</span>
                   </h3>
                   <button
                     onClick={() => {
                       setEditingItem(profile?.career_preferences || {});
-                      setActiveModal("preferences");
+                      setActiveModal("experience");
                     }}
                     className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
                   >
@@ -334,9 +404,9 @@ export default function CandidateProfilePage() {
                 {profile?.career_preferences && Object.keys(profile.career_preferences).length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-                      <span className="text-slate-500 font-mono block mb-1">PREFERRED JOB TYPE</span>
+                      <span className="text-slate-500 font-mono block mb-1">PREFERRED ROLE / EXPERIENCE</span>
                       <span className="text-white font-medium">
-                        {profile.career_preferences.job_type || "Jobs, Internships"}
+                        {profile.career_preferences.job_type || "Software Engineering, AI Development"}
                       </span>
                     </div>
                     <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
@@ -360,21 +430,21 @@ export default function CandidateProfilePage() {
                   </div>
                 ) : (
                   <div className="text-slate-500 text-xs italic py-2">
-                    No career preferences added yet.{" "}
+                    No experience preferences added yet.{" "}
                     <button
                       onClick={() => {
                         setEditingItem({});
-                        setActiveModal("preferences");
+                        setActiveModal("experience");
                       }}
                       className="text-sky-400 underline font-normal"
                     >
-                      Add preferences
+                      Add experience
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* SECTION 2: Education */}
+              {/* SECTION 3: Education */}
               <div id="education" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
@@ -383,7 +453,7 @@ export default function CandidateProfilePage() {
                   </h3>
                   <button
                     onClick={() => {
-                      setEditingItem({ degree: "", institution: "", field: "", start_year: "", end_year: "", grade: "" });
+                      setEditingItem({ degree: "", institution: "", year: "", grade: "" });
                       setEditingIndex(null);
                       setActiveModal("education");
                     }}
@@ -398,36 +468,20 @@ export default function CandidateProfilePage() {
                     {profile.education.map((edu: any, idx: number) => (
                       <div key={idx} className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-start">
                         <div>
-                          <h4 className="text-sm font-bold text-white">{edu.degree || edu.degree_name || "Degree"}</h4>
-                          <p className="text-xs text-sky-400 mt-0.5">{edu.institution || edu.school || "Institution"}</p>
-                          <p className="text-[11px] text-slate-400 mt-1">
-                            {edu.field && <span>{edu.field} • </span>}
-                            <span>{edu.start_year || edu.start_date || "N/A"} - {edu.end_year || edu.end_date || "Present"}</span>
-                            {edu.grade && <span className="ml-2 font-mono text-emerald-400">({edu.grade})</span>}
-                          </p>
+                          <h4 className="text-sm font-bold text-white">{edu.degree}</h4>
+                          <p className="text-xs text-sky-400 mt-0.5">{edu.institution}</p>
+                          <p className="text-[11px] text-slate-400 mt-1">Passing Year: {edu.year} {edu.grade ? `| Grade: ${edu.grade}` : ""}</p>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => {
-                              setEditingItem(edu);
-                              setEditingIndex(idx);
-                              setActiveModal("education");
-                            }}
-                            className="text-slate-400 hover:text-sky-400 text-xs"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              const updated = [...(profile.education || [])];
-                              updated.splice(idx, 1);
-                              saveProfileData({ education: updated }, "Education entry removed.");
-                            }}
-                            className="text-slate-500 hover:text-rose-400 text-xs"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => {
+                            const updated = [...(profile.education || [])];
+                            updated.splice(idx, 1);
+                            saveProfileData({ education: updated }, "Education entry removed.");
+                          }}
+                          className="text-slate-500 hover:text-rose-400 text-xs"
+                        >
+                          Delete
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -436,7 +490,7 @@ export default function CandidateProfilePage() {
                     No education added yet.{" "}
                     <button
                       onClick={() => {
-                        setEditingItem({ degree: "", institution: "", field: "", start_year: "", end_year: "", grade: "" });
+                        setEditingItem({ degree: "", institution: "", year: "", grade: "" });
                         setEditingIndex(null);
                         setActiveModal("education");
                       }}
@@ -448,7 +502,7 @@ export default function CandidateProfilePage() {
                 )}
               </div>
 
-              {/* SECTION 3: Key Skills */}
+              {/* SECTION 4: Key Skills */}
               <div id="skills" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
@@ -456,7 +510,10 @@ export default function CandidateProfilePage() {
                     <span>Key Skills</span>
                   </h3>
                   <button
-                    onClick={() => setActiveModal("skills")}
+                    onClick={() => {
+                      setEditingItem((profile?.skills || []).join(", "));
+                      setActiveModal("skills");
+                    }}
                     className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
                   >
                     Edit Skills
@@ -468,32 +525,29 @@ export default function CandidateProfilePage() {
                     {profile.skills.map((skill: string, idx: number) => (
                       <span
                         key={idx}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-sky-300 text-xs font-mono flex items-center space-x-1.5"
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-sky-400 text-xs font-medium"
                       >
-                        <span>{skill}</span>
-                        <button
-                          onClick={() => {
-                            const updated = profile.skills?.filter((_, i) => i !== idx) || [];
-                            saveProfileData({ skills: updated }, `Skill '${skill}' removed.`);
-                          }}
-                          className="text-slate-500 hover:text-rose-400 text-[10px]"
-                        >
-                          ✕
-                        </button>
+                        {skill}
                       </span>
                     ))}
                   </div>
                 ) : (
                   <div className="text-slate-500 text-xs italic py-2">
                     No skills added yet.{" "}
-                    <button onClick={() => setActiveModal("skills")} className="text-sky-400 underline font-normal">
+                    <button
+                      onClick={() => {
+                        setEditingItem("");
+                        setActiveModal("skills");
+                      }}
+                      className="text-sky-400 underline font-normal"
+                    >
                       Add skills
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* SECTION 4: Languages */}
+              {/* SECTION 5: Languages */}
               <div id="languages" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
@@ -502,9 +556,9 @@ export default function CandidateProfilePage() {
                   </h3>
                   <button
                     onClick={() => {
-                      setEditingItem({ language: "", proficiency: "Fluent" });
+                      setEditingItem({ name: "", proficiency: "Full Professional" });
                       setEditingIndex(null);
-                      setActiveModal("language");
+                      setActiveModal("languages");
                     }}
                     className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
                   >
@@ -517,8 +571,8 @@ export default function CandidateProfilePage() {
                     {profile.languages.map((lang: any, idx: number) => (
                       <div key={idx} className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800 flex justify-between items-center text-xs">
                         <div>
-                          <span className="text-white font-bold block">{lang.language}</span>
-                          <span className="text-slate-400 text-[11px] font-mono">{lang.proficiency || "Fluent"}</span>
+                          <span className="font-bold text-white">{lang.name}</span>
+                          <span className="text-slate-400 block text-[11px]">{lang.proficiency}</span>
                         </div>
                         <button
                           onClick={() => {
@@ -538,72 +592,13 @@ export default function CandidateProfilePage() {
                     No languages added yet.{" "}
                     <button
                       onClick={() => {
-                        setEditingItem({ language: "", proficiency: "Fluent" });
+                        setEditingItem({ name: "", proficiency: "Full Professional" });
                         setEditingIndex(null);
-                        setActiveModal("language");
+                        setActiveModal("languages");
                       }}
                       className="text-sky-400 underline font-normal"
                     >
                       Add language
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 5: Internships */}
-              <div id="internships" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <span>💼</span>
-                    <span>Internships</span>
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setEditingItem({ organization: "", position: "", start_date: "", end_date: "", description: "" });
-                      setEditingIndex(null);
-                      setActiveModal("internship");
-                    }}
-                    className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
-                  >
-                    + Add
-                  </button>
-                </div>
-
-                {profile?.internships && profile.internships.length > 0 ? (
-                  <div className="space-y-3">
-                    {profile.internships.map((intern: any, idx: number) => (
-                      <div key={idx} className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-start">
-                        <div>
-                          <h4 className="text-sm font-bold text-white">{intern.position}</h4>
-                          <p className="text-xs text-sky-400 mt-0.5">{intern.organization}</p>
-                          <p className="text-[11px] text-slate-400 mt-1">{intern.start_date} - {intern.end_date || "Present"}</p>
-                          {intern.description && <p className="text-xs text-slate-300 mt-2">{intern.description}</p>}
-                        </div>
-                        <button
-                          onClick={() => {
-                            const updated = [...(profile.internships || [])];
-                            updated.splice(idx, 1);
-                            saveProfileData({ internships: updated }, "Internship removed.");
-                          }}
-                          className="text-slate-500 hover:text-rose-400 text-xs"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-slate-500 text-xs italic py-2">
-                    No internships added yet.{" "}
-                    <button
-                      onClick={() => {
-                        setEditingItem({ organization: "", position: "", start_date: "", end_date: "", description: "" });
-                        setEditingIndex(null);
-                        setActiveModal("internship");
-                      }}
-                      className="text-sky-400 underline font-normal"
-                    >
-                      Add internship
                     </button>
                   </div>
                 )}
@@ -618,7 +613,7 @@ export default function CandidateProfilePage() {
                   </h3>
                   <button
                     onClick={() => {
-                      setEditingItem({ name: "", description: "", technologies: "", github_url: "", live_url: "" });
+                      setEditingItem({ title: "", description: "", link: "", tech_stack: "" });
                       setEditingIndex(null);
                       setActiveModal("project");
                     }}
@@ -633,21 +628,13 @@ export default function CandidateProfilePage() {
                     {profile.projects.map((proj: any, idx: number) => (
                       <div key={idx} className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-start">
                         <div>
-                          <h4 className="text-sm font-bold text-white">{proj.name}</h4>
-                          {proj.technologies && <p className="text-xs text-sky-400 font-mono mt-0.5">{proj.technologies}</p>}
-                          {proj.description && <p className="text-xs text-slate-300 mt-2">{proj.description}</p>}
-                          <div className="flex items-center space-x-4 mt-2 text-xs">
-                            {proj.github_url && (
-                              <a href={proj.github_url} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
-                                GitHub →
-                              </a>
-                            )}
-                            {proj.live_url && (
-                              <a href={proj.live_url} target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">
-                                Live Demo →
-                              </a>
-                            )}
-                          </div>
+                          <h4 className="text-sm font-bold text-white">{proj.title}</h4>
+                          {proj.link && (
+                            <a href={proj.link} target="_blank" rel="noreferrer" className="text-xs text-sky-400 underline mt-0.5 inline-block">
+                              {proj.link}
+                            </a>
+                          )}
+                          <p className="text-xs text-slate-300 mt-2">{proj.description}</p>
                         </div>
                         <button
                           onClick={() => {
@@ -667,7 +654,7 @@ export default function CandidateProfilePage() {
                     No projects added yet.{" "}
                     <button
                       onClick={() => {
-                        setEditingItem({ name: "", description: "", technologies: "", github_url: "", live_url: "" });
+                        setEditingItem({ title: "", description: "", link: "", tech_stack: "" });
                         setEditingIndex(null);
                         setActiveModal("project");
                       }}
@@ -679,50 +666,12 @@ export default function CandidateProfilePage() {
                 )}
               </div>
 
-              {/* SECTION 7: Profile Summary */}
-              <div id="summary" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <span>📝</span>
-                    <span>Profile Summary</span>
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setEditingItem({ summary: profile?.summary || "" });
-                      setActiveModal("summary");
-                    }}
-                    className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
-                  >
-                    Edit
-                  </button>
-                </div>
-
-                {profile?.summary ? (
-                  <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-4 rounded-2xl border border-slate-800 whitespace-pre-wrap">
-                    {profile.summary}
-                  </p>
-                ) : (
-                  <div className="text-slate-500 text-xs italic py-2">
-                    No summary added yet.{" "}
-                    <button
-                      onClick={() => {
-                        setEditingItem({ summary: "" });
-                        setActiveModal("summary");
-                      }}
-                      className="text-sky-400 underline font-normal"
-                    >
-                      Write summary
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 8: Accomplishments */}
+              {/* SECTION 7: Accomplishments */}
               <div id="accomplishments" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
                     <span>🏆</span>
-                    <span>Accomplishments &amp; Certifications</span>
+                    <span>Accomplishments</span>
                   </h3>
                   <button
                     onClick={() => {
@@ -737,14 +686,17 @@ export default function CandidateProfilePage() {
                 </div>
 
                 {profile?.accomplishments && Object.keys(profile.accomplishments).length > 0 ? (
-                  <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-xs space-y-2">
-                    <pre className="text-slate-300 font-mono whitespace-pre-wrap">
-                      {JSON.stringify(profile.accomplishments, null, 2)}
-                    </pre>
+                  <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                    {Object.entries(profile.accomplishments).map(([k, v]: [string, any], idx: number) => (
+                      <div key={idx} className="flex justify-between items-center border-b border-slate-800/50 pb-1.5 last:border-0 last:pb-0">
+                        <span className="text-slate-400 font-mono capitalize">{k}:</span>
+                        <span className="text-white font-medium">{String(v)}</span>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-slate-500 text-xs italic py-2">
-                    No accomplishments or certifications added yet.{" "}
+                    No accomplishments added yet.{" "}
                     <button
                       onClick={() => {
                         setEditingItem({ title: "", issuer: "", year: "", description: "" });
@@ -759,66 +711,7 @@ export default function CandidateProfilePage() {
                 )}
               </div>
 
-              {/* SECTION 9: Employment */}
-              <div id="employment" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <span>🏢</span>
-                    <span>Employment History</span>
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setEditingItem({ company: "", designation: "", start_date: "", end_date: "", description: "" });
-                      setEditingIndex(null);
-                      setActiveModal("employment");
-                    }}
-                    className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
-                  >
-                    + Add
-                  </button>
-                </div>
-
-                {profile?.employment && profile.employment.length > 0 ? (
-                  <div className="space-y-3">
-                    {profile.employment.map((emp: any, idx: number) => (
-                      <div key={idx} className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-start">
-                        <div>
-                          <h4 className="text-sm font-bold text-white">{emp.designation}</h4>
-                          <p className="text-xs text-sky-400 mt-0.5">{emp.company}</p>
-                          <p className="text-[11px] text-slate-400 mt-1">{emp.start_date} - {emp.end_date || "Present"}</p>
-                          {emp.description && <p className="text-xs text-slate-300 mt-2">{emp.description}</p>}
-                        </div>
-                        <button
-                          onClick={() => {
-                            const updated = [...(profile.employment || [])];
-                            updated.splice(idx, 1);
-                            saveProfileData({ employment: updated }, "Employment entry removed.");
-                          }}
-                          className="text-slate-500 hover:text-rose-400 text-xs"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-slate-500 text-xs italic py-2">
-                    No employment records added yet.{" "}
-                    <button
-                      onClick={() => {
-                        setEditingItem({ company: "", designation: "", start_date: "", end_date: "", description: "" });
-                        setEditingIndex(null);
-                        setActiveModal("employment");
-                      }}
-                      className="text-sky-400 underline font-normal"
-                    >
-                      Add employment
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 10: Resume */}
+              {/* SECTION 8: Resume */}
               <div id="resume" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
@@ -898,7 +791,38 @@ export default function CandidateProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
             <h3 className="text-lg font-bold text-white">Edit Profile Header</h3>
+
+            {/* Live Photo Preview */}
+            <div className="flex items-center space-x-4 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center border border-slate-700 overflow-hidden shrink-0">
+                {headerForm.photo_url ? (
+                  <img src={headerForm.photo_url} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{headerForm.full_name?.charAt(0).toUpperCase() || "C"}</span>
+                )}
+              </div>
+              <div className="space-y-1 text-xs flex-1">
+                <label className="block text-slate-300 font-semibold">Upload Candidate Photo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="block w-full text-[11px] text-slate-400 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-500 file:text-white hover:file:bg-sky-400 cursor-pointer"
+                />
+              </div>
+            </div>
+
             <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Candidate Full Name</label>
+                <input
+                  type="text"
+                  value={headerForm.full_name}
+                  onChange={(e) => setHeaderForm({ ...headerForm, full_name: e.target.value })}
+                  placeholder="Enter your full name"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                />
+              </div>
               <div>
                 <label className="block text-slate-400 font-mono mb-1">Headline</label>
                 <input
@@ -959,26 +883,26 @@ export default function CandidateProfilePage() {
                 disabled={saving}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? "Saving..." : "Save Header"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal 2: Edit Career Preferences */}
-      {activeModal === "preferences" && (
+      {/* Modal 2: Edit Experience (formerly Career Preferences) */}
+      {activeModal === "experience" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Edit Career Preferences</h3>
+            <h3 className="text-lg font-bold text-white">Edit Experience Preferences</h3>
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Preferred Job Type</label>
+                <label className="block text-slate-400 font-mono mb-1">Preferred Role / Experience</label>
                 <input
                   type="text"
                   value={editingItem?.job_type || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, job_type: e.target.value })}
-                  placeholder="e.g. Full-time Jobs, Internships"
+                  placeholder="e.g. Software Engineering, AI Development"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -1008,7 +932,7 @@ export default function CandidateProfilePage() {
                   type="text"
                   value={editingItem?.work_mode || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, work_mode: e.target.value })}
-                  placeholder="e.g. Remote / Hybrid"
+                  placeholder="e.g. Hybrid / Remote"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -1021,84 +945,83 @@ export default function CandidateProfilePage() {
                 Cancel
               </button>
               <button
-                onClick={() => saveProfileData({ career_preferences: editingItem }, "Career preferences saved.")}
+                onClick={() => saveProfileData({ career_preferences: editingItem }, "Experience preferences updated.")}
                 disabled={saving}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Preferences"}
+                {saving ? "Saving..." : "Save Experience"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal 3: Add / Edit Education */}
+      {/* Modal 3: Edit Summary */}
+      {activeModal === "summary" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Edit Profile Summary</h3>
+            <div>
+              <textarea
+                rows={5}
+                value={editingItem}
+                onChange={(e) => setEditingItem(e.target.value)}
+                placeholder="Write a concise overview of your career background, expertise, and goals..."
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+              />
+            </div>
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveProfileData({ summary: editingItem }, "Profile summary updated.")}
+                disabled={saving}
+                className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Summary"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 4: Edit Education */}
       {activeModal === "education" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">
-              {editingIndex !== null ? "Edit Education" : "Add Education"}
-            </h3>
+            <h3 className="text-lg font-bold text-white">Add Education</h3>
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Degree / Certificate</label>
+                <label className="block text-slate-400 font-mono mb-1">Degree / Qualification</label>
                 <input
                   type="text"
                   value={editingItem?.degree || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, degree: e.target.value })}
-                  placeholder="e.g. B.Tech / Class XII / Class X"
+                  placeholder="e.g. B.Tech Computer Science"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Institution / School</label>
+                <label className="block text-slate-400 font-mono mb-1">Institution / College</label>
                 <input
                   type="text"
                   value={editingItem?.institution || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, institution: e.target.value })}
-                  placeholder="e.g. Indian Institute of Technology (IIT), Bhilai"
+                  placeholder="e.g. IIT Bhilai"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Field of Study</label>
+                <label className="block text-slate-400 font-mono mb-1">Passing Year</label>
                 <input
                   type="text"
-                  value={editingItem?.field || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, field: e.target.value })}
-                  placeholder="e.g. Computer Science & Engineering"
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 font-mono mb-1">Start Year</label>
-                  <input
-                    type="text"
-                    value={editingItem?.start_year || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, start_year: e.target.value })}
-                    placeholder="e.g. 2022"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 font-mono mb-1">End Year / Graduated</label>
-                  <input
-                    type="text"
-                    value={editingItem?.end_year || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, end_year: e.target.value })}
-                    placeholder="e.g. 2026"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-slate-400 font-mono mb-1">Grade / CGPA / %</label>
-                <input
-                  type="text"
-                  value={editingItem?.grade || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, grade: e.target.value })}
-                  placeholder="e.g. 8.9 / 10"
+                  value={editingItem?.year || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, year: e.target.value })}
+                  placeholder="e.g. 2026"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -1112,13 +1035,8 @@ export default function CandidateProfilePage() {
               </button>
               <button
                 onClick={() => {
-                  const list = [...(profile?.education || [])];
-                  if (editingIndex !== null) {
-                    list[editingIndex] = editingItem;
-                  } else {
-                    list.push(editingItem);
-                  }
-                  saveProfileData({ education: list }, "Education updated.");
+                  const updated = [...(profile?.education || []), editingItem];
+                  saveProfileData({ education: updated }, "Education added.");
                 }}
                 disabled={saving}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
@@ -1130,18 +1048,21 @@ export default function CandidateProfilePage() {
         </div>
       )}
 
-      {/* Modal 4: Edit Skills */}
+      {/* Modal 5: Edit Skills */}
       {activeModal === "skills" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Manage Key Skills</h3>
-            <p className="text-xs text-slate-400">Enter comma-separated skills (e.g. Python, React, FastAPI, SQL, RAG)</p>
-            <textarea
-              rows={4}
-              value={editingItem?.skills_text ?? (profile?.skills?.join(", ") || "")}
-              onChange={(e) => setEditingItem({ skills_text: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-            />
+            <h3 className="text-lg font-bold text-white">Edit Key Skills</h3>
+            <div>
+              <label className="block text-slate-400 font-mono mb-1">Comma Separated Skills</label>
+              <textarea
+                rows={3}
+                value={editingItem}
+                onChange={(e) => setEditingItem(e.target.value)}
+                placeholder="Python, FastAPI, RAG, Machine Learning, PostgreSQL"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+              />
+            </div>
             <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
               <button
                 onClick={() => setActiveModal(null)}
@@ -1151,12 +1072,11 @@ export default function CandidateProfilePage() {
               </button>
               <button
                 onClick={() => {
-                  const str = editingItem?.skills_text ?? (profile?.skills?.join(", ") || "");
-                  const skillList = str
+                  const parsed = editingItem
                     .split(",")
                     .map((s: string) => s.trim())
-                    .filter((s: string) => s.length > 0);
-                  saveProfileData({ skills: skillList }, "Key skills updated.");
+                    .filter(Boolean);
+                  saveProfileData({ skills: parsed }, "Key skills updated.");
                 }}
                 disabled={saving}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
@@ -1168,91 +1088,34 @@ export default function CandidateProfilePage() {
         </div>
       )}
 
-      {/* Modal 5: Edit Profile Summary */}
-      {activeModal === "summary" && (
+      {/* Modal 6: Edit Languages */}
+      {activeModal === "languages" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Edit Profile Summary</h3>
-            <textarea
-              rows={5}
-              value={editingItem?.summary ?? ""}
-              onChange={(e) => setEditingItem({ summary: e.target.value })}
-              placeholder="Write a brief professional summary of your background, experience, and career objectives..."
-              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-            />
-            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
-              <button
-                onClick={() => setActiveModal(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => saveProfileData({ summary: editingItem?.summary }, "Summary updated.")}
-                disabled={saving}
-                className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Save Summary"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 6: Add / Edit Internship */}
-      {activeModal === "internship" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Add Internship</h3>
+            <h3 className="text-lg font-bold text-white">Add Language</h3>
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Organization / Company</label>
+                <label className="block text-slate-400 font-mono mb-1">Language Name</label>
                 <input
                   type="text"
-                  value={editingItem?.organization || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, organization: e.target.value })}
+                  value={editingItem?.name || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                  placeholder="e.g. English, Telugu, Hindi"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Position / Role</label>
-                <input
-                  type="text"
-                  value={editingItem?.position || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, position: e.target.value })}
+                <label className="block text-slate-400 font-mono mb-1">Proficiency Level</label>
+                <select
+                  value={editingItem?.proficiency || "Full Professional"}
+                  onChange={(e) => setEditingItem({ ...editingItem, proficiency: e.target.value })}
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 font-mono mb-1">Start Date</label>
-                  <input
-                    type="text"
-                    value={editingItem?.start_date || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, start_date: e.target.value })}
-                    placeholder="e.g. May 2024"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 font-mono mb-1">End Date</label>
-                  <input
-                    type="text"
-                    value={editingItem?.end_date || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, end_date: e.target.value })}
-                    placeholder="e.g. Aug 2024"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-slate-400 font-mono mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  value={editingItem?.description || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                />
+                >
+                  <option value="Native / Bilingual">Native / Bilingual</option>
+                  <option value="Full Professional">Full Professional</option>
+                  <option value="Professional Working">Professional Working</option>
+                  <option value="Elementary">Elementary</option>
+                </select>
               </div>
             </div>
             <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
@@ -1264,42 +1127,42 @@ export default function CandidateProfilePage() {
               </button>
               <button
                 onClick={() => {
-                  const list = [...(profile?.internships || [])];
-                  list.push(editingItem);
-                  saveProfileData({ internships: list }, "Internship added.");
+                  const updated = [...(profile?.languages || []), editingItem];
+                  saveProfileData({ languages: updated }, "Language added.");
                 }}
                 disabled={saving}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Internship"}
+                {saving ? "Saving..." : "Save Language"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal 7: Add / Edit Project */}
+      {/* Modal 7: Edit Project */}
       {activeModal === "project" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
             <h3 className="text-lg font-bold text-white">Add Project</h3>
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Project Name</label>
+                <label className="block text-slate-400 font-mono mb-1">Project Title</label>
                 <input
                   type="text"
-                  value={editingItem?.name || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                  value={editingItem?.title || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                  placeholder="e.g. AI Hiring System & Talent OS"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Technologies Used</label>
+                <label className="block text-slate-400 font-mono mb-1">Project Link (Optional)</label>
                 <input
                   type="text"
-                  value={editingItem?.technologies || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, technologies: e.target.value })}
-                  placeholder="e.g. Next.js, Python, PostgreSQL, Vector Search"
+                  value={editingItem?.link || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, link: e.target.value })}
+                  placeholder="https://github.com/..."
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -1309,30 +1172,9 @@ export default function CandidateProfilePage() {
                   rows={3}
                   value={editingItem?.description || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                  placeholder="Describe your project, technologies used, and key outcomes..."
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 font-mono mb-1">GitHub URL</label>
-                  <input
-                    type="text"
-                    value={editingItem?.github_url || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, github_url: e.target.value })}
-                    placeholder="https://github.com/..."
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 font-mono mb-1">Live URL</label>
-                  <input
-                    type="text"
-                    value={editingItem?.live_url || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, live_url: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
-                  />
-                </div>
               </div>
             </div>
             <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
@@ -1344,9 +1186,8 @@ export default function CandidateProfilePage() {
               </button>
               <button
                 onClick={() => {
-                  const list = [...(profile?.projects || [])];
-                  list.push(editingItem);
-                  saveProfileData({ projects: list }, "Project added.");
+                  const updated = [...(profile?.projects || []), editingItem];
+                  saveProfileData({ projects: updated }, "Project added.");
                 }}
                 disabled={saving}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
@@ -1358,38 +1199,105 @@ export default function CandidateProfilePage() {
         </div>
       )}
 
-      {/* Modal 8: Upload / Replace Resume */}
-      {activeModal === "resume" && (
+      {/* Modal 8: Edit Accomplishment */}
+      {activeModal === "accomplishment" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-md w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Upload Resume</h3>
-            <p className="text-xs text-slate-400">Select a PDF or DOCX file (Max size 10MB)</p>
-            <input
-              type="file"
-              accept=".pdf,.docx"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const now = new Date().toLocaleDateString();
-                  saveProfileData(
-                    {
-                      resume_filename: file.name,
-                      resume_url: `/uploads/resumes/${file.name}`,
-                      resume_filesize: file.size,
-                      resume_updated_at: now,
-                    },
-                    "Resume uploaded successfully."
-                  );
-                }
-              }}
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-500 file:text-white hover:file:bg-sky-400 cursor-pointer"
-            />
-            <div className="flex justify-end pt-4 border-t border-slate-800">
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Add Accomplishment</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Title / Certificate</label>
+                <input
+                  type="text"
+                  value={editingItem?.title || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                  placeholder="e.g. AWS Certified Solutions Architect"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Issuing Authority</label>
+                <input
+                  type="text"
+                  value={editingItem?.issuer || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, issuer: e.target.value })}
+                  placeholder="e.g. Amazon Web Services"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
               <button
                 onClick={() => setActiveModal(null)}
                 className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
               >
                 Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const existingAcc = profile?.accomplishments || {};
+                  const updated = { ...existingAcc, [editingItem.title || "certification"]: editingItem.issuer };
+                  saveProfileData({ accomplishments: updated }, "Accomplishment added.");
+                }}
+                disabled={saving}
+                className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Accomplishment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 9: Upload Resume */}
+      {activeModal === "resume" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Upload Candidate Resume</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Select Resume File (PDF / DOCX)</label>
+                <input
+                  type="file"
+                  accept=".pdf,.docx,.doc"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setEditingItem({
+                        filename: file.name,
+                        filesize: file.size,
+                        url: `/uploads/resumes/${file.name}`,
+                      });
+                    }
+                  }}
+                  className="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-500 file:text-white hover:file:bg-sky-400 cursor-pointer"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (editingItem?.filename) {
+                    saveProfileData(
+                      {
+                        resume_filename: editingItem.filename,
+                        resume_url: editingItem.url,
+                        resume_updated_at: new Date().toISOString().split("T")[0],
+                      },
+                      "Resume uploaded successfully."
+                    );
+                  }
+                }}
+                disabled={saving || !editingItem?.filename}
+                className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
+              >
+                {saving ? "Uploading..." : "Save Resume"}
               </button>
             </div>
           </div>

@@ -37,7 +37,9 @@ async def get_my_candidate_profile(user: User = Depends(get_current_user)):
             await session.commit()
             await session.refresh(profile)
 
-        return profile
+        resp = CandidateProfileResponse.model_validate(profile)
+        resp.full_name = user.full_name
+        return resp
 
 @router.put("/profile", response_model=CandidateProfileResponse)
 async def update_my_candidate_profile(
@@ -46,6 +48,12 @@ async def update_my_candidate_profile(
 ):
     """Creates or updates candidate profile metadata."""
     async with async_session_factory() as session:
+        if payload.full_name is not None:
+            stmt_u = select(User).where(User.id == user.id)
+            u_obj = (await session.execute(stmt_u)).scalar_one_or_none()
+            if u_obj:
+                u_obj.full_name = payload.full_name
+
         stmt = select(CandidateProfile).where(CandidateProfile.user_id == user.id)
         result = await session.execute(stmt)
         profile = result.scalar_one_or_none()
@@ -126,7 +134,9 @@ async def update_my_candidate_profile(
         await session.commit()
         await session.refresh(profile)
 
-        return profile
+        resp = CandidateProfileResponse.model_validate(profile)
+        resp.full_name = payload.full_name or user.full_name
+        return resp
 
 @router.post("/applications", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED)
 async def submit_application(

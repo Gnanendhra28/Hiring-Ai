@@ -62,6 +62,14 @@ export function CandidateNavbar() {
       }
     }
     fetchCandidateProfile();
+
+    const handleProfileUpdate = () => {
+      fetchCandidateProfile();
+    };
+    window.addEventListener("candidate_profile_updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("candidate_profile_updated", handleProfileUpdate);
+    };
   }, []);
 
   // Close dropdowns on outside click

@@ -128,11 +128,12 @@ class RecruiterProfileResponse(BaseModel):
     created_at: datetime
 
 class CandidateProfileRequest(BaseModel):
+    full_name: Optional[str] = Field(None, max_length=255)
     location: Optional[str] = Field(None, max_length=255)
     headline: Optional[str] = Field(None, max_length=255)
     summary: Optional[str] = None
     phone: Optional[str] = Field(None, max_length=50)
-    photo_url: Optional[str] = Field(None, max_length=500)
+    photo_url: Optional[str] = None
     degree: Optional[str] = Field(None, max_length=255)
     college: Optional[str] = Field(None, max_length=255)
     skills: Optional[List[str]] = Field(default_factory=list)
@@ -156,6 +157,7 @@ class CandidateProfileResponse(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
+    full_name: Optional[str] = None
     location: Optional[str] = None
     headline: Optional[str] = None
     summary: Optional[str] = None
