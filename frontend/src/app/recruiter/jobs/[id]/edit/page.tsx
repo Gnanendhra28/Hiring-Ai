@@ -19,6 +19,7 @@ export default function EditJobPostingPage() {
     location: "San Francisco, CA",
     work_mode: "Hybrid",
     employment_type: "FULL_TIME",
+    experience: "3-5 Years",
     date_posted: todayStr,
     closing_date: "",
     status: "PUBLISHED",
@@ -58,6 +59,14 @@ export default function EditJobPostingPage() {
             parsedLocation = job.location.replace(" (Hybrid)", "");
           }
 
+          let parsedExp = "3-5 Years";
+          if (job.description && job.description.includes("Required Experience**: ")) {
+            const match = job.description.match(/Required Experience\*\*: ([^\n]+)/);
+            if (match && match[1]) {
+              parsedExp = match[1].trim();
+            }
+          }
+
           setFormData((prev) => ({
             ...prev,
             title: job.title || "",
@@ -65,6 +74,7 @@ export default function EditJobPostingPage() {
             location: parsedLocation,
             work_mode: parsedWorkMode,
             employment_type: job.employment_type || "FULL_TIME",
+            experience: parsedExp,
             status: job.status || "PUBLISHED",
             description: job.description || "",
           }));
@@ -78,7 +88,7 @@ export default function EditJobPostingPage() {
     loadJobDetails();
   }, [jobId]);
 
-  // Auto-compile markdown if not manually overridden
+  // Auto-compile markdown if individual fields update
   useEffect(() => {
     if (fetching) return;
     const compiledMarkdown = `## About the Company
@@ -86,6 +96,7 @@ ${formData.about_company}
 
 ## Work Location & Schedule
 - **Location**: ${formData.location} (${formData.work_mode})
+- **Required Experience**: ${formData.experience}
 - **Date Posted**: ${formData.date_posted}
 ${formData.closing_date ? `- **Application Closing Date**: ${formData.closing_date}` : ""}
 
@@ -119,6 +130,7 @@ ${formData.good_to_have
     formData.about_company,
     formData.location,
     formData.work_mode,
+    formData.experience,
     formData.date_posted,
     formData.closing_date,
     formData.responsibilities,
@@ -130,7 +142,7 @@ ${formData.good_to_have
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.description) {
-      setError("Job title and core requirements are required.");
+      setError("Job title and description are required.");
       return;
     }
     setLoading(true);
@@ -149,13 +161,13 @@ ${formData.good_to_have
       };
 
       const res = await apiFetch(`/api/v1/jobs/${jobId}`, {
-        method: "PUT",
+        method: "PATCH",
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ detail: null }));
-        throw new Error(errData.detail || "Failed to update job requisition.");
+        throw new Error(errData.detail || "Failed to update job posting.");
       }
 
       router.push("/recruiter/jobs");
@@ -169,8 +181,8 @@ ${formData.good_to_have
   if (fetching) {
     return (
       <div className="min-h-screen bg-[#0b1220] text-slate-100 p-8 flex items-center justify-center font-sans">
-        <div className="text-slate-400 text-sm flex items-center gap-2">
-          <Sparkles className="animate-spin text-sky-400" size={18} /> Loading job requisition...
+        <div className="text-xs text-slate-400 font-semibold animate-pulse">
+          Loading job requisition details...
         </div>
       </div>
     );
@@ -186,7 +198,7 @@ ${formData.good_to_have
               Edit Job Requisition
             </h1>
             <p className="text-slate-400 text-xs mt-1">
-              Update job specifications, key skills, responsibilities, and status.
+              Update job specifications, required experience, skills, and requirements.
             </p>
           </div>
           <Link href="/recruiter/jobs" className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
@@ -215,7 +227,6 @@ ${formData.good_to_have
               <input
                 type="text"
                 required
-                placeholder="e.g. Staff Backend Engineer - Python"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
@@ -229,7 +240,6 @@ ${formData.good_to_have
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Engineering"
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
@@ -238,11 +248,10 @@ ${formData.good_to_have
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Location (Area / City Name)
+                  Location
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. San Francisco, CA or Bengaluru, KA"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
@@ -250,10 +259,10 @@ ${formData.good_to_have
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Role Type (Work Mode)
+                  Work Mode
                 </label>
                 <select
                   value={formData.work_mode}
@@ -284,6 +293,19 @@ ${formData.good_to_have
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Required Experience
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 3-5 Years"
+                  value={formData.experience}
+                  onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Status
                 </label>
                 <select
@@ -291,126 +313,43 @@ ${formData.good_to_have
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 >
-                  <option value="PUBLISHED">Published (Active)</option>
-                  <option value="PAUSED">Paused</option>
+                  <option value="PUBLISHED">Published</option>
                   <option value="DRAFT">Draft</option>
+                  <option value="PAUSED">Paused</option>
                   <option value="CLOSED">Closed</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Skills & Competencies */}
+          {/* Section 2: Full Description Editor */}
           <div className="space-y-4 pt-4 border-t border-slate-800">
             <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2">
-              2. Skills & Technical Qualifications
+              2. Job Requisition Description (Markdown)
             </h3>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                Key Skills (Comma Separated) *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Python, FastAPI, PostgreSQL, RAG"
-                value={formData.key_skills}
-                onChange={(e) => setFormData({ ...formData, key_skills: e.target.value })}
-                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Preferred Skills
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Kubernetes, Docker, Vector DBs, MLOps"
-                  value={formData.preferred_skills}
-                  onChange={(e) => setFormData({ ...formData, preferred_skills: e.target.value })}
-                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Good to Have Knowledge In
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Kafka, Redis, GraphQL, Terraform"
-                  value={formData.good_to_have}
-                  onChange={(e) => setFormData({ ...formData, good_to_have: e.target.value })}
-                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Responsibilities & Company Overview */}
-          <div className="space-y-4 pt-4 border-t border-slate-800">
-            <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2">
-              3. Responsibilities & About Company
-            </h3>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                Key Role Responsibilities *
-              </label>
               <textarea
-                required
-                rows={4}
-                placeholder="List key duties, engineering expectations, and day-to-day deliverables..."
-                value={formData.responsibilities}
-                onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
-                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                rows={12}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500 transition leading-relaxed"
               />
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                About Company
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Briefly describe your company, culture, and team mission..."
-                value={formData.about_company}
-                onChange={(e) => setFormData({ ...formData, about_company: e.target.value })}
-                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition"
-              />
-            </div>
-          </div>
-
-          {/* Section 4: Formatted Markdown Specification Preview */}
-          <div className="space-y-3 pt-4 border-t border-slate-800">
-            <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center justify-between">
-              <span>4. Compiled Job Description (Markdown Preview)</span>
-              <span className="text-[10px] text-slate-400 font-normal">Auto-assembled from fields</span>
-            </h3>
-
-            <textarea
-              required
-              rows={8}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-[#070d18] border border-[#1b263b] rounded-lg p-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-sky-500 transition"
-            />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-800">
+          <div className="pt-6 border-t border-slate-800 flex items-center justify-end gap-3">
             <Link
               href="/recruiter/jobs"
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition"
+              className="px-5 py-2.5 rounded-lg border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition shadow-lg flex items-center gap-2"
+              className="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
             >
               <Save size={14} />
               {loading ? "Saving Changes..." : "Save Changes"}

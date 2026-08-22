@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Building2, Calendar, MapPin, Sparkles, Wrench } from "lucide-react";
+import { ArrowLeft, Building2, Calendar, MapPin, Sparkles, Wrench, Briefcase } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
 export default function CreateJobPostingPage() {
@@ -17,6 +17,7 @@ export default function CreateJobPostingPage() {
     location: "San Francisco, CA",
     work_mode: "Hybrid",
     employment_type: "FULL_TIME",
+    experience: "3-5 Years",
     date_posted: todayStr,
     closing_date: "",
     status: "DRAFT",
@@ -40,6 +41,7 @@ ${formData.about_company}
 
 ## Work Location & Schedule
 - **Location**: ${formData.location} (${formData.work_mode})
+- **Required Experience**: ${formData.experience}
 - **Date Posted**: ${formData.date_posted}
 ${formData.closing_date ? `- **Application Closing Date**: ${formData.closing_date}` : ""}
 
@@ -72,6 +74,7 @@ ${formData.good_to_have
     formData.about_company,
     formData.location,
     formData.work_mode,
+    formData.experience,
     formData.date_posted,
     formData.closing_date,
     formData.responsibilities,
@@ -130,7 +133,7 @@ ${formData.good_to_have
               Create New Requisition
             </h1>
             <p className="text-slate-400 text-xs mt-1">
-              Define job specifications, key skills, responsibilities, and tenant requirements.
+              Define job specifications, key skills, responsibilities, required experience, and tenant requirements.
             </p>
           </div>
           <Link href="/recruiter/jobs" className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
@@ -194,7 +197,7 @@ ${formData.good_to_have
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Role Type (Work Mode)
@@ -228,6 +231,19 @@ ${formData.good_to_have
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Required Experience
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 3-5 Years or 5+ yrs"
+                  value={formData.experience}
+                  onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Initial Status
                 </label>
                 <select
@@ -235,8 +251,8 @@ ${formData.good_to_have
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 >
-                  <option value="PUBLISHED">Published (Active)</option>
                   <option value="DRAFT">Draft</option>
+                  <option value="PUBLISHED">Published (Active)</option>
                 </select>
               </div>
             </div>
@@ -268,7 +284,7 @@ ${formData.good_to_have
             </div>
           </div>
 
-          {/* Section 2: Skills & Competencies */}
+          {/* Section 2: Skills & Technical Qualifications */}
           <div className="space-y-4 pt-4 border-t border-slate-800">
             <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2">
               2. Skills & Technical Qualifications
@@ -317,7 +333,7 @@ ${formData.good_to_have
             </div>
           </div>
 
-          {/* Section 3: Responsibilities & Company Overview */}
+          {/* Section 3: Responsibilities & Company Context */}
           <div className="space-y-4 pt-4 border-t border-slate-800">
             <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2">
               3. Responsibilities & About Company
@@ -325,63 +341,46 @@ ${formData.good_to_have
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                Key Role Responsibilities *
+                Core Responsibilities (Bullet points)
               </label>
               <textarea
-                required
                 rows={4}
-                placeholder="List key duties, engineering expectations, and day-to-day deliverables..."
+                placeholder="• List key duties..."
                 value={formData.responsibilities}
                 onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
-                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-sm text-white focus:outline-none focus:border-sky-500 transition"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                About Company
+                About Company & Context
               </label>
               <textarea
                 rows={3}
-                placeholder="Briefly describe your company, culture, and team mission..."
+                placeholder="Brief description of your organization..."
                 value={formData.about_company}
                 onChange={(e) => setFormData({ ...formData, about_company: e.target.value })}
-                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-sm text-white focus:outline-none focus:border-sky-500 transition"
               />
             </div>
           </div>
 
-          {/* Section 4: Formatted Markdown Specification Preview */}
-          <div className="space-y-3 pt-4 border-t border-slate-800">
-            <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center justify-between">
-              <span>4. Compiled Job Description (Markdown Preview)</span>
-              <span className="text-[10px] text-slate-400 font-normal">Auto-assembled from fields</span>
-            </h3>
-
-            <textarea
-              required
-              rows={8}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-[#070d18] border border-[#1b263b] rounded-lg p-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-sky-500 transition"
-            />
-          </div>
-
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-800">
+          <div className="pt-6 border-t border-slate-800 flex items-center justify-end gap-3">
             <Link
               href="/recruiter/jobs"
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition"
+              className="px-5 py-2.5 rounded-lg border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition shadow-lg flex items-center gap-2"
+              className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20"
             >
               <Sparkles size={14} />
-              {loading ? "Creating Requisition..." : "Create Requisition"}
+              {loading ? "Creating Requisition..." : "Create Job Requisition"}
             </button>
           </div>
         </form>
@@ -389,4 +388,3 @@ ${formData.good_to_have
     </div>
   );
 }
-
