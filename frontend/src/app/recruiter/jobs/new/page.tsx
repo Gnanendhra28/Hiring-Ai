@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Building2, Calendar, MapPin, Sparkles, Wrench, Briefcase } from "lucide-react";
+import { ArrowLeft, Sparkles, FileText } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
 export default function CreateJobPostingPage() {
@@ -364,6 +364,22 @@ ${formData.good_to_have
                 className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-sm text-white focus:outline-none focus:border-sky-500 transition"
               />
             </div>
+          </div>
+
+          {/* Section 4: Compiled Job Description (Markdown Review & Edit) */}
+          <div className="space-y-3 pt-4 border-t border-slate-800">
+            <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><FileText size={14} /> 4. Compiled Job Description (Complete Description Review & Edit)</span>
+              <span className="text-[10px] text-slate-400 font-normal">Auto-assembled & fully customizable Markdown</span>
+            </h3>
+
+            <textarea
+              required
+              rows={8}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full bg-[#070d18] border border-[#1b263b] rounded-lg p-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-sky-500 transition leading-relaxed"
+            />
           </div>
 
           {/* Actions */}
