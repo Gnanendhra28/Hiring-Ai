@@ -260,16 +260,14 @@ async def list_jobs(
     page_size: int = Query(20, ge=1, le=100),
     ctx: SecurityContext = Depends(get_security_context),
 ):
-    """Lists jobs in active organization tenant context with pagination and filters."""
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
-
+    """Lists jobs in active organization tenant context or public candidate listings."""
     async with async_session_factory() as session:
         await session.begin()
         if ctx.active_organization_id:
             await set_tenant_context(session, ctx.active_organization_id)
             stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
         else:
+            # Candidate portal listing: return all published & admin-approved jobs across employers
             stmt = select(Job).where(
                 (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
             )
@@ -295,18 +293,26 @@ async def list_jobs(
 
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(
-    job_id: uuid.UUID,
+    job_id: str,
     ctx: SecurityContext = Depends(get_security_context),
 ):
-    """Fetches single job details within active tenant context."""
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
-
+    """Fetches single job details by UUID or slug for recruiters or public candidates."""
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+        if ctx.active_organization_id:
+            await set_tenant_context(session, ctx.active_organization_id)
+            stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
+        else:
+            stmt = select(Job).where(
+                (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
+            )
 
-        stmt = select(Job).where(Job.id == job_id, Job.organization_id == ctx.active_organization_id)
+        try:
+            val_uuid = uuid.UUID(job_id)
+            stmt = stmt.where(Job.id == val_uuid)
+        except ValueError:
+            stmt = stmt.where(Job.slug == job_id)
+
         job = (await session.execute(stmt)).scalar_one_or_none()
 
         if not job:
