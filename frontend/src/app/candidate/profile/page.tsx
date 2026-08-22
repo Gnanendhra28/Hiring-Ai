@@ -471,13 +471,13 @@ export default function CandidateProfilePage() {
                   </h3>
                   <button
                     onClick={() => {
-                      setEditingItem({ degree: "", institution: "", year: "", grade: "" });
+                      setEditingItem({ degree: "", department: "", institution: "", location: "", start_year: "", end_year: "", year: "", percentage: "", grade: "" });
                       setEditingIndex(null);
                       setActiveModal("education");
                     }}
                     className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
                   >
-                    + Add
+                    + Add Education
                   </button>
                 </div>
 
@@ -485,21 +485,50 @@ export default function CandidateProfilePage() {
                   <div className="space-y-3">
                     {profile.education.map((edu: any, idx: number) => (
                       <div key={idx} className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-start">
-                        <div>
-                          <h4 className="text-sm font-bold text-white">{edu.degree}</h4>
-                          <p className="text-xs text-sky-400 mt-0.5">{edu.institution}</p>
-                          <p className="text-[11px] text-slate-400 mt-1">Passing Year: {edu.year} {edu.grade ? `| Grade: ${edu.grade}` : ""}</p>
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-bold text-white">
+                            {edu.degree} {edu.department ? `— ${edu.department}` : ""}
+                          </h4>
+                          <p className="text-xs font-semibold text-sky-400">
+                            {edu.institution || edu.college} {edu.location ? `(${edu.location})` : ""}
+                          </p>
+                          <p className="text-[11px] font-mono text-slate-400">
+                            {edu.start_year ? `${edu.start_year} – ${edu.end_year || edu.year}` : `Passing Year: ${edu.year || edu.end_year}`}
+                            {(edu.percentage || edu.grade) && ` | Score: ${edu.percentage || edu.grade}`}
+                          </p>
                         </div>
-                        <button
-                          onClick={() => {
-                            const updated = [...(profile.education || [])];
-                            updated.splice(idx, 1);
-                            saveProfileData({ education: updated }, "Education entry removed.");
-                          }}
-                          className="text-slate-500 hover:text-rose-400 text-xs"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center space-x-2 shrink-0 ml-4">
+                          <button
+                            onClick={() => {
+                              setEditingItem({
+                                ...edu,
+                                degree: edu.degree || "",
+                                department: edu.department || "",
+                                institution: edu.institution || edu.college || "",
+                                location: edu.location || "",
+                                start_year: edu.start_year || "",
+                                end_year: edu.end_year || edu.year || "",
+                                year: edu.year || edu.end_year || "",
+                                percentage: edu.percentage || edu.grade || "",
+                              });
+                              setEditingIndex(idx);
+                              setActiveModal("education");
+                            }}
+                            className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
+                          >
+                            ✏ Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              const updated = [...(profile.education || [])];
+                              updated.splice(idx, 1);
+                              saveProfileData({ education: updated }, "Education entry removed.");
+                            }}
+                            className="text-slate-500 hover:text-rose-400 text-xs font-bold"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -508,7 +537,7 @@ export default function CandidateProfilePage() {
                     No education added yet.{" "}
                     <button
                       onClick={() => {
-                        setEditingItem({ degree: "", institution: "", year: "", grade: "" });
+                        setEditingItem({ degree: "", department: "", institution: "", location: "", start_year: "", end_year: "", year: "", percentage: "", grade: "" });
                         setEditingIndex(null);
                         setActiveModal("education");
                       }}
@@ -1040,11 +1069,13 @@ export default function CandidateProfilePage() {
         </div>
       )}
 
-      {/* Modal 4: Edit Education */}
+      {/* Modal 4: Add / Edit Education */}
       {activeModal === "education" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Add Education</h3>
+            <h3 className="text-lg font-bold text-white">
+              {editingIndex !== null ? "Edit Education" : "Add Education"}
+            </h3>
             <div className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-400 font-mono mb-1">Degree / Qualification</label>
@@ -1052,7 +1083,17 @@ export default function CandidateProfilePage() {
                   type="text"
                   value={editingItem?.degree || ""}
                   onChange={(e) => setEditingItem({ ...editingItem, degree: e.target.value })}
-                  placeholder="e.g. B.Tech Computer Science"
+                  placeholder="e.g. B.Tech / B.E. / M.Tech"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Department / Specialization</label>
+                <input
+                  type="text"
+                  value={editingItem?.department || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, department: e.target.value })}
+                  placeholder="e.g. Computer Science & Engineering"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -1060,19 +1101,51 @@ export default function CandidateProfilePage() {
                 <label className="block text-slate-400 font-mono mb-1">Institution / College</label>
                 <input
                   type="text"
-                  value={editingItem?.institution || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, institution: e.target.value })}
+                  value={editingItem?.institution || editingItem?.college || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, institution: e.target.value, college: e.target.value })}
                   placeholder="e.g. IIT Bhilai"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Passing Year</label>
+                <label className="block text-slate-400 font-mono mb-1">College Address / Location</label>
                 <input
                   type="text"
-                  value={editingItem?.year || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, year: e.target.value })}
-                  placeholder="e.g. 2026"
+                  value={editingItem?.location || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, location: e.target.value })}
+                  placeholder="e.g. Bhilai, Chhattisgarh"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-mono mb-1">Start Year</label>
+                  <input
+                    type="text"
+                    value={editingItem?.start_year || ""}
+                    onChange={(e) => setEditingItem({ ...editingItem, start_year: e.target.value })}
+                    placeholder="e.g. 2022"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-mono mb-1">End Year / Passing Year</label>
+                  <input
+                    type="text"
+                    value={editingItem?.end_year || editingItem?.year || ""}
+                    onChange={(e) => setEditingItem({ ...editingItem, end_year: e.target.value, year: e.target.value })}
+                    placeholder="e.g. 2026"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-slate-400 font-mono mb-1">Percentage / CGPA</label>
+                <input
+                  type="text"
+                  value={editingItem?.percentage || editingItem?.grade || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, percentage: e.target.value, grade: e.target.value })}
+                  placeholder="e.g. 85% or 8.5 CGPA"
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs"
                 />
               </div>
@@ -1086,10 +1159,18 @@ export default function CandidateProfilePage() {
               </button>
               <button
                 onClick={() => {
-                  const updated = [...(profile?.education || []), editingItem];
-                  saveProfileData({ education: updated }, "Education added.");
+                  const updated = [...(profile?.education || [])];
+                  if (editingIndex !== null && editingIndex >= 0) {
+                    updated[editingIndex] = editingItem;
+                  } else {
+                    updated.push(editingItem);
+                  }
+                  saveProfileData(
+                    { education: updated },
+                    editingIndex !== null ? "Education entry updated successfully." : "Education entry added successfully."
+                  );
                 }}
-                disabled={saving}
+                disabled={saving || !editingItem?.degree}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Education"}
