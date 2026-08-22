@@ -136,15 +136,15 @@ class CandidateProfileRequest(BaseModel):
     photo_url: Optional[str] = None
     degree: Optional[str] = Field(None, max_length=255)
     college: Optional[str] = Field(None, max_length=255)
-    skills: Optional[List[str]] = Field(default_factory=list)
-    experience: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
-    education: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
-    career_preferences: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    languages: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
-    internships: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
-    projects: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
-    accomplishments: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    employment: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    skills: Optional[List[str]] = None
+    experience: Optional[List[Dict[str, Any]]] = None
+    education: Optional[List[Dict[str, Any]]] = None
+    career_preferences: Optional[Dict[str, Any]] = None
+    languages: Optional[List[Dict[str, Any]]] = None
+    internships: Optional[List[Dict[str, Any]]] = None
+    projects: Optional[List[Dict[str, Any]]] = None
+    accomplishments: Optional[Dict[str, Any]] = None
+    employment: Optional[List[Dict[str, Any]]] = None
     website_url: Optional[str] = Field(None, max_length=500)
     linkedin_url: Optional[str] = Field(None, max_length=500)
     resume_url: Optional[str] = Field(None, max_length=500)
