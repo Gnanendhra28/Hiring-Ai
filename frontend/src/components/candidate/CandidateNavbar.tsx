@@ -440,15 +440,6 @@ export function CandidateNavbar() {
                       <MessageCircle size={15} className="text-sky-500" />
                       <span>Messages</span>
                     </Link>
-
-                    <Link
-                      href="/settings"
-                      onClick={() => setShowProfileDropdown(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                    >
-                      <Settings size={15} className="text-slate-500" />
-                      <span>Settings</span>
-                    </Link>
                   </div>
 
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-1">
@@ -488,10 +479,6 @@ export function CandidateNavbar() {
           <Link href="/candidate/profile" className="nav-link">
             <UserRound size={18} />
             <span>Profile</span>
-          </Link>
-          <Link href="/settings" className="nav-link">
-            <Settings size={18} />
-            <span>Settings</span>
           </Link>
           <div className="ai-side-card">
             <Sparkles size={16} />

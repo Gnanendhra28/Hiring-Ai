@@ -214,86 +214,42 @@ export default function CandidateProfilePage() {
         </Link>
       </div>
 
-      {/* Top Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-800 pb-2">
-        <button
-          onClick={() => setActiveTab("view")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeTab === "view"
-              ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          View &amp; Edit
-        </button>
-        <button
-          onClick={() => setActiveTab("insights")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeTab === "insights"
-              ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          Activity Insights
-        </button>
-      </div>
+      {/* Header Identity Card */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="flex items-center space-x-5">
+            {/* Profile Photo / Avatar */}
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center border-2 border-slate-700 shadow-xl overflow-hidden">
+                {profile?.photo_url ? (
+                  <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{currentName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+            </div>
 
-      {/* Activity Insights Tab Content */}
-      {activeTab === "insights" ? (
-        <div className="glass-panel p-8 rounded-3xl border border-slate-800 text-center space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center mx-auto text-xl font-bold">
-            📊
-          </div>
-          <h3 className="text-xl font-bold text-white">Activity Insights &amp; Engagement</h3>
-          <p className="text-slate-400 text-xs max-w-md mx-auto">
-            View job application statuses, profile view metrics by recruiters, and assessment performance logs.
-          </p>
-          <div className="inline-block px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sky-400 text-xs font-mono">
-            Status: Fully Operational — Track applications on your Dashboard
-          </div>
-        </div>
-      ) : (
-        /* Main View & Edit Tab Content */
-        <div className="space-y-6">
-          {/* Header Identity Card */}
-          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-              <div className="flex items-center space-x-5">
-                {/* Profile Photo / Avatar */}
-                <div className="relative group">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center border-2 border-slate-700 shadow-xl overflow-hidden">
-                    {profile?.photo_url ? (
-                      <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{currentName.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
-                </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-2xl font-black text-white">{currentName}</h2>
+              </div>
 
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h2 className="text-2xl font-black text-white">{currentName}</h2>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono">
-                      Verified
-                    </span>
-                  </div>
+              <p className="text-sky-400 text-xs font-semibold mt-0.5">
+                {profile?.headline || "Professional Headline (e.g. Full Stack Developer)"}
+              </p>
 
-                  <p className="text-sky-400 text-xs font-semibold mt-0.5">
-                    {profile?.headline || "Professional Headline (e.g. Full Stack Developer)"}
-                  </p>
+              {(profile?.degree || profile?.college) && (
+                <p className="text-slate-400 text-xs mt-1">
+                  🎓 {profile?.degree || "Degree"} — {profile?.college || "College / University"}
+                </p>
+              )}
 
-                  {(profile?.degree || profile?.college) && (
-                    <p className="text-slate-400 text-xs mt-1">
-                      🎓 {profile?.degree || "Degree"} — {profile?.college || "College / University"}
-                    </p>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-2">
-                    {profile?.location && <span>📍 {profile.location}</span>}
-                    {profile?.phone && <span>📞 {profile.phone}</span>}
-                    <span>✉ {user?.email}</span>
-                  </div>
-                </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-2">
+                {profile?.location && <span>📍 {profile.location}</span>}
+                {profile?.phone && <span>📞 {profile.phone}</span>}
+                <span>✉ {user?.email}</span>
+              </div>
+            </div>
               </div>
 
               {/* Action & Completion */}
@@ -800,8 +756,6 @@ export default function CandidateProfilePage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
 
       {/* ================= MODALS ================= */}
 
