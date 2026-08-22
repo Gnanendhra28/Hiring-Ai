@@ -48,15 +48,7 @@ export function CandidateNavbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("candidate_theme_pref");
-    if (savedTheme === "dark" || savedTheme === "light") {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
-    } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-      document.documentElement.classList.toggle("dark", prefersDark);
-    }
+    document.documentElement.classList.add("dark");
 
     async function fetchCandidateProfile() {
       try {
@@ -308,20 +300,6 @@ export function CandidateNavbar() {
                 </div>
               )}
             </div>
-
-            {/* Dark & Light UI Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              className="icon-button transition-transform hover:scale-105"
-            >
-              {theme === "dark" ? (
-                <Sun size={19} className="text-amber-400 hover:text-amber-300 transition-colors" />
-              ) : (
-                <Moon size={19} className="text-slate-600 hover:text-indigo-600 transition-colors" />
-              )}
-            </button>
 
             {/* Requirement 4: Message Icon Dropdown (Interviews & Recruiter Messages) */}
             <div className="relative">
