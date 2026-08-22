@@ -53,7 +53,7 @@ const PRESET_SKILLS = [
   "TypeScript",
 ];
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -767,7 +767,7 @@ function getTimeAgo(dateInput?: string | Date) {
                 ))}
               </div>
 
-              {/* 15 Jobs Per Page Pagination Controls */}
+              {/* 10 Jobs Per Page Pagination Controls */}
               {totalPages > 1 && (
                 <div className="p-4 rounded-xl border border-slate-800 bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
                   <div className="text-xs text-slate-400 font-medium">
