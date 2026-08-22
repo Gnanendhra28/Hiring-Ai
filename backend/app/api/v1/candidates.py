@@ -2,6 +2,7 @@ import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.v1.deps import get_current_user
 from app.api.v1.schemas import (
@@ -102,22 +103,31 @@ async def update_my_candidate_profile(
                 profile.college = payload.college
             if payload.skills is not None:
                 profile.skills = payload.skills
+                flag_modified(profile, "skills")
             if payload.experience is not None:
                 profile.experience = payload.experience
+                flag_modified(profile, "experience")
             if payload.education is not None:
                 profile.education = payload.education
+                flag_modified(profile, "education")
             if payload.career_preferences is not None:
                 profile.career_preferences = payload.career_preferences
+                flag_modified(profile, "career_preferences")
             if payload.languages is not None:
                 profile.languages = payload.languages
+                flag_modified(profile, "languages")
             if payload.internships is not None:
                 profile.internships = payload.internships
+                flag_modified(profile, "internships")
             if payload.projects is not None:
                 profile.projects = payload.projects
+                flag_modified(profile, "projects")
             if payload.accomplishments is not None:
                 profile.accomplishments = payload.accomplishments
+                flag_modified(profile, "accomplishments")
             if payload.employment is not None:
                 profile.employment = payload.employment
+                flag_modified(profile, "employment")
             if payload.website_url is not None:
                 profile.website_url = payload.website_url
             if payload.linkedin_url is not None:

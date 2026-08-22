@@ -99,7 +99,7 @@ export default function CandidateProfilePage() {
     setError(null);
     try {
       const result = await updateCandidateProfile(updatedFields);
-      setProfile(result);
+      setProfile((prev) => ({ ...prev, ...result }));
       showToast(toastMsg);
       setActiveModal(null);
       setEditingItem(null);
