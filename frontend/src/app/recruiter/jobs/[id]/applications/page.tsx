@@ -7,6 +7,7 @@ import {
   fetchJobIntelligence,
   fetchActiveRankings,
   fetchRecruiterJobs,
+  updateApplicationStatus,
   apiFetch,
   JobIntelligenceData,
   CandidateRankingItem,
@@ -164,6 +165,17 @@ export default function RecruiterApplicationPipelinePage() {
     router.push(`/recruiter/jobs/${newJobId}/applications`);
   };
 
+  const handleStatusUpdate = async (applicationId: string, newStatus: string) => {
+    setApplications((prev) =>
+      prev.map((a) => (a.id === applicationId ? { ...a, status: newStatus } : a))
+    );
+    try {
+      await updateApplicationStatus(applicationId, newStatus);
+    } catch (err) {
+      console.error("Failed to update application status on backend:", err);
+    }
+  };
+
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
       app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -256,12 +268,14 @@ export default function RecruiterApplicationPipelinePage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2 text-xs text-slate-300 outline-none"
+            className="bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2 text-xs text-slate-300 outline-none cursor-pointer"
           >
             <option value="ALL">All Application States</option>
             <option value="SUBMITTED">Submitted</option>
             <option value="REVIEWED">Reviewed</option>
             <option value="SHORTLISTED">Shortlisted</option>
+            <option value="INTERVIEW">Interview</option>
+            <option value="SELECTED">Selected</option>
             <option value="REJECTED">Rejected</option>
           </select>
         </div>
@@ -332,9 +346,18 @@ export default function RecruiterApplicationPipelinePage() {
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-blue-500/20 text-sky-300 border border-sky-500/30">
-                        {app.status}
-                      </span>
+                      <select
+                        value={app.status}
+                        onChange={(e) => handleStatusUpdate(app.id, e.target.value)}
+                        className="bg-[#0b1425] border border-sky-500/30 text-sky-300 rounded px-2.5 py-1 text-[11px] font-bold outline-none cursor-pointer focus:border-sky-500 transition shadow"
+                      >
+                        <option value="SUBMITTED" className="bg-[#0b1425] text-white">SUBMITTED</option>
+                        <option value="REVIEWED" className="bg-[#0b1425] text-white">REVIEWED</option>
+                        <option value="SHORTLISTED" className="bg-[#0b1425] text-white">SHORTLISTED</option>
+                        <option value="INTERVIEW" className="bg-[#0b1425] text-white">INTERVIEW</option>
+                        <option value="SELECTED" className="bg-[#0b1425] text-white">SELECTED</option>
+                        <option value="REJECTED" className="bg-[#0b1425] text-white">REJECTED</option>
+                      </select>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <Link

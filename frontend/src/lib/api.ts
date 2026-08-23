@@ -1263,6 +1263,14 @@ export async function deleteJobPost(jobId: string): Promise<boolean> {
   return res.ok;
 }
 
+export async function updateApplicationStatus(applicationId: string, status: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/jobs/applications/${applicationId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+  return res.ok;
+}
+
 export interface RecruiterProfileData {
   id: string;
   user_id: string;

@@ -9,14 +9,16 @@ from app.db.base import Base, TenantMixin, TimestampMixin, UUIDMixin
 
 class ApplicationStatusEnum(str, enum.Enum):
     SUBMITTED = "SUBMITTED"
+    REVIEWED = "REVIEWED"
     PROCESSING = "PROCESSING"
     RECRUITER_REVIEW = "RECRUITER_REVIEW"
     SHORTLISTED = "SHORTLISTED"
+    INTERVIEW = "INTERVIEW"
+    SELECTED = "SELECTED"
     REJECTED = "REJECTED"
     WITHDRAWN = "WITHDRAWN"
     # Extensible states for future phases
     ASSESSMENT = "ASSESSMENT"
-    INTERVIEW = "INTERVIEW"
     OFFER = "OFFER"
     HIRED = "HIRED"
 

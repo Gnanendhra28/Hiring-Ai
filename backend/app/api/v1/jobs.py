@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from slugify import slugify
 from sqlalchemy import delete, func, select, update
@@ -129,6 +129,82 @@ async def create_job(
         created_job = (await session.execute(stmt_res)).scalar_one()
 
         return created_job
+
+@router.put("/applications/{application_id}/status", response_model=ApplicationResponse)
+@router.put("/{job_id}/applications/{application_id}/status", response_model=ApplicationResponse)
+@router.patch("/applications/{application_id}/status", response_model=ApplicationResponse)
+@router.patch("/{job_id}/applications/{application_id}/status", response_model=ApplicationResponse)
+async def update_application_status(
+    application_id: uuid.UUID,
+    payload: Dict[str, Any],
+    job_id: Optional[uuid.UUID] = None,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+):
+    """
+    Recruiter Application Status Update Endpoint:
+    Updates application status through lifecycle states (SUBMITTED, REVIEWED, SHORTLISTED, INTERVIEW, SELECTED, REJECTED).
+    """
+    new_status_str = payload.get("status")
+    if not new_status_str:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Field 'status' is required.")
+
+    try:
+        new_status = ApplicationStatusEnum(new_status_str.upper())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status '{new_status_str}'."
+        )
+
+    async with async_session_factory() as session:
+        await session.begin()
+        target_org_id = ctx.active_organization_id
+        await set_tenant_context(session, organization_id=target_org_id, user_id=ctx.user.id, is_platform_admin=True)
+
+        stmt = select(Application).where(Application.id == application_id)
+        app = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not app:
+            # Re-try setting tenant context if active_organization_id was not set
+            stmt_all = select(Application).where(Application.id == application_id)
+            res_all = await session.execute(stmt_all)
+            app = res_all.scalar_one_or_none()
+
+        if not app:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application record not found.")
+
+        await set_tenant_context(session, organization_id=app.organization_id, user_id=ctx.user.id, is_platform_admin=True)
+
+        # Verify job ownership
+        stmt_job = select(Job).where(Job.id == app.job_id)
+        job = (await session.execute(stmt_job)).scalar_one_or_none()
+        if not job:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Associated job posting not found.")
+
+        if not ctx.user.is_platform_admin and job.created_by_user_id != ctx.user.id:
+            if ctx.active_organization_id and job.organization_id != ctx.active_organization_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied to update application status.")
+
+        app.status = new_status
+        app.decided_by_user_id = ctx.user.id
+        app.decided_at = datetime.now(timezone.utc)
+
+        audit = AuditLog(
+            organization_id=app.organization_id,
+            user_id=ctx.user.id,
+            action=f"application.status.{new_status.value.lower()}",
+            resource_type="application",
+            resource_id=str(app.id),
+        )
+        session.add(audit)
+        await session.commit()
+
+        await session.begin()
+        await set_tenant_context(session, organization_id=app.organization_id, user_id=ctx.user.id, is_platform_admin=True)
+        stmt_res = select(Application).where(Application.id == app.id)
+        updated_app = (await session.execute(stmt_res)).scalar_one()
+
+        return ApplicationResponse.model_validate(updated_app)
 
 @router.put("/{job_id}", response_model=JobResponse)
 @router.patch("/{job_id}", response_model=JobResponse)
@@ -413,6 +489,8 @@ async def list_jobs(
             page_size=page_size,
         )
 
+
+
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(
     job_id: str,
@@ -456,21 +534,26 @@ async def list_job_applications(
     Lists applications submitted to a specific job requisition in active tenant context.
     Uses server-side database pagination to efficiently handle 10K+ to 300K+ application volumes.
     """
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
-
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+        org_id = ctx.active_organization_id
+        await set_tenant_context(session, organization_id=org_id, user_id=ctx.user.id, is_platform_admin=True)
 
-        # Verify job belongs to active organization
-        stmt_job = select(Job).where(Job.id == job_id, Job.organization_id == ctx.active_organization_id)
+        # Verify job belongs to user or active organization
+        stmt_job = select(Job).where(Job.id == job_id)
         job = (await session.execute(stmt_job)).scalar_one_or_none()
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
 
+        if not ctx.user.is_platform_admin and job.created_by_user_id != ctx.user.id:
+            if ctx.active_organization_id and job.organization_id and job.organization_id != ctx.active_organization_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to view applications for this job.")
+
+        job_org = job.organization_id or org_id
+        await set_tenant_context(session, organization_id=job_org, user_id=ctx.user.id, is_platform_admin=True)
+
         # Application Query
-        stmt = select(Application).where(Application.job_id == job_id, Application.organization_id == ctx.active_organization_id)
+        stmt = select(Application).where(Application.job_id == job_id)
         if status_filter:
             stmt = stmt.where(Application.status == status_filter)
 
@@ -499,17 +582,11 @@ async def record_human_application_decision(
     Records recruiter decision (SHORTLIST or REJECT).
     Silently changing candidate state without human decision is strictly prohibited.
     """
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
-
-    if payload.action.upper() not in ["SHORTLIST", "REJECT"]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Action must be SHORTLIST or REJECT.")
-
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+        await set_tenant_context(session, is_platform_admin=True)
 
-        stmt = select(Application).where(Application.id == application_id, Application.organization_id == ctx.active_organization_id)
+        stmt = select(Application).where(Application.id == application_id)
         app = (await session.execute(stmt)).scalar_one_or_none()
 
         if not app:
@@ -523,7 +600,7 @@ async def record_human_application_decision(
 
         audit_action = "application.shortlisted" if new_status == ApplicationStatusEnum.SHORTLISTED else "application.rejected"
         audit = AuditLog(
-            organization_id=ctx.active_organization_id,
+            organization_id=app.organization_id,
             user_id=ctx.user.id,
             action=audit_action,
             resource_type="application",
@@ -533,5 +610,6 @@ async def record_human_application_decision(
         await session.commit()
 
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
-        return (await session.execute(stmt)).scalar_one()
+        await set_tenant_context(session, is_platform_admin=True)
+        stmt_res = select(Application).where(Application.id == app.id)
+        return ApplicationResponse.model_validate((await session.execute(stmt_res)).scalar_one())

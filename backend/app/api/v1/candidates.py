@@ -199,13 +199,19 @@ async def submit_application(
             )
 
         # 3. Set transaction RLS context for target organization & candidate
-        await set_tenant_context(session, organization_id=job.organization_id, user_id=user.id)
+        target_org_id = job.organization_id or getattr(user, "organization_id", None)
+        if not target_org_id:
+            from app.domains.organizations.models import Organization
+            stmt_org = select(Organization.id).where(Organization.is_active.is_(True))
+            target_org_id = (await session.execute(stmt_org)).scalars().first()
+
+        await set_tenant_context(session, organization_id=target_org_id, user_id=user.id)
 
         # 4. Create Application record
         application = Application(
             candidate_id=user.id,
             job_id=job.id,
-            organization_id=job.organization_id,
+            organization_id=target_org_id,
             status=ApplicationStatusEnum.SUBMITTED,
             resume_file_path=payload.resume_file_path,
             answers_json=payload.answers_json,
@@ -214,7 +220,7 @@ async def submit_application(
         await session.flush()
 
         audit = AuditLog(
-            organization_id=job.organization_id,
+            organization_id=target_org_id,
             user_id=user.id,
             action="application.submit",
             resource_type="application",

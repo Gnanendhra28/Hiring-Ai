@@ -42,7 +42,8 @@ export default function CreateJobPostingPage() {
   // Auto-generate Markdown description whenever individual fields update
   useEffect(() => {
     const formattedPreferredSkills =
-      formData.preferred_skills.includes("•") || formData.preferred_skills.includes("-")
+      formData.preferred_skills.includes("•") ||
+      formData.preferred_skills.includes("-")
         ? formData.preferred_skills
         : formData.preferred_skills
             .split(",")
@@ -107,7 +108,11 @@ ${formData.good_to_have}`;
           const meRes = await apiFetch("/api/v1/auth/me");
           if (meRes.ok) {
             const meData = await meRes.json();
-            if (meData.memberships && meData.memberships.length > 0 && meData.memberships[0].organization_id) {
+            if (
+              meData.memberships &&
+              meData.memberships.length > 0 &&
+              meData.memberships[0].organization_id
+            ) {
               currentOrgId = meData.memberships[0].organization_id;
               if (currentOrgId) setOrgId(currentOrgId);
             }
@@ -189,7 +194,10 @@ ${formData.good_to_have}`;
             </h3>
 
             <div>
-              <label htmlFor="job-title-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label
+                htmlFor="job-title-input"
+                className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+              >
                 Job Title *
               </label>
               <input
@@ -208,7 +216,10 @@ ${formData.good_to_have}`;
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="job-department-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-department-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Department
                 </label>
                 <input
@@ -225,7 +236,10 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-location-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-location-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Location (Area / City Name)
                 </label>
                 <input
@@ -244,7 +258,10 @@ ${formData.good_to_have}`;
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label htmlFor="job-work-mode-select" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-work-mode-select"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Role Type (Work Mode)
                 </label>
                 <select
@@ -263,7 +280,10 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-employment-type-select" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-employment-type-select"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Employment Type
                 </label>
                 <select
@@ -286,7 +306,10 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-experience-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-experience-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Required Experience
                 </label>
                 <input
@@ -303,7 +326,10 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-status-select" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-status-select"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Initial Status
                 </label>
                 <select
@@ -323,7 +349,10 @@ ${formData.good_to_have}`;
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="job-date-posted-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-date-posted-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Date Posted
                 </label>
                 <input
@@ -339,7 +368,10 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-closing-date-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-closing-date-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Closing Date (Optional)
                 </label>
                 <input
@@ -357,8 +389,11 @@ ${formData.good_to_have}`;
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="job-salary-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Salary / Compensation Range (Optional)
+                <label
+                  htmlFor="job-salary-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
+                  Salary / Compensation Range
                 </label>
                 <input
                   id="job-salary-input"
@@ -374,8 +409,11 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-openings-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  No. of Openings (Optional)
+                <label
+                  htmlFor="job-openings-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
+                  No. of Openings
                 </label>
                 <input
                   id="job-openings-input"
@@ -392,8 +430,11 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-company-website-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Company Website URL (Optional)
+                <label
+                  htmlFor="job-company-website-input"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
+                  Company Website URL
                 </label>
                 <input
                   id="job-company-website-input"
@@ -402,7 +443,10 @@ ${formData.good_to_have}`;
                   placeholder="e.g. https://www.avenuesai.com"
                   value={formData.company_website || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, company_website: e.target.value })
+                    setFormData({
+                      ...formData,
+                      company_website: e.target.value,
+                    })
                   }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
@@ -417,7 +461,10 @@ ${formData.good_to_have}`;
             </h3>
 
             <div>
-              <label htmlFor="job-key-skills-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label
+                htmlFor="job-key-skills-input"
+                className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+              >
                 Key Skills (Comma Separated) *
               </label>
               <input
@@ -436,7 +483,10 @@ ${formData.good_to_have}`;
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="job-preferred-skills-textarea" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-preferred-skills-textarea"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Preferred Skills (Bullet points)
                 </label>
                 <textarea
@@ -456,7 +506,10 @@ ${formData.good_to_have}`;
               </div>
 
               <div>
-                <label htmlFor="job-good-to-have-textarea" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label
+                  htmlFor="job-good-to-have-textarea"
+                  className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+                >
                   Good to Have Knowledge In (Bullet points)
                 </label>
                 <textarea
@@ -481,7 +534,10 @@ ${formData.good_to_have}`;
             </h3>
 
             <div>
-              <label htmlFor="job-responsibilities-textarea" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label
+                htmlFor="job-responsibilities-textarea"
+                className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+              >
                 Core Responsibilities (Bullet points)
               </label>
               <textarea
@@ -498,7 +554,10 @@ ${formData.good_to_have}`;
             </div>
 
             <div>
-              <label htmlFor="job-about-company-textarea" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label
+                htmlFor="job-about-company-textarea"
+                className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2"
+              >
                 About Company & Context
               </label>
               <textarea
@@ -517,7 +576,10 @@ ${formData.good_to_have}`;
 
           {/* Section 4: Compiled Job Description (Markdown Review & Edit) */}
           <div className="space-y-3 pt-4 border-t border-slate-800">
-            <label htmlFor="job-compiled-description-textarea" className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center justify-between">
+            <label
+              htmlFor="job-compiled-description-textarea"
+              className="text-xs font-bold text-sky-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center justify-between"
+            >
               <span className="flex items-center gap-1.5">
                 <FileText size={14} /> 4. Compiled Job Description{" "}
               </span>

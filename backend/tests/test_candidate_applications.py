@@ -109,3 +109,21 @@ async def test_application_submission_and_duplicate_prevention():
         my_apps = my_apps_resp.json()
         assert len(my_apps) == 1
         assert my_apps[0]["id"] == app_data["id"]
+
+        # Recruiter lists applications for job -> Default status is SUBMITTED
+        rec_list_resp = await client.get(f"/api/v1/jobs/{job_id}/applications", headers=rec_headers)
+        assert rec_list_resp.status_code == 200
+        rec_apps = rec_list_resp.json()["items"]
+        assert len(rec_apps) == 1
+        app_id = rec_apps[0]["id"]
+        assert rec_apps[0]["status"] == "SUBMITTED"
+
+        # Recruiter updates status through required lifecycle: REVIEWED -> SHORTLISTED -> INTERVIEW -> SELECTED
+        for new_st in ["REVIEWED", "SHORTLISTED", "INTERVIEW", "SELECTED"]:
+            upd_resp = await client.put(f"/api/v1/jobs/{job_id}/applications/{app_id}/status", json={"status": new_st}, headers=rec_headers)
+            assert upd_resp.status_code == 200
+            assert upd_resp.json()["status"] == new_st
+
+            # Verify status persists on reload
+            check_resp = await client.get(f"/api/v1/jobs/{job_id}/applications", headers=rec_headers)
+            assert check_resp.json()["items"][0]["status"] == new_st
