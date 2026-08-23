@@ -321,9 +321,30 @@ async def list_jobs(
     """Lists jobs in active organization tenant context or public candidate listings."""
     async with async_session_factory() as session:
         await session.begin()
-        if ctx.active_organization_id and ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]:
-            await set_tenant_context(session, ctx.active_organization_id)
-            stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
+
+        from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership
+
+        target_org_id = ctx.active_organization_id
+        if not target_org_id and ctx.user:
+            stmt_mem = select(OrganizationMembership).where(
+                OrganizationMembership.user_id == ctx.user.id,
+                OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
+            )
+            mem = (await session.execute(stmt_mem)).scalars().first()
+            if mem:
+                target_org_id = mem.organization_id
+
+        if ctx.user and (target_org_id or ctx.user.is_platform_admin or ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]):
+            if target_org_id:
+                await set_tenant_context(session, target_org_id)
+                stmt = select(Job).where(
+                    (Job.organization_id == target_org_id) | (Job.created_by_user_id == ctx.user.id)
+                )
+            elif ctx.user.is_platform_admin:
+                await set_tenant_context(session, is_platform_admin=True)
+                stmt = select(Job)
+            else:
+                stmt = select(Job).where(Job.created_by_user_id == ctx.user.id)
         else:
             # Candidate portal listing: return all published & admin-approved jobs across employers
             stmt = select(Job).where(
