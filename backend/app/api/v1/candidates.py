@@ -17,7 +17,7 @@ from app.domains.applications.models import Application, ApplicationStatusEnum
 from app.domains.audit.models import AuditLog
 from app.domains.candidates.models import CandidateProfile
 from app.domains.identity.models import User
-from app.domains.jobs.models import Job, JobStatusEnum
+from app.domains.jobs.models import Job, JobStatusEnum, JobVerificationStatusEnum
 from app.infrastructure.events.envelope import EventEnvelope
 from app.infrastructure.events.memory import InMemoryEventBus
 
@@ -167,7 +167,7 @@ async def submit_application(
         job_result = await session.execute(stmt_job)
         job = job_result.scalar_one_or_none()
 
-        if not job or job.status != JobStatusEnum.PUBLISHED:
+        if not job or job.status != JobStatusEnum.PUBLISHED or job.verification_status != JobVerificationStatusEnum.APPROVED or job.created_by_user_id is None:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

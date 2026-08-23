@@ -293,20 +293,40 @@ async def submit_job_for_verification(
 @router.post("/{job_id}/publish", response_model=JobResponse)
 async def publish_job(
     job_id: uuid.UUID,
-    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+    ctx: SecurityContext = Depends(get_security_context),
 ):
     """
     Publishes an APPROVED job posting.
     CRITICAL SECURITY GUARD: Rejects direct transition to PUBLISHED if verification_status != APPROVED.
     """
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+    if not ctx.user.is_platform_admin and ctx.role == RoleEnum.CANDIDATE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Role Access Denied: Action requires one of ['ORGANIZATION_ADMIN', 'RECRUITER'].",
+        )
 
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
 
-        stmt = select(Job).where(Job.id == job_id, Job.organization_id == ctx.active_organization_id)
+        from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership
+
+        target_org_id = ctx.active_organization_id
+        if not target_org_id and ctx.user:
+            stmt_mem = select(OrganizationMembership).where(
+                OrganizationMembership.user_id == ctx.user.id,
+                OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
+            )
+            mem = (await session.execute(stmt_mem)).scalars().first()
+            if mem:
+                target_org_id = mem.organization_id
+
+        if target_org_id:
+            await set_tenant_context(session, target_org_id)
+            stmt = select(Job).where(Job.id == job_id, (Job.organization_id == target_org_id) | (Job.created_by_user_id == ctx.user.id))
+        else:
+            await set_tenant_context(session, is_platform_admin=True)
+            stmt = select(Job).where(Job.id == job_id)
+
         job = (await session.execute(stmt)).scalar_one_or_none()
 
         if not job:
@@ -322,7 +342,7 @@ async def publish_job(
         job.status = JobStatusEnum.PUBLISHED
 
         audit = AuditLog(
-            organization_id=ctx.active_organization_id,
+            organization_id=job.organization_id,
             user_id=ctx.user.id,
             action="job.publish",
             resource_type="job",
@@ -332,8 +352,14 @@ async def publish_job(
         await session.commit()
 
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
-        return (await session.execute(stmt)).scalar_one()
+        if job.organization_id:
+            await set_tenant_context(session, job.organization_id)
+        else:
+            await set_tenant_context(session, is_platform_admin=True)
+        stmt_res = select(Job).where(Job.id == job.id)
+        updated_job = (await session.execute(stmt_res)).scalar_one()
+
+        return JobResponse.model_validate(updated_job)
 
 @router.get("", response_model=JobListResponse)
 @router.get("/", response_model=JobListResponse, include_in_schema=False)
