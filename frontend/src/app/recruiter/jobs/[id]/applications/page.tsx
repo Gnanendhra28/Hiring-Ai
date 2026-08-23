@@ -8,6 +8,7 @@ import {
   fetchActiveRankings,
   fetchRecruiterJobs,
   updateApplicationStatus,
+  fetchApplicationResumePDF,
   apiFetch,
   JobIntelligenceData,
   CandidateRankingItem,
@@ -40,6 +41,9 @@ export default function RecruiterApplicationPipelinePage() {
   const params = useParams();
   const router = useRouter();
   const [selectedResumeAppId, setSelectedResumeAppId] = useState<string | null>(null);
+  const [resumeObjectUrl, setResumeObjectUrl] = useState<string | null>(null);
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const rawJobId = params?.id as string;
 
   const [activeJobs, setActiveJobs] = useState<JobItemData[]>([]);
@@ -181,6 +185,42 @@ export default function RecruiterApplicationPipelinePage() {
       );
     }
   };
+
+  const handleViewResume = async (applicationId: string) => {
+    setSelectedResumeAppId(applicationId);
+    setResumeLoading(true);
+    setResumeError(null);
+    if (resumeObjectUrl) {
+      URL.revokeObjectURL(resumeObjectUrl);
+      setResumeObjectUrl(null);
+    }
+    try {
+      const url = await fetchApplicationResumePDF(applicationId);
+      setResumeObjectUrl(url);
+    } catch (err: any) {
+      setResumeError(err.message || "Failed to load resume PDF.");
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
+  const handleCloseResumeModal = () => {
+    if (resumeObjectUrl) {
+      URL.revokeObjectURL(resumeObjectUrl);
+      setResumeObjectUrl(null);
+    }
+    setSelectedResumeAppId(null);
+    setResumeError(null);
+    setResumeLoading(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (resumeObjectUrl) {
+        URL.revokeObjectURL(resumeObjectUrl);
+      }
+    };
+  }, [resumeObjectUrl]);
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
@@ -368,7 +408,7 @@ export default function RecruiterApplicationPipelinePage() {
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => setSelectedResumeAppId(app.id)}
+                          onClick={() => handleViewResume(app.id)}
                           className="px-3 py-1.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 font-semibold text-xs transition flex items-center gap-1.5 shadow"
                         >
                           <FileText size={13} /> View Resume
@@ -397,18 +437,37 @@ export default function RecruiterApplicationPipelinePage() {
                   <FileText size={16} className="text-indigo-400" /> Submitted Application Resume PDF
                 </h3>
                 <button
-                  onClick={() => setSelectedResumeAppId(null)}
+                  onClick={handleCloseResumeModal}
                   className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold px-3 py-1 transition border border-slate-700"
                 >
                   ✕ Close
                 </button>
               </div>
-              <div className="flex-1 bg-slate-950">
-                <iframe
-                  src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/jobs/applications/${selectedResumeAppId}/resume`}
-                  className="w-full h-full border-0"
-                  title="Candidate Application Resume PDF"
-                />
+              <div className="flex-1 bg-slate-950 relative flex items-center justify-center">
+                {resumeLoading ? (
+                  <div className="text-slate-400 text-xs font-semibold flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    Loading application resume PDF...
+                  </div>
+                ) : resumeError ? (
+                  <div className="p-6 text-center space-y-3 max-w-md">
+                    <p className="text-rose-400 text-xs font-bold bg-rose-500/10 border border-rose-500/30 p-4 rounded-xl">
+                      {resumeError}
+                    </p>
+                    <button
+                      onClick={handleCloseResumeModal}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg transition"
+                    >
+                      Close Viewer
+                    </button>
+                  </div>
+                ) : resumeObjectUrl ? (
+                  <iframe
+                    src={resumeObjectUrl}
+                    className="w-full h-full border-0"
+                    title="Candidate Application Resume PDF"
+                  />
+                ) : null}
               </div>
             </div>
           </div>

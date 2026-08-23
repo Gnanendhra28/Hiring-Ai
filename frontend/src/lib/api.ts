@@ -1292,6 +1292,16 @@ export async function updateApplicationStatus(applicationId: string, status: str
   return res.ok;
 }
 
+export async function fetchApplicationResumePDF(applicationId: string): Promise<string> {
+  const res = await apiFetch(`/api/v1/jobs/applications/${applicationId}/resume`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: null }));
+    throw new Error(err.detail || "Failed to load application resume PDF.");
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export interface RecruiterProfileData {
   id: string;
   user_id: string;
