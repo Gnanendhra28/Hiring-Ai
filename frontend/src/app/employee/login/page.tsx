@@ -55,10 +55,8 @@ export default function EmployeeLoginPage() {
 
       if (isPlatformAdmin) {
         router.push("/admin/dashboard");
-      } else if (isRecruiter) {
-        router.push("/recruiter/dashboard");
       } else {
-        router.push("/candidate/dashboard");
+        router.push("/recruiter/dashboard");
       }
     } catch (err: any) {
       setError(err.message || "Invalid work email address or password. Please try again.");

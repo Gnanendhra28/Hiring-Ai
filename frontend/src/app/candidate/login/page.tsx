@@ -55,8 +55,6 @@ export default function CandidateLoginPage() {
 
       if (isPlatformAdmin) {
         router.push("/admin/dashboard");
-      } else if (isRecruiter) {
-        router.push("/recruiter/dashboard");
       } else {
         router.push("/candidate/dashboard");
       }
