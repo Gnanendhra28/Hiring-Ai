@@ -37,7 +37,10 @@ async def list_pending_jobs(
         await session.begin()
         await set_tenant_context(session, is_platform_admin=True)
 
-        stmt = select(Job).where(Job.verification_status == JobVerificationStatusEnum.PENDING_VERIFICATION)
+        stmt = select(Job).where(
+            Job.verification_status == JobVerificationStatusEnum.PENDING_VERIFICATION,
+            Job.created_by_user_id.isnot(None),
+        )
 
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await session.execute(count_stmt)).scalar_one()
@@ -65,7 +68,7 @@ async def list_all_platform_jobs(
         await session.begin()
         await set_tenant_context(session, is_platform_admin=True)
 
-        stmt = select(Job)
+        stmt = select(Job).where(Job.created_by_user_id.isnot(None))
         if verification_status:
             stmt = stmt.where(Job.verification_status == verification_status)
 
