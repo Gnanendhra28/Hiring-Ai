@@ -14,24 +14,39 @@ const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const ORG_ID_KEY = "organization_id";
 
+function hasSessionStorage(): boolean {
+  return typeof window !== "undefined" && typeof sessionStorage !== "undefined";
+}
+
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  const sessionToken = hasSessionStorage() ? sessionStorage.getItem(ACCESS_TOKEN_KEY) : null;
+  return sessionToken || localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  const sessionToken = hasSessionStorage() ? sessionStorage.getItem(REFRESH_TOKEN_KEY) : null;
+  return sessionToken || localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 export function setTokens(accessToken: string, refreshToken: string): void {
   if (typeof window === "undefined") return;
+  if (hasSessionStorage()) {
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  }
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
+  if (hasSessionStorage()) {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(ORG_ID_KEY);
+  }
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(ORG_ID_KEY);
@@ -39,11 +54,15 @@ export function clearTokens(): void {
 
 export function getOrgId(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(ORG_ID_KEY);
+  const sessionOrgId = hasSessionStorage() ? sessionStorage.getItem(ORG_ID_KEY) : null;
+  return sessionOrgId || localStorage.getItem(ORG_ID_KEY);
 }
 
 export function setOrgId(orgId: string): void {
   if (typeof window === "undefined") return;
+  if (hasSessionStorage()) {
+    sessionStorage.setItem(ORG_ID_KEY, orgId);
+  }
   localStorage.setItem(ORG_ID_KEY, orgId);
 }
 
