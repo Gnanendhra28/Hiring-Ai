@@ -127,7 +127,7 @@ function getTimeAgo(dateInput?: string | Date) {
   useEffect(() => {
     async function loadJobs() {
       try {
-        const res = await apiFetch("/api/v1/jobs");
+        const res = await apiFetch("/api/v1/jobs?public_only=true");
         if (res.ok) {
           const data = await res.json();
           const apiItems = data.items || [];

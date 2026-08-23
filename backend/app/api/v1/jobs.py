@@ -366,14 +366,16 @@ async def list_jobs(
             if mem:
                 target_org_id = mem.organization_id
 
-        is_recruiter_workspace = (
-            not public_only and (
-                ctx.user.is_platform_admin or
-                ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]
+        if public_only:
+            # Public Candidate Directory: return all published & admin-approved jobs across all employers
+            await set_tenant_context(session, is_platform_admin=True)
+            stmt = select(Job).where(
+                Job.verification_status == JobVerificationStatusEnum.APPROVED,
+                Job.status == JobStatusEnum.PUBLISHED,
+                Job.created_by_user_id.isnot(None),
             )
-        )
-
-        if is_recruiter_workspace:
+        elif ctx.user:
+            # Authenticated Recruiter / Admin Workspace: return owned / tenant requisitions across all lifecycle states
             await set_tenant_context(session, is_platform_admin=True)
             if ctx.user.is_platform_admin:
                 stmt = select(Job)
@@ -384,7 +386,7 @@ async def list_jobs(
             else:
                 stmt = select(Job).where(Job.created_by_user_id == ctx.user.id)
         else:
-            # Candidate portal listing: return all published & admin-approved jobs across employers
+            # Unauthenticated public candidate fallback
             await set_tenant_context(session, is_platform_admin=True)
             stmt = select(Job).where(
                 Job.verification_status == JobVerificationStatusEnum.APPROVED,
@@ -414,15 +416,16 @@ async def list_jobs(
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(
     job_id: str,
-    ctx: SecurityContext = Depends(get_security_context),
+    ctx: SecurityContext = Depends(get_optional_security_context),
 ):
     """Fetches single job details by UUID or slug for recruiters or public candidates."""
     async with async_session_factory() as session:
         await session.begin()
-        if ctx.active_organization_id and ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]:
+        if ctx.active_organization_id and not (ctx.user and ctx.user.is_platform_admin):
             await set_tenant_context(session, ctx.active_organization_id)
             stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
         else:
+            await set_tenant_context(session, is_platform_admin=True)
             stmt = select(Job)
 
         try:
