@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from slugify import slugify
 from sqlalchemy import delete, func, select, update
 
-from app.api.v1.deps import get_security_context, require_role, SecurityContext
+from app.api.v1.deps import get_optional_security_context, get_security_context, require_role, SecurityContext
 from app.api.v1.schemas import (
     ApplicationDecisionRequest,
     ApplicationListResponse,
@@ -345,6 +345,7 @@ async def publish_job(
 async def list_jobs(
     status_filter: Optional[JobStatusEnum] = Query(None, alias="status"),
     department_filter: Optional[str] = Query(None, alias="department"),
+    public_only: bool = Query(False, alias="public_only"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     ctx: SecurityContext = Depends(get_security_context),
@@ -365,7 +366,14 @@ async def list_jobs(
             if mem:
                 target_org_id = mem.organization_id
 
-        if ctx.user:
+        is_recruiter_workspace = (
+            not public_only and (
+                ctx.user.is_platform_admin or
+                ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]
+            )
+        )
+
+        if is_recruiter_workspace:
             await set_tenant_context(session, is_platform_admin=True)
             if ctx.user.is_platform_admin:
                 stmt = select(Job)
@@ -376,9 +384,12 @@ async def list_jobs(
             else:
                 stmt = select(Job).where(Job.created_by_user_id == ctx.user.id)
         else:
-            # Unauthenticated public candidate portal listing: return all published & admin-approved jobs across employers
+            # Candidate portal listing: return all published & admin-approved jobs across employers
+            await set_tenant_context(session, is_platform_admin=True)
             stmt = select(Job).where(
-                (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
+                Job.verification_status == JobVerificationStatusEnum.APPROVED,
+                Job.status == JobStatusEnum.PUBLISHED,
+                Job.created_by_user_id.isnot(None),
             )
 
         if status_filter:

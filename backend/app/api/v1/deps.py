@@ -154,3 +154,33 @@ def require_role(allowed_roles: List[RoleEnum]):
             )
         return ctx
     return role_checker
+
+async def get_optional_user(
+    auth_credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+) -> Optional[User]:
+    """Decodes optional JWT Bearer token if present; returns None if unauthenticated."""
+    if not auth_credentials:
+        return None
+    try:
+        payload = decode_token(auth_credentials.credentials)
+        if payload.get("type") and payload.get("type") != "access":
+            return None
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            return None
+        user_id = uuid.UUID(user_id_str)
+        async with async_session_factory() as session:
+            stmt = select(User).where(User.id == user_id, User.is_active.is_(True))
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+    except Exception:
+        return None
+
+async def get_optional_security_context(
+    user: Optional[User] = Depends(get_optional_user),
+    x_organization_id: Optional[str] = Header(None, alias="X-Organization-ID"),
+) -> SecurityContext:
+    """Optional Tenant Security Context Dependency for public endpoints."""
+    if not user:
+        return SecurityContext(user=User(id=uuid.uuid4(), email="", full_name="", is_active=False))
+    return await get_security_context(user=user, x_organization_id=x_organization_id)
