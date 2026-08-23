@@ -13,7 +13,7 @@ import {
   CandidateRankingItem,
   JobItemData,
 } from "@/lib/api";
-import { Briefcase, ChevronDown, Plus, Sparkles, User, UsersRound } from "lucide-react";
+import { Briefcase, ChevronDown, FileText, Plus, Sparkles, User, UsersRound } from "lucide-react";
 
 interface RecruiterApplicationRow {
   id: string;
@@ -24,6 +24,7 @@ interface RecruiterApplicationRow {
   skills: string[];
   submitted_at: string;
   status: string;
+  resume_file_path?: string;
   score?: number;
   eligibility_status?: string;
   score_confidence?: number;
@@ -38,6 +39,7 @@ const isValidUUID = (str: string) =>
 export default function RecruiterApplicationPipelinePage() {
   const params = useParams();
   const router = useRouter();
+  const [selectedResumeAppId, setSelectedResumeAppId] = useState<string | null>(null);
   const rawJobId = params?.id as string;
 
   const [activeJobs, setActiveJobs] = useState<JobItemData[]>([]);
@@ -364,17 +366,51 @@ export default function RecruiterApplicationPipelinePage() {
                       </select>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <Link
-                        href={`/recruiter/jobs/${selectedJobId}/applications/${app.id}`}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded text-xs inline-flex items-center gap-1 shadow"
-                      >
-                        Inspect Candidate &rarr;
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedResumeAppId(app.id)}
+                          className="px-3 py-1.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 font-semibold text-xs transition flex items-center gap-1.5 shadow"
+                        >
+                          <FileText size={13} /> View Resume
+                        </button>
+                        <Link
+                          href={`/recruiter/jobs/${selectedJobId}/applications/${app.id}`}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded text-xs inline-flex items-center gap-1 shadow"
+                        >
+                          Inspect Candidate &rarr;
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* PDF Resume Viewer Modal */}
+        {selectedResumeAppId && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#111a2c] border border-slate-800 rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#0b1425]">
+                <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                  <FileText size={16} className="text-indigo-400" /> Submitted Application Resume PDF
+                </h3>
+                <button
+                  onClick={() => setSelectedResumeAppId(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold px-3 py-1 transition border border-slate-700"
+                >
+                  ✕ Close
+                </button>
+              </div>
+              <div className="flex-1 bg-slate-950">
+                <iframe
+                  src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/jobs/applications/${selectedResumeAppId}/resume`}
+                  className="w-full h-full border-0"
+                  title="Candidate Application Resume PDF"
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>

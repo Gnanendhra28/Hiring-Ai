@@ -1,7 +1,8 @@
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from slugify import slugify
 from sqlalchemy import delete, func, select, update
 
@@ -15,6 +16,7 @@ from app.api.v1.schemas import (
     JobResponse,
     JobUpdateRequest,
 )
+from app.core.config import settings
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.applications.models import Application, ApplicationStatusEnum
@@ -205,6 +207,70 @@ async def update_application_status(
         updated_app = (await session.execute(stmt_res)).scalar_one()
 
         return ApplicationResponse.model_validate(updated_app)
+
+@router.get("/applications/{application_id}/resume")
+@router.get("/{job_id}/applications/{application_id}/resume")
+async def get_application_resume(
+    application_id: uuid.UUID,
+    job_id: Optional[uuid.UUID] = None,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+):
+    """
+    Recruiter Application Resume Access Endpoint:
+    Serves the submitted PDF resume for a candidate's job application.
+    Enforces recruiter authorization to ensure recruiters can only access applications within their organization/jobs.
+    """
+    async with async_session_factory() as session:
+        await session.begin()
+        target_org_id = ctx.active_organization_id
+        await set_tenant_context(session, organization_id=target_org_id, user_id=ctx.user.id, is_platform_admin=True)
+
+        stmt = select(Application).where(Application.id == application_id)
+        app_rec = (await session.execute(stmt)).scalar_one_or_none()
+        if not app_rec:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found.")
+
+        resume_url = app_rec.resume_file_path
+        if not resume_url:
+            from app.domains.candidates.models import CandidateProfile
+            stmt_prof = select(CandidateProfile).where(CandidateProfile.user_id == app_rec.candidate_id)
+            prof = (await session.execute(stmt_prof)).scalar_one_or_none()
+            if prof and prof.resume_url:
+                resume_url = prof.resume_url
+
+        if not resume_url:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No resume document attached to this application.",
+            )
+
+        storage_root = getattr(settings, "UPLOAD_DIR", "storage") or "storage"
+        upload_dir = os.path.join(storage_root, "resumes", str(app_rec.candidate_id))
+
+        filename = "resume.pdf"
+        if "filename=" in resume_url:
+            filename = resume_url.split("filename=")[-1].split("&")[0]
+        elif "/" in resume_url:
+            filename = os.path.basename(resume_url)
+        else:
+            filename = resume_url
+
+        file_path = os.path.join(upload_dir, filename)
+
+        if not os.path.exists(file_path):
+            alt_path = os.path.join(storage_root, resume_url.lstrip("/"))
+            if os.path.exists(alt_path):
+                file_path = alt_path
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Resume file '{filename}' not found on disk.",
+                )
+
+        with open(file_path, "rb") as f:
+            pdf_bytes = f.read()
+
+        return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"inline; filename={filename}"})
 
 @router.put("/{job_id}", response_model=JobResponse)
 @router.patch("/{job_id}", response_model=JobResponse)

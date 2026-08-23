@@ -340,6 +340,27 @@ export async function updateCandidateProfile(data: Partial<CandidateProfileData>
   return res.json();
 }
 
+export async function uploadCandidateProfileResume(file: File): Promise<CandidateProfileData> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const res = await fetch(`${baseUrl}/api/v1/candidate/profile/resume`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: null }));
+    throw new Error(err.detail || "Failed to upload candidate resume PDF.");
+  }
+
+  return res.json();
+}
+
 let refreshPromise: Promise<string | null> | null = null;
 
 export async function performTokenRefresh(): Promise<string | null> {

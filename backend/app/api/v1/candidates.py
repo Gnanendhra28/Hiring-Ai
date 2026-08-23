@@ -1,6 +1,8 @@
+import os
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timezone
+from typing import List, Optional
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -11,6 +13,7 @@ from app.api.v1.schemas import (
     CandidateProfileRequest,
     CandidateProfileResponse,
 )
+from app.core.config import settings
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.applications.models import Application, ApplicationStatusEnum
@@ -23,6 +26,100 @@ from app.infrastructure.events.memory import InMemoryEventBus
 
 router = APIRouter(prefix="/candidate", tags=["Candidate Platform"])
 event_bus = InMemoryEventBus()
+
+@router.post("/profile/resume", response_model=CandidateProfileResponse)
+async def upload_candidate_profile_resume(
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+):
+    """
+    Candidate endpoint: Uploads PDF resume document to candidate profile.
+    Validates file size limit (max 10 MB), MIME type, and PDF magic header (%PDF).
+    Saves file to disk and updates CandidateProfile.
+    """
+    file_bytes = await file.read()
+    file_size = len(file_bytes)
+
+    if file_size > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File size ({file_size} bytes) exceeds maximum limit of 10 MB.",
+        )
+
+    if not file.filename.lower().endswith(".pdf") and file.content_type != "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Only PDF documents (.pdf) are supported.",
+        )
+
+    if not file_bytes.startswith(b"%PDF"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Malformed document: File content header is not a valid PDF file.",
+        )
+
+    storage_root = getattr(settings, "UPLOAD_DIR", "storage") or "storage"
+    upload_dir = os.path.join(storage_root, "resumes", str(user.id))
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, file.filename)
+    with open(file_path, "wb") as f:
+        f.write(file_bytes)
+
+    rel_resume_url = f"/api/v1/candidate/profile/resume/file?filename={file.filename}"
+
+    async with async_session_factory() as session:
+        stmt = select(CandidateProfile).where(CandidateProfile.user_id == user.id)
+        result = await session.execute(stmt)
+        profile = result.scalar_one_or_none()
+
+        if not profile:
+            profile = CandidateProfile(
+                user_id=user.id,
+                resume_url=rel_resume_url,
+                resume_filename=file.filename,
+                resume_filesize=file_size,
+                resume_updated_at=datetime.now(timezone.utc).isoformat(),
+            )
+            session.add(profile)
+        else:
+            profile.resume_url = rel_resume_url
+            profile.resume_filename = file.filename
+            profile.resume_filesize = file_size
+            profile.resume_updated_at = datetime.now(timezone.utc).isoformat()
+
+        await session.commit()
+        await session.refresh(profile)
+
+        resp = CandidateProfileResponse.model_validate(profile)
+        resp.full_name = user.full_name
+        return resp
+
+@router.get("/profile/resume/file")
+async def get_my_profile_resume_file(
+    filename: Optional[str] = None,
+    user: User = Depends(get_current_user),
+):
+    """
+    Candidate endpoint: Serves candidate's profile resume PDF file.
+    """
+    async with async_session_factory() as session:
+        stmt = select(CandidateProfile).where(CandidateProfile.user_id == user.id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+        if not profile or not profile.resume_filename:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No resume uploaded in candidate profile.")
+
+        target_file = filename or profile.resume_filename
+        storage_root = getattr(settings, "UPLOAD_DIR", "storage") or "storage"
+        upload_dir = os.path.join(storage_root, "resumes", str(user.id))
+        file_path = os.path.join(upload_dir, target_file)
+
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume PDF file not found on disk.")
+
+        with open(file_path, "rb") as f:
+            pdf_bytes = f.read()
+
+        return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"inline; filename={target_file}"})
 
 @router.get("/profile", response_model=CandidateProfileResponse)
 async def get_my_candidate_profile(user: User = Depends(get_current_user)):
@@ -207,13 +304,20 @@ async def submit_application(
 
         await set_tenant_context(session, organization_id=target_org_id, user_id=user.id)
 
-        # 4. Create Application record
+        # 4. Create Application record with snapshot of candidate's current resume
+        resume_snapshot = payload.resume_file_path
+        if not resume_snapshot:
+            stmt_prof = select(CandidateProfile.resume_url).where(CandidateProfile.user_id == user.id)
+            prof_resume = (await session.execute(stmt_prof)).scalar_one_or_none()
+            if prof_resume:
+                resume_snapshot = prof_resume
+
         application = Application(
             candidate_id=user.id,
             job_id=job.id,
             organization_id=target_org_id,
             status=ApplicationStatusEnum.SUBMITTED,
-            resume_file_path=payload.resume_file_path,
+            resume_file_path=resume_snapshot,
             answers_json=payload.answers_json,
         )
         session.add(application)

@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import {
   getCandidateProfile,
   updateCandidateProfile,
+  uploadCandidateProfileResume,
   CandidateProfileData,
 } from "@/lib/api";
 
@@ -32,6 +33,7 @@ export default function CandidateProfilePage() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [selectedResumeFile, setSelectedResumeFile] = useState<File | null>(null);
 
   // Form states for profile header edit
   const [headerForm, setHeaderForm] = useState({
@@ -1462,17 +1464,17 @@ export default function CandidateProfilePage() {
             <h3 className="text-lg font-bold text-white">Upload Candidate Resume</h3>
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Select Resume File (PDF / DOCX)</label>
+                <label className="block text-slate-400 font-mono mb-1">Select Resume File (PDF only)</label>
                 <input
                   type="file"
-                  accept=".pdf,.docx,.doc"
+                  accept=".pdf,application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      setSelectedResumeFile(file);
                       setEditingItem({
                         filename: file.name,
                         filesize: file.size,
-                        url: `/uploads/resumes/${file.name}`,
                       });
                     }
                   }}
@@ -1482,28 +1484,36 @@ export default function CandidateProfilePage() {
             </div>
             <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
               <button
-                onClick={() => setActiveModal(null)}
+                onClick={() => {
+                  setActiveModal(null);
+                  setSelectedResumeFile(null);
+                }}
                 className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  if (editingItem?.filename) {
-                    saveProfileData(
-                      {
-                        resume_filename: editingItem.filename,
-                        resume_url: editingItem.url,
-                        resume_updated_at: new Date().toISOString().split("T")[0],
-                      },
-                      "Resume uploaded successfully."
-                    );
+                onClick={async () => {
+                  if (selectedResumeFile) {
+                    setSaving(true);
+                    setError(null);
+                    try {
+                      const updatedProf = await uploadCandidateProfileResume(selectedResumeFile);
+                      setProfile(updatedProf);
+                      showToast("Resume uploaded and saved to profile successfully.");
+                      setActiveModal(null);
+                      setSelectedResumeFile(null);
+                    } catch (err: any) {
+                      setError(err.message || "Failed to upload resume PDF.");
+                    } finally {
+                      setSaving(false);
+                    }
                   }
                 }}
-                disabled={saving || !editingItem?.filename}
+                disabled={saving || !selectedResumeFile}
                 className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
               >
-                {saving ? "Uploading..." : "Save Resume"}
+                {saving ? "Uploading PDF..." : "Save Resume"}
               </button>
             </div>
           </div>
