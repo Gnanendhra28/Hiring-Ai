@@ -424,7 +424,7 @@ async def list_jobs(
     public_only: bool = Query(False, alias="public_only"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    ctx: SecurityContext = Depends(get_security_context),
+    ctx: SecurityContext = Depends(get_optional_security_context),
 ):
     """Lists jobs in active organization tenant context or public candidate listings."""
     async with async_session_factory() as session:
@@ -432,8 +432,8 @@ async def list_jobs(
 
         from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership
 
-        target_org_id = ctx.active_organization_id
-        if not target_org_id and ctx.user:
+        target_org_id = ctx.active_organization_id if ctx else None
+        if ctx and ctx.user and not target_org_id:
             stmt_mem = select(OrganizationMembership).where(
                 OrganizationMembership.user_id == ctx.user.id,
                 OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
@@ -442,7 +442,9 @@ async def list_jobs(
             if mem:
                 target_org_id = mem.organization_id
 
-        if public_only:
+        is_candidate_or_public = public_only or not ctx or not ctx.user or ctx.role == RoleEnum.CANDIDATE
+
+        if is_candidate_or_public:
             # Public Candidate Directory: return all published & admin-approved jobs across all employers
             await set_tenant_context(session, is_platform_admin=True)
             stmt = select(Job).where(
@@ -450,7 +452,7 @@ async def list_jobs(
                 Job.status == JobStatusEnum.PUBLISHED,
                 Job.created_by_user_id.isnot(None),
             )
-        elif ctx.user:
+        elif ctx and ctx.user:
             # Authenticated Recruiter / Admin Workspace: return owned / tenant requisitions across all lifecycle states
             await set_tenant_context(session, is_platform_admin=True)
             if ctx.user.is_platform_admin:
@@ -461,14 +463,6 @@ async def list_jobs(
                 )
             else:
                 stmt = select(Job).where(Job.created_by_user_id == ctx.user.id)
-        else:
-            # Unauthenticated public candidate fallback
-            await set_tenant_context(session, is_platform_admin=True)
-            stmt = select(Job).where(
-                Job.verification_status == JobVerificationStatusEnum.APPROVED,
-                Job.status == JobStatusEnum.PUBLISHED,
-                Job.created_by_user_id.isnot(None),
-            )
 
         if status_filter:
             stmt = stmt.where(Job.status == status_filter)
@@ -490,7 +484,6 @@ async def list_jobs(
         )
 
 
-
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(
     job_id: str,
@@ -499,26 +492,29 @@ async def get_job(
     """Fetches single job details by UUID or slug for recruiters or public candidates."""
     async with async_session_factory() as session:
         await session.begin()
-        if ctx.active_organization_id and not (ctx.user and ctx.user.is_platform_admin):
-            await set_tenant_context(session, ctx.active_organization_id)
-            stmt = select(Job).where(Job.organization_id == ctx.active_organization_id)
-        else:
-            await set_tenant_context(session, is_platform_admin=True)
-            stmt = select(Job)
+        await set_tenant_context(session, is_platform_admin=True)
 
+        stmt = select(Job)
         try:
             val_uuid = uuid.UUID(job_id)
             stmt = stmt.where(Job.id == val_uuid)
         except ValueError:
-            stmt = stmt.where(
-                Job.slug == job_id,
-                (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
-            )
+            stmt = stmt.where(Job.slug == job_id)
 
         job = (await session.execute(stmt)).scalar_one_or_none()
 
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+        is_recruiter_owner = ctx and ctx.user and (
+            ctx.user.is_platform_admin or
+            job.created_by_user_id == ctx.user.id or
+            (ctx.active_organization_id and job.organization_id == ctx.active_organization_id)
+        )
+
+        if not is_recruiter_owner:
+            if job.status != JobStatusEnum.PUBLISHED or job.verification_status != JobVerificationStatusEnum.APPROVED:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
 
         return job
 

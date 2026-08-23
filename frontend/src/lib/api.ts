@@ -415,7 +415,8 @@ export async function apiFetch(
     const orgId = getOrgId();
     const isCandidateOrGlobalEndpoint =
       endpoint.includes("/auth/") ||
-      endpoint.includes("/candidate");
+      endpoint.includes("/candidate") ||
+      (endpoint.includes("/jobs") && !endpoint.includes("/recruiter/") && !endpoint.includes("/applications"));
     if (orgId && !headers.has("X-Organization-ID") && !isCandidateOrGlobalEndpoint) {
       headers.set("X-Organization-ID", orgId);
     }
