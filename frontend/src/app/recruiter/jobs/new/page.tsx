@@ -114,7 +114,7 @@ ${formData.good_to_have}`;
         location: formattedLocation,
         employment_type: formData.employment_type,
         status: formData.status,
-        verification_status: "PENDING_VERIFICATION",
+        verification_status: "DRAFT",
         salary: formData.salary,
         company_website: formData.company_website,
         description: formData.description,
