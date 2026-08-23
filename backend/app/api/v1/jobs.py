@@ -261,11 +261,31 @@ async def get_application_resume(
             alt_path = os.path.join(storage_root, resume_url.lstrip("/"))
             if os.path.exists(alt_path):
                 file_path = alt_path
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Resume file '{filename}' not found on disk.",
-                )
+
+        if not os.path.exists(file_path):
+            if os.path.exists(upload_dir):
+                pdfs = [f for f in os.listdir(upload_dir) if f.lower().endswith(".pdf")]
+                if pdfs:
+                    file_path = os.path.join(upload_dir, pdfs[0])
+                    filename = pdfs[0]
+
+        if not os.path.exists(file_path):
+            from app.domains.candidates.models import CandidateDocument
+            stmt_doc = select(CandidateDocument).where(
+                CandidateDocument.candidate_id == app_rec.candidate_id
+            ).order_by(CandidateDocument.created_at.desc())
+            doc = (await session.execute(stmt_doc)).scalars().first()
+            if doc and doc.file_path:
+                doc_path = os.path.join(storage_root, doc.file_path)
+                if os.path.exists(doc_path):
+                    file_path = doc_path
+                    filename = doc.file_name or "resume.pdf"
+
+        if not os.path.exists(file_path):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Resume file '{filename}' not found on disk. Candidate needs to upload a PDF resume.",
+            )
 
         with open(file_path, "rb") as f:
             pdf_bytes = f.read()
