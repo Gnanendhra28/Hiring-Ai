@@ -24,11 +24,18 @@ async def list_public_jobs(
     Strictly filters out draft, paused, or closed jobs and internal recruiter notes.
     """
     async with async_session_factory() as session:
+        from app.domains.jobs.models import JobVerificationStatusEnum
+
         stmt = (
             select(Job)
             .options(selectinload(Job.organization_id))  # noqa: F841
             .join(Organization, Job.organization_id == Organization.id)
-            .where(Job.status == JobStatusEnum.PUBLISHED, Organization.is_active.is_(True))
+            .where(
+                Job.created_by_user_id.isnot(None),
+                Job.status == JobStatusEnum.PUBLISHED,
+                Job.verification_status == JobVerificationStatusEnum.APPROVED,
+                Organization.is_active.is_(True),
+            )
         )
 
         if department_filter:
@@ -45,7 +52,12 @@ async def list_public_jobs(
         stmt = (
             select(Job, Organization.name.label("org_name"))
             .join(Organization, Job.organization_id == Organization.id)
-            .where(Job.status == JobStatusEnum.PUBLISHED, Organization.is_active.is_(True))
+            .where(
+                Job.created_by_user_id.isnot(None),
+                Job.status == JobStatusEnum.PUBLISHED,
+                Job.verification_status == JobVerificationStatusEnum.APPROVED,
+                Organization.is_active.is_(True),
+            )
             .order_by(Job.created_at.desc())
             .offset(offset)
             .limit(page_size)
