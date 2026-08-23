@@ -18,11 +18,13 @@ export default function CreateJobPostingPage() {
     work_mode: "Hybrid",
     employment_type: "FULL_TIME",
     experience: "3-5 Years",
+    openings: "1",
     date_posted: todayStr,
     closing_date: "",
     status: "DRAFT",
     key_skills: "Python, FastAPI, PostgreSQL, RAG",
-    preferred_skills: "Kubernetes, Docker, Vector DBs, MLOps",
+    preferred_skills:
+      "• Experience with Kubernetes, Docker, or containerization\n• Knowledge of Vector Databases & LLM orchestration\n• Familiarity with MLOps pipelines and cloud architecture",
     good_to_have:
       "• Experience working on payment platforms, fintech products, or financial technology solutions\n• Knowledge of Kubernetes, messaging systems, or distributed systems\n• Familiarity with CI/CD pipelines, monitoring, and observability tools\n• Experience working with high-volume transaction processing systems\n• Understanding of security, scalability, and reliability requirements in fintech applications",
     responsibilities:
@@ -39,12 +41,22 @@ export default function CreateJobPostingPage() {
 
   // Auto-generate Markdown description whenever individual fields update
   useEffect(() => {
+    const formattedPreferredSkills =
+      formData.preferred_skills.includes("•") || formData.preferred_skills.includes("-")
+        ? formData.preferred_skills
+        : formData.preferred_skills
+            .split(",")
+            .map((s) => `• ${s.trim()}`)
+            .filter(Boolean)
+            .join("\n");
+
     const compiledMarkdown = `## About the Company
 ${formData.about_company}
 
 ## Work Location & Schedule
 - **Location**: ${formData.location} (${formData.work_mode})
 - **Required Experience**: ${formData.experience}
+${formData.openings ? `- **Number of Openings**: ${formData.openings}` : ""}
 - **Date Posted**: ${formData.date_posted}
 ${formData.closing_date ? `- **Application Closing Date**: ${formData.closing_date}` : ""}
 
@@ -59,11 +71,7 @@ ${formData.key_skills
   .join("\n")}
 
 ## Preferred Qualifications & Skills
-${formData.preferred_skills
-  .split(",")
-  .map((s) => `- ${s.trim()}`)
-  .filter(Boolean)
-  .join("\n")}
+${formattedPreferredSkills}
 
 ## Good to Have Knowledge
 ${formData.good_to_have}`;
@@ -74,6 +82,7 @@ ${formData.good_to_have}`;
     formData.location,
     formData.work_mode,
     formData.experience,
+    formData.openings,
     formData.date_posted,
     formData.closing_date,
     formData.responsibilities,
@@ -346,7 +355,7 @@ ${formData.good_to_have}`;
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="job-salary-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Salary / Compensation Range (Optional)
@@ -359,6 +368,24 @@ ${formData.good_to_have}`;
                   value={formData.salary || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, salary: e.target.value })
+                  }
+                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="job-openings-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  No. of Openings (Optional)
+                </label>
+                <input
+                  id="job-openings-input"
+                  name="openings"
+                  type="number"
+                  min={1}
+                  placeholder="e.g. 5"
+                  value={formData.openings || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, openings: e.target.value })
                   }
                   className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
@@ -409,14 +436,14 @@ ${formData.good_to_have}`;
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="job-preferred-skills-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Preferred Skills
+                <label htmlFor="job-preferred-skills-textarea" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Preferred Skills (Bullet points)
                 </label>
-                <input
-                  id="job-preferred-skills-input"
+                <textarea
+                  id="job-preferred-skills-textarea"
                   name="preferred_skills"
-                  type="text"
-                  placeholder="e.g. Kubernetes, Docker, Vector DBs, Github"
+                  rows={4}
+                  placeholder="• Experience with Kubernetes, Docker, or containerization&#10;• Knowledge of Vector Databases & LLM orchestration&#10;• MLOps pipelines and cloud architecture"
                   value={formData.preferred_skills}
                   onChange={(e) =>
                     setFormData({
@@ -424,7 +451,7 @@ ${formData.good_to_have}`;
                       preferred_skills: e.target.value,
                     })
                   }
-                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
+                  className="w-full bg-[#0b1425] border border-[#233047] rounded-lg p-4 text-sm text-white focus:outline-none focus:border-sky-500 transition"
                 />
               </div>
 
