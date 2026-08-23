@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock3, FileCheck, Pencil, Plus, Send } from "lucide-react";
+import { CheckCircle2, Clock3, FileCheck, Pencil, Plus, Send, Trash2 } from "lucide-react";
 import {
   fetchRecruiterJobs,
   updateJobStatus,
   submitJobForAdminApproval,
+  deleteJobPost,
   JobItemData,
 } from "@/lib/api";
 
@@ -58,6 +59,18 @@ export default function JobWorkspaceListPage() {
       console.error("Failed to submit job for admin approval:", err);
     } finally {
       setSubmittingJobId(null);
+    }
+  };
+
+  const handleDeleteJob = async (jobId: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) return;
+    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+    try {
+      await deleteJobPost(jobId);
+      setAlertMsg(`Job requisition "${title}" has been deleted.`);
+      setTimeout(() => setAlertMsg(null), 5000);
+    } catch (err) {
+      console.error("Failed to delete job on backend:", err);
     }
   };
 
@@ -192,9 +205,13 @@ export default function JobWorkspaceListPage() {
                       >
                         <Pencil size={12} /> Edit
                       </Link>
-                      <Link href={`/recruiter/jobs/${job.id}/ranking`} className="text-xs text-sky-300 hover:text-sky-200 font-semibold">
-                        Open Workspace &rarr;
-                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteJob(job.id, job.title)}
+                        className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 bg-rose-950/40 hover:bg-rose-900/50 px-2 py-1 rounded border border-rose-800/60 transition cursor-pointer"
+                      >
+                        <Trash2 size={12} /> Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
