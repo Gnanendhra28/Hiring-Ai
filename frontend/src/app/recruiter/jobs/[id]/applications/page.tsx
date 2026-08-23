@@ -158,13 +158,25 @@ export default function RecruiterApplicationPipelinePage() {
   };
 
   const handleStatusUpdate = async (applicationId: string, newStatus: string) => {
+    const targetApp = applications.find((a) => a.id === applicationId);
+    const oldStatus = targetApp ? targetApp.status : "SUBMITTED";
+
     setApplications((prev) =>
       prev.map((a) => (a.id === applicationId ? { ...a, status: newStatus } : a))
     );
     try {
-      await updateApplicationStatus(applicationId, newStatus);
+      const ok = await updateApplicationStatus(applicationId, newStatus);
+      if (!ok) {
+        console.error("Failed to update application status on backend, rolling back:", oldStatus);
+        setApplications((prev) =>
+          prev.map((a) => (a.id === applicationId ? { ...a, status: oldStatus } : a))
+        );
+      }
     } catch (err) {
-      console.error("Failed to update application status on backend:", err);
+      console.error("Failed to update application status on backend, rolling back:", err);
+      setApplications((prev) =>
+        prev.map((a) => (a.id === applicationId ? { ...a, status: oldStatus } : a))
+      );
     }
   };
 

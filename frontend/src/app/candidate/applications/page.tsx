@@ -143,23 +143,23 @@ export default function CandidateApplicationsPage() {
   const getFilteredList = () => {
     if (activeTab === "shortlisted") {
       return applications.filter(
-        (a) => a.status === "SHORTLISTED" || a.status.toLowerCase().includes("shortlist")
+        (a) => a.status.toUpperCase() === "SHORTLISTED" || a.status.toUpperCase().includes("SHORTLIST")
       );
     }
     if (activeTab === "interviews") {
       return applications.filter(
         (a) =>
-          a.status === "INTERVIEW" ||
-          a.status.toLowerCase().includes("interview") ||
-          a.status === "ASSESSMENT"
+          a.status.toUpperCase() === "INTERVIEW" ||
+          a.status.toUpperCase().includes("INTERVIEW") ||
+          a.status.toUpperCase() === "ASSESSMENT"
       );
     }
     if (activeTab === "closed") {
       return applications.filter(
         (a) =>
-          a.status === "WITHDRAWN" ||
-          a.status === "CLOSED" ||
-          a.status === "REJECTED"
+          a.status.toUpperCase() === "WITHDRAWN" ||
+          a.status.toUpperCase() === "CLOSED" ||
+          a.status.toUpperCase() === "REJECTED"
       );
     }
     return applications;
@@ -170,6 +170,13 @@ export default function CandidateApplicationsPage() {
   // Helper badge color renderer
   const renderStatusBadge = (status: string) => {
     const sUpper = status.toUpperCase();
+    if (sUpper === "REVIEWED" || sUpper.includes("REVIEW")) {
+      return (
+        <span className="px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800 text-blue-300 text-xs font-bold flex items-center gap-1.5">
+          <CheckCircle2 size={13} /> Submitted
+        </span>
+      );
+    }
     if (sUpper.includes("SHORTLIST")) {
       return (
         <span className="px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs font-bold flex items-center gap-1.5">
@@ -181,6 +188,13 @@ export default function CandidateApplicationsPage() {
       return (
         <span className="px-3 py-1 rounded-full bg-indigo-950/80 border border-indigo-800 text-indigo-300 text-xs font-bold flex items-center gap-1.5">
           📅 Interview Scheduled
+        </span>
+      );
+    }
+    if (sUpper === "SELECTED" || sUpper.includes("SELECT") || sUpper.includes("HIRED") || sUpper.includes("OFFER")) {
+      return (
+        <span className="px-3 py-1 rounded-full bg-teal-950/80 border border-teal-800 text-teal-300 text-xs font-bold flex items-center gap-1.5">
+          ✨ Selected
         </span>
       );
     }
@@ -262,7 +276,7 @@ export default function CandidateApplicationsPage() {
           🎯 Shortlisted (
           {
             applications.filter(
-              (a) => a.status === "SHORTLISTED" || a.status.toLowerCase().includes("shortlist")
+              (a) => a.status.toUpperCase() === "SHORTLISTED" || a.status.toUpperCase().includes("SHORTLIST")
             ).length
           }
           )
@@ -280,9 +294,9 @@ export default function CandidateApplicationsPage() {
           {
             applications.filter(
               (a) =>
-                a.status === "INTERVIEW" ||
-                a.status.toLowerCase().includes("interview") ||
-                a.status === "ASSESSMENT"
+                a.status.toUpperCase() === "INTERVIEW" ||
+                a.status.toUpperCase().includes("INTERVIEW") ||
+                a.status.toUpperCase() === "ASSESSMENT"
             ).length
           }
           )
@@ -300,9 +314,9 @@ export default function CandidateApplicationsPage() {
           {
             applications.filter(
               (a) =>
-                a.status === "WITHDRAWN" ||
-                a.status === "CLOSED" ||
-                a.status === "REJECTED"
+                a.status.toUpperCase() === "WITHDRAWN" ||
+                a.status.toUpperCase() === "CLOSED" ||
+                a.status.toUpperCase() === "REJECTED"
             ).length
           }
           )
