@@ -365,13 +365,7 @@ async def list_jobs(
             if mem:
                 target_org_id = mem.organization_id
 
-        is_recruiter_or_admin = ctx.user and (
-            ctx.user.is_platform_admin or
-            ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER] or
-            target_org_id is not None
-        )
-
-        if is_recruiter_or_admin:
+        if ctx.user:
             await set_tenant_context(session, is_platform_admin=True)
             if ctx.user.is_platform_admin:
                 stmt = select(Job)
@@ -382,7 +376,7 @@ async def list_jobs(
             else:
                 stmt = select(Job).where(Job.created_by_user_id == ctx.user.id)
         else:
-            # Candidate portal listing: return all published & admin-approved jobs across employers
+            # Unauthenticated public candidate portal listing: return all published & admin-approved jobs across employers
             stmt = select(Job).where(
                 (Job.status == JobStatusEnum.PUBLISHED) | (Job.verification_status == JobVerificationStatusEnum.APPROVED)
             )
