@@ -546,7 +546,17 @@ async def list_job_applications(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
 
         if not ctx.user.is_platform_admin and job.created_by_user_id != ctx.user.id:
-            if ctx.active_organization_id and job.organization_id and job.organization_id != ctx.active_organization_id:
+            from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership
+            stmt_mem = select(OrganizationMembership).where(
+                OrganizationMembership.user_id == ctx.user.id,
+                OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
+            )
+            user_mems = list((await session.execute(stmt_mem)).scalars().all())
+            user_org_ids = {m.organization_id for m in user_mems}
+            if ctx.active_organization_id:
+                user_org_ids.add(ctx.active_organization_id)
+
+            if job.organization_id and job.organization_id not in user_org_ids:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to view applications for this job.")
 
         job_org = job.organization_id or org_id

@@ -89,25 +89,33 @@ export default function RecruiterApplicationPipelinePage() {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch Job Intelligence status
-      const intel = await fetchJobIntelligence(targetId);
-      setIntelligence(intel);
-
-      // 2. Fetch Active Rankings
-      const rankingVer = await fetchActiveRankings(targetId);
-      const rankingsMap = new Map<string, CandidateRankingItem>();
-      if (rankingVer && rankingVer.rankings) {
-        rankingVer.rankings.forEach((r) => {
-          rankingsMap.set(r.candidate_id, r);
-        });
-      }
-
-      // 3. Fetch Applications list
+      // 1. Fetch Applications list (Mandatory Primary Data)
       const appRes = await apiFetch(`/api/v1/jobs/${targetId}/applications`);
       let appsData: any[] = [];
       if (appRes.ok) {
         const body = await appRes.json();
         appsData = Array.isArray(body) ? body : (body.items || []);
+      }
+
+      // 2. Fetch Job Intelligence status (Auxiliary feature)
+      try {
+        const intel = await fetchJobIntelligence(targetId);
+        setIntelligence(intel);
+      } catch (e) {
+        // Safe fallback if intelligence endpoint fails or is not generated
+      }
+
+      // 3. Fetch Active Rankings (Auxiliary feature)
+      const rankingsMap = new Map<string, CandidateRankingItem>();
+      try {
+        const rankingVer = await fetchActiveRankings(targetId);
+        if (rankingVer && rankingVer.rankings) {
+          rankingVer.rankings.forEach((r) => {
+            rankingsMap.set(r.candidate_id, r);
+          });
+        }
+      } catch (e) {
+        // Safe fallback if rankings endpoint fails or is not generated
       }
 
       // 4. Merge applications with ranking & score data
