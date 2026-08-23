@@ -101,6 +101,8 @@ export default function AddAdminPage() {
               </label>
               <input
                 id="admin-full-name-input"
+                name="fullName"
+                autoComplete="name"
                 type="text"
                 required
                 value={fullName}
@@ -116,6 +118,8 @@ export default function AddAdminPage() {
               </label>
               <input
                 id="admin-email-input"
+                name="email"
+                autoComplete="email"
                 type="email"
                 required
                 value={email}
@@ -132,6 +136,8 @@ export default function AddAdminPage() {
               <div className="relative">
                 <input
                   id="admin-password-input"
+                  name="password"
+                  autoComplete="new-password"
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}

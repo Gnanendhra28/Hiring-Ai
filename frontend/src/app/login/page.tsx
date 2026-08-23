@@ -265,6 +265,8 @@ export default function UnifiedLoginPage() {
                   </label>
                   <input
                     id="email-input"
+                    name="email"
+                    autoComplete="email"
                     type="email"
                     required
                     value={email}
@@ -290,6 +292,8 @@ export default function UnifiedLoginPage() {
                   <div className="relative">
                     <input
                       id="password-input"
+                      name="password"
+                      autoComplete="current-password"
                       type={showPassword ? "text" : "password"}
                       required
                       value={password}

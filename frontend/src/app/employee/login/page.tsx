@@ -255,6 +255,8 @@ export default function EmployeeLoginPage() {
                   </label>
                   <input
                     id="email-input"
+                    name="email"
+                    autoComplete="email"
                     type="email"
                     required
                     value={email}
@@ -280,6 +282,8 @@ export default function EmployeeLoginPage() {
                   <div className="relative">
                     <input
                       id="password-input"
+                      name="password"
+                      autoComplete="current-password"
                       type={showPassword ? "text" : "password"}
                       required
                       value={password}

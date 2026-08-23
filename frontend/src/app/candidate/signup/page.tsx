@@ -163,6 +163,8 @@ export default function CandidateSignupPage() {
                 </label>
                 <input
                   id="cand-first-name-input"
+                  name="firstName"
+                  autoComplete="given-name"
                   type="text"
                   required
                   value={firstName}
@@ -177,6 +179,8 @@ export default function CandidateSignupPage() {
                 </label>
                 <input
                   id="cand-last-name-input"
+                  name="lastName"
+                  autoComplete="family-name"
                   type="text"
                   required
                   value={lastName}
@@ -193,6 +197,8 @@ export default function CandidateSignupPage() {
               </label>
               <input
                 id="cand-email-input"
+                name="email"
+                autoComplete="email"
                 type="email"
                 required
                 value={email}
@@ -208,6 +214,8 @@ export default function CandidateSignupPage() {
               </label>
               <input
                 id="cand-phone-input"
+                name="phoneNumber"
+                autoComplete="tel"
                 type="tel"
                 required
                 value={phoneNumber}
@@ -223,6 +231,8 @@ export default function CandidateSignupPage() {
               </label>
               <input
                 id="cand-college-input"
+                name="collegeUniversity"
+                autoComplete="organization"
                 type="text"
                 value={collegeUniversity}
                 onChange={(e) => setCollegeUniversity(e.target.value)}
@@ -238,6 +248,8 @@ export default function CandidateSignupPage() {
               <div className="relative">
                 <input
                   id="cand-password-input"
+                  name="password"
+                  autoComplete="new-password"
                   type={showPassword ? "text" : "password"}
                   required
                   minLength={8}
@@ -262,6 +274,8 @@ export default function CandidateSignupPage() {
               </label>
               <input
                 id="cand-confirm-password-input"
+                name="confirmPassword"
+                autoComplete="new-password"
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={8}

@@ -255,6 +255,8 @@ export default function CandidateLoginPage() {
                   </label>
                   <input
                     id="email-input"
+                    name="email"
+                    autoComplete="email"
                     type="email"
                     required
                     value={email}
@@ -280,6 +282,8 @@ export default function CandidateLoginPage() {
                   <div className="relative">
                     <input
                       id="password-input"
+                      name="password"
+                      autoComplete="current-password"
                       type={showPassword ? "text" : "password"}
                       required
                       value={password}
@@ -372,6 +376,8 @@ export default function CandidateLoginPage() {
                   </label>
                   <input
                     id="forgot-email-input"
+                    name="resetEmail"
+                    autoComplete="email"
                     type="email"
                     required
                     value={resetEmail || email}
@@ -442,6 +448,8 @@ export default function CandidateLoginPage() {
                   </label>
                   <input
                     id="reset-code-input"
+                    name="resetCode"
+                    autoComplete="one-time-code"
                     type="text"
                     required
                     value={resetCode}
@@ -466,6 +474,8 @@ export default function CandidateLoginPage() {
                   </div>
                   <input
                     id="new-password-input"
+                    name="newPassword"
+                    autoComplete="new-password"
                     type={showNewPassword ? "text" : "password"}
                     required
                     minLength={6}
@@ -482,6 +492,8 @@ export default function CandidateLoginPage() {
                   </label>
                   <input
                     id="confirm-password-input"
+                    name="confirmPassword"
+                    autoComplete="new-password"
                     type={showNewPassword ? "text" : "password"}
                     required
                     minLength={6}

@@ -146,6 +146,8 @@ export default function EmployeeSignupPage() {
                 </label>
                 <input
                   id="emp-first-name-input"
+                  name="firstName"
+                  autoComplete="given-name"
                   type="text"
                   required
                   value={firstName}
@@ -160,6 +162,8 @@ export default function EmployeeSignupPage() {
                 </label>
                 <input
                   id="emp-last-name-input"
+                  name="lastName"
+                  autoComplete="family-name"
                   type="text"
                   required
                   value={lastName}
@@ -176,6 +180,8 @@ export default function EmployeeSignupPage() {
               </label>
               <input
                 id="emp-work-email-input"
+                name="email"
+                autoComplete="email"
                 type="email"
                 required
                 value={email}
@@ -191,6 +197,8 @@ export default function EmployeeSignupPage() {
               </label>
               <input
                 id="emp-company-name-input"
+                name="companyName"
+                autoComplete="organization"
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
@@ -206,6 +214,8 @@ export default function EmployeeSignupPage() {
               <div className="relative">
                 <input
                   id="emp-password-input"
+                  name="password"
+                  autoComplete="new-password"
                   type={showPassword ? "text" : "password"}
                   required
                   minLength={8}
@@ -230,6 +240,8 @@ export default function EmployeeSignupPage() {
               </label>
               <input
                 id="emp-confirm-password-input"
+                name="confirmPassword"
+                autoComplete="new-password"
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={8}

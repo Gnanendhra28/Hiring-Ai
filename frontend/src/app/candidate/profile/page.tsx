@@ -884,8 +884,10 @@ export default function CandidateProfilePage() {
                 )}
               </div>
               <div className="space-y-1 text-xs flex-1">
-                <label className="block text-slate-300 font-semibold">Upload Candidate Photo</label>
+                <label htmlFor="cand-photo-input" className="block text-slate-300 font-semibold">Upload Candidate Photo</label>
                 <input
+                  id="cand-photo-input"
+                  name="candidatePhoto"
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoUpload}
@@ -896,8 +898,11 @@ export default function CandidateProfilePage() {
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Candidate Full Name</label>
+                <label htmlFor="cand-prof-full-name-input" className="block text-slate-400 font-mono mb-1">Candidate Full Name</label>
                 <input
+                  id="cand-prof-full-name-input"
+                  name="fullName"
+                  autoComplete="name"
                   type="text"
                   value={headerForm.full_name}
                   onChange={(e) => setHeaderForm({ ...headerForm, full_name: e.target.value })}
@@ -906,8 +911,10 @@ export default function CandidateProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Headline</label>
+                <label htmlFor="cand-prof-headline-input" className="block text-slate-400 font-mono mb-1">Headline</label>
                 <input
+                  id="cand-prof-headline-input"
+                  name="headline"
                   type="text"
                   value={headerForm.headline}
                   onChange={(e) => setHeaderForm({ ...headerForm, headline: e.target.value })}
@@ -915,8 +922,10 @@ export default function CandidateProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Location</label>
+                <label htmlFor="cand-prof-location-input" className="block text-slate-400 font-mono mb-1">Location</label>
                 <input
+                  id="cand-prof-location-input"
+                  name="location"
                   type="text"
                   value={headerForm.location}
                   onChange={(e) => setHeaderForm({ ...headerForm, location: e.target.value })}
@@ -924,8 +933,11 @@ export default function CandidateProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Phone Number</label>
+                <label htmlFor="cand-prof-phone-input" className="block text-slate-400 font-mono mb-1">Phone Number</label>
                 <input
+                  id="cand-prof-phone-input"
+                  name="phone"
+                  autoComplete="tel"
                   type="text"
                   value={headerForm.phone}
                   onChange={(e) => setHeaderForm({ ...headerForm, phone: e.target.value })}
@@ -933,8 +945,10 @@ export default function CandidateProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Degree</label>
+                <label htmlFor="cand-prof-degree-input" className="block text-slate-400 font-mono mb-1">Degree</label>
                 <input
+                  id="cand-prof-degree-input"
+                  name="degree"
                   type="text"
                   value={headerForm.degree}
                   onChange={(e) => setHeaderForm({ ...headerForm, degree: e.target.value })}
@@ -943,8 +957,11 @@ export default function CandidateProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-mono mb-1">College / University</label>
+                <label htmlFor="cand-prof-college-input" className="block text-slate-400 font-mono mb-1">College / University</label>
                 <input
+                  id="cand-prof-college-input"
+                  name="college"
+                  autoComplete="organization"
                   type="text"
                   value={headerForm.college}
                   onChange={(e) => setHeaderForm({ ...headerForm, college: e.target.value })}

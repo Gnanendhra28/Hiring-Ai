@@ -42,7 +42,11 @@ export default function TeamMembersPage() {
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
           <h2 className="text-sm font-semibold text-white mb-3">Invite Team Member</h2>
           <form onSubmit={handleInvite} className="flex flex-col sm:flex-row items-center gap-3">
+            <label htmlFor="invite-email-input" className="sr-only">Colleague Email</label>
             <input
+              id="invite-email-input"
+              name="inviteEmail"
+              autoComplete="email"
               type="email"
               required
               placeholder="colleague@organization.com"
@@ -50,7 +54,10 @@ export default function TeamMembersPage() {
               onChange={(e) => setInviteEmail(e.target.value)}
               className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 w-full"
             />
+            <label htmlFor="invite-role-select" className="sr-only">Role</label>
             <select
+              id="invite-role-select"
+              name="inviteRole"
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
               className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 w-full sm:w-auto"

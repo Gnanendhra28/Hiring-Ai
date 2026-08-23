@@ -297,9 +297,12 @@ function getTimeAgo(dateInput?: string | Date) {
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <label className="flex flex-1 items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 shadow-xs">
+          <label htmlFor="job-smart-search-input" className="flex flex-1 items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 shadow-xs">
             <Sparkles size={18} className="text-indigo-400 shrink-0" />
             <input
+              id="job-smart-search-input"
+              name="searchQuery"
+              aria-label="Search jobs by title, department, skills, or location"
               className="w-full border-0 bg-transparent text-xs sm:text-sm text-white placeholder-slate-400 outline-none"
               placeholder="Search jobs by title, department, skills, or location..."
               value={searchQuery}
@@ -361,6 +364,9 @@ function getTimeAgo(dateInput?: string | Date) {
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
                   <input
+                    id="location-filter-search-input"
+                    name="locationSearch"
+                    aria-label="Search location"
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
                     placeholder="Search location..."
                     value={locationSearch}
@@ -374,9 +380,12 @@ function getTimeAgo(dateInput?: string | Date) {
                   ).map((loc) => (
                     <label
                       key={loc}
+                      htmlFor={`loc-checkbox-${loc}`}
                       className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-800/80 cursor-pointer text-xs text-slate-200 font-medium"
                     >
                       <input
+                        id={`loc-checkbox-${loc}`}
+                        name={`loc_${loc}`}
                         type="checkbox"
                         checked={selectedLocations.includes(loc)}
                         onChange={() => toggleLocation(loc)}
@@ -388,11 +397,14 @@ function getTimeAgo(dateInput?: string | Date) {
                 </div>
 
                 <div className="border-t border-slate-800 pt-2 space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <label htmlFor="custom-location-input" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Custom Location
-                  </span>
+                  </label>
                   <div className="flex gap-1.5">
                     <input
+                      id="custom-location-input"
+                      name="customLocation"
+                      aria-label="Add custom location"
                       className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 outline-none"
                       placeholder="Add custom location..."
                       value={customLocationInput}
@@ -451,9 +463,12 @@ function getTimeAgo(dateInput?: string | Date) {
                   {PRESET_WORK_TYPES.map((type) => (
                     <label
                       key={type}
+                      htmlFor={`type-checkbox-${type}`}
                       className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-800/80 cursor-pointer text-xs text-slate-200 font-medium"
                     >
                       <input
+                        id={`type-checkbox-${type}`}
+                        name={`type_${type}`}
                         type="checkbox"
                         checked={selectedTypes.includes(type)}
                         onChange={() => toggleType(type)}
@@ -508,9 +523,12 @@ function getTimeAgo(dateInput?: string | Date) {
                   {PRESET_EXPERIENCE_RANGES.map((exp) => (
                     <label
                       key={exp}
+                      htmlFor={`exp-checkbox-${exp}`}
                       className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-800/80 cursor-pointer text-xs text-slate-200 font-medium"
                     >
                       <input
+                        id={`exp-checkbox-${exp}`}
+                        name={`exp_${exp}`}
                         type="checkbox"
                         checked={selectedExperience.includes(exp)}
                         onChange={() => toggleExperience(exp)}
@@ -563,6 +581,9 @@ function getTimeAgo(dateInput?: string | Date) {
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
                   <input
+                    id="skill-filter-search-input"
+                    name="skillSearch"
+                    aria-label="Search skills"
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
                     placeholder="Search skills..."
                     value={skillSearch}
@@ -576,9 +597,12 @@ function getTimeAgo(dateInput?: string | Date) {
                   ).map((s) => (
                     <label
                       key={s}
+                      htmlFor={`skill-checkbox-${s}`}
                       className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-800/80 cursor-pointer text-xs text-slate-200 font-medium"
                     >
                       <input
+                        id={`skill-checkbox-${s}`}
+                        name={`skill_${s}`}
                         type="checkbox"
                         checked={selectedSkills.includes(s)}
                         onChange={() => toggleSkill(s)}
@@ -590,11 +614,14 @@ function getTimeAgo(dateInput?: string | Date) {
                 </div>
 
                 <div className="border-t border-slate-800 pt-2 space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <label htmlFor="custom-skill-input" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Custom Skill
-                  </span>
+                  </label>
                   <div className="flex gap-1.5">
                     <input
+                      id="custom-skill-input"
+                      name="customSkill"
+                      aria-label="Add custom skill"
                       className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 outline-none"
                       placeholder="Add custom skill..."
                       value={customSkillInput}
