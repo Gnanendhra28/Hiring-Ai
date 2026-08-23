@@ -287,10 +287,12 @@ async def get_application_resume(
                 detail=f"Resume file '{filename}' not found on disk. Candidate needs to upload a PDF resume.",
             )
 
-        with open(file_path, "rb") as f:
-            pdf_bytes = f.read()
-
-        return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"inline; filename={filename}"})
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            path=file_path,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename=\"{filename}\""},
+        )
 
 @router.put("/{job_id}", response_model=JobResponse)
 @router.patch("/{job_id}", response_model=JobResponse)

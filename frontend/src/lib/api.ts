@@ -1298,8 +1298,9 @@ export async function fetchApplicationResumePDF(applicationId: string): Promise<
     const err = await res.json().catch(() => ({ detail: null }));
     throw new Error(err.detail || "Failed to load application resume PDF.");
   }
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
+  const arrayBuffer = await res.arrayBuffer();
+  const pdfBlob = new Blob([arrayBuffer], { type: "application/pdf" });
+  return URL.createObjectURL(pdfBlob);
 }
 
 export interface RecruiterProfileData {
