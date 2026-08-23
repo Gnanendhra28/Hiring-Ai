@@ -285,6 +285,11 @@ class ApplicationResponse(BaseModel):
     answers_json: Optional[Dict[str, Any]]
     created_at: datetime
 
+    candidate_name: Optional[str] = None
+    candidate_email: Optional[str] = None
+    headline: Optional[str] = None
+    skills: Optional[List[str]] = None
+
 class ApplicationListResponse(BaseModel):
     items: List[ApplicationResponse]
     total: int

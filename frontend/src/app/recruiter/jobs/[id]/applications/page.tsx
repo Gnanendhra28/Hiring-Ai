@@ -106,7 +106,8 @@ export default function RecruiterApplicationPipelinePage() {
       const appRes = await apiFetch(`/api/v1/jobs/${targetId}/applications`);
       let appsData: any[] = [];
       if (appRes.ok) {
-        appsData = await appRes.json();
+        const body = await appRes.json();
+        appsData = Array.isArray(body) ? body : (body.items || []);
       }
 
       // 4. Merge applications with ranking & score data
@@ -119,7 +120,7 @@ export default function RecruiterApplicationPipelinePage() {
             candidate_name: app.candidate_name || app.candidate_email || "Candidate " + app.candidate_id.substring(0, 8),
             candidate_email: app.candidate_email || "candidate@example.com",
             headline: app.headline || "Applicant",
-            skills: app.skills || ["Python", "FastAPI", "PostgreSQL", "AWS"],
+            skills: app.skills && app.skills.length > 0 ? app.skills : ["Python", "FastAPI", "PostgreSQL", "AWS"],
             submitted_at: app.created_at || app.submitted_at || new Date().toISOString(),
             status: app.status || "SUBMITTED",
             score: r ? r.score : 50.0,
@@ -132,25 +133,7 @@ export default function RecruiterApplicationPipelinePage() {
         });
         setApplications(merged);
       } else {
-        // Default baseline candidate row
-        setApplications([
-          {
-            id: "2850187a-a20b-4851-a562-0a6dc6a70986",
-            candidate_id: "fe86992a-53d3-4cfa-8be4-ff124b541381",
-            candidate_name: "Validated Production Candidate",
-            candidate_email: "production.candidate@example.com",
-            headline: "Senior Backend / AI Engineer",
-            skills: ["Python", "FastAPI", "PostgreSQL", "Docker", "AWS"],
-            submitted_at: new Date().toISOString(),
-            status: "SUBMITTED",
-            score: 50.0,
-            eligibility_status: "PASS",
-            score_confidence: 0.5,
-            confidence_tier: "LOW",
-            rank_position: 1,
-            recommendation_type: "REQUIRES_REVIEW",
-          },
-        ]);
+        setApplications([]);
       }
     } catch (err: any) {
       console.error("Error loading candidate applications:", err);
@@ -162,6 +145,7 @@ export default function RecruiterApplicationPipelinePage() {
 
   const handleJobChange = (newJobId: string) => {
     setSelectedJobId(newJobId);
+    loadJobApplications(newJobId);
     router.push(`/recruiter/jobs/${newJobId}/applications`);
   };
 

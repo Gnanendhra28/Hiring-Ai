@@ -564,8 +564,36 @@ async def list_job_applications(
         stmt = stmt.order_by(Application.submitted_at.desc()).offset(offset).limit(page_size)
         apps = list((await session.execute(stmt)).scalars().all())
 
+        candidate_ids = [a.candidate_id for a in apps]
+        user_map = {}
+        profile_map = {}
+        if candidate_ids:
+            from app.domains.identity.models import User
+            from app.domains.candidates.models import CandidateProfile
+
+            stmt_users = select(User).where(User.id.in_(candidate_ids))
+            users = (await session.execute(stmt_users)).scalars().all()
+            user_map = {u.id: u for u in users}
+
+            stmt_profiles = select(CandidateProfile).where(CandidateProfile.user_id.in_(candidate_ids))
+            profiles = (await session.execute(stmt_profiles)).scalars().all()
+            profile_map = {p.user_id: p for p in profiles}
+
+        res_items = []
+        for a in apps:
+            app_resp = ApplicationResponse.model_validate(a)
+            u = user_map.get(a.candidate_id)
+            p = profile_map.get(a.candidate_id)
+            if u:
+                app_resp.candidate_name = u.full_name or u.email
+                app_resp.candidate_email = u.email
+            if p:
+                app_resp.headline = p.headline
+                app_resp.skills = p.skills
+            res_items.append(app_resp)
+
         return ApplicationListResponse(
-            items=[ApplicationResponse.model_validate(a) for a in apps],
+            items=res_items,
             total=total,
             page=page,
             page_size=page_size,
