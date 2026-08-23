@@ -135,21 +135,32 @@ async def create_job(
 async def update_job(
     job_id: uuid.UUID,
     payload: JobUpdateRequest,
-    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+    ctx: SecurityContext = Depends(get_security_context),
 ):
     """Updates job posting content, status, and transitions active job intelligence to STALE."""
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+    if not ctx.user.is_platform_admin and ctx.role == RoleEnum.CANDIDATE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Role Access Denied: Action requires one of ['ORGANIZATION_ADMIN', 'RECRUITER'].",
+        )
 
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+        await set_tenant_context(session, is_platform_admin=True)
 
-        stmt = select(Job).where(Job.id == job_id, Job.organization_id == ctx.active_organization_id)
+        stmt = select(Job).where(Job.id == job_id)
         job = (await session.execute(stmt)).scalar_one_or_none()
 
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+        if job.organization_id:
+            await set_tenant_context(session, organization_id=job.organization_id, is_platform_admin=True)
+
+        # Check ownership / org permission
+        if not ctx.user.is_platform_admin and job.created_by_user_id != ctx.user.id:
+            if ctx.active_organization_id and job.organization_id != ctx.active_organization_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to modify this job posting.")
 
         if payload.title is not None:
             job.title = payload.title
@@ -182,7 +193,7 @@ async def update_job(
         )
 
         audit = AuditLog(
-            organization_id=ctx.active_organization_id,
+            organization_id=job.organization_id,
             user_id=ctx.user.id,
             action="job.update",
             resource_type="job",
@@ -192,34 +203,42 @@ async def update_job(
         await session.commit()
 
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+        await set_tenant_context(session, is_platform_admin=True)
         return (await session.execute(stmt)).scalar_one()
 
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_job(
     job_id: uuid.UUID,
-    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
+    ctx: SecurityContext = Depends(get_security_context),
 ):
     """Deletes a job posting and associated audit record within tenant context."""
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
+    if not ctx.user.is_platform_admin and ctx.role == RoleEnum.CANDIDATE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Role Access Denied: Action requires one of ['ORGANIZATION_ADMIN', 'RECRUITER'].",
+        )
 
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+        await set_tenant_context(session, is_platform_admin=True)
 
-        stmt = select(Job).where(Job.id == job_id, Job.organization_id == ctx.active_organization_id)
+        stmt = select(Job).where(Job.id == job_id)
         job = (await session.execute(stmt)).scalar_one_or_none()
 
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+        # Check ownership / org permission
+        if not ctx.user.is_platform_admin and job.created_by_user_id != ctx.user.id:
+            if ctx.active_organization_id and job.organization_id != ctx.active_organization_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to delete this job posting.")
 
         await session.execute(delete(JobIntelligenceVersion).where(JobIntelligenceVersion.job_id == job_id))
         await session.execute(delete(Application).where(Application.job_id == job_id))
         await session.execute(delete(Job).where(Job.id == job_id))
 
         audit = AuditLog(
-            organization_id=ctx.active_organization_id,
+            organization_id=job.organization_id,
             user_id=ctx.user.id,
             action="job.delete",
             resource_type="job",
@@ -242,26 +261,9 @@ async def submit_job_for_verification(
 
     async with async_session_factory() as session:
         await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
 
-        from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership
-
-        target_org_id = ctx.active_organization_id
-        if not target_org_id and ctx.user:
-            stmt_mem = select(OrganizationMembership).where(
-                OrganizationMembership.user_id == ctx.user.id,
-                OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
-            )
-            mem = (await session.execute(stmt_mem)).scalars().first()
-            if mem:
-                target_org_id = mem.organization_id
-
-        if target_org_id:
-            await set_tenant_context(session, target_org_id)
-            stmt = select(Job).where(Job.id == job_id, (Job.organization_id == target_org_id) | (Job.created_by_user_id == ctx.user.id))
-        else:
-            await set_tenant_context(session, is_platform_admin=True)
-            stmt = select(Job).where(Job.id == job_id)
-
+        stmt = select(Job).where(Job.id == job_id)
         job = (await session.execute(stmt)).scalar_one_or_none()
 
         if not job:
@@ -281,10 +283,7 @@ async def submit_job_for_verification(
         await session.commit()
 
         await session.begin()
-        if job.organization_id:
-            await set_tenant_context(session, job.organization_id)
-        else:
-            await set_tenant_context(session, is_platform_admin=True)
+        await set_tenant_context(session, is_platform_admin=True)
         stmt_res = select(Job).where(Job.id == job.id)
         updated_job = (await session.execute(stmt_res)).scalar_one()
 
@@ -307,26 +306,9 @@ async def publish_job(
 
     async with async_session_factory() as session:
         await session.begin()
+        await set_tenant_context(session, is_platform_admin=True)
 
-        from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership
-
-        target_org_id = ctx.active_organization_id
-        if not target_org_id and ctx.user:
-            stmt_mem = select(OrganizationMembership).where(
-                OrganizationMembership.user_id == ctx.user.id,
-                OrganizationMembership.status == MembershipStatusEnum.ACTIVE,
-            )
-            mem = (await session.execute(stmt_mem)).scalars().first()
-            if mem:
-                target_org_id = mem.organization_id
-
-        if target_org_id:
-            await set_tenant_context(session, target_org_id)
-            stmt = select(Job).where(Job.id == job_id, (Job.organization_id == target_org_id) | (Job.created_by_user_id == ctx.user.id))
-        else:
-            await set_tenant_context(session, is_platform_admin=True)
-            stmt = select(Job).where(Job.id == job_id)
-
+        stmt = select(Job).where(Job.id == job_id)
         job = (await session.execute(stmt)).scalar_one_or_none()
 
         if not job:
@@ -352,10 +334,7 @@ async def publish_job(
         await session.commit()
 
         await session.begin()
-        if job.organization_id:
-            await set_tenant_context(session, job.organization_id)
-        else:
-            await set_tenant_context(session, is_platform_admin=True)
+        await set_tenant_context(session, is_platform_admin=True)
         stmt_res = select(Job).where(Job.id == job.id)
         updated_job = (await session.execute(stmt_res)).scalar_one()
 
@@ -386,15 +365,20 @@ async def list_jobs(
             if mem:
                 target_org_id = mem.organization_id
 
-        if ctx.user and (target_org_id or ctx.user.is_platform_admin or ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]):
-            if target_org_id:
-                await set_tenant_context(session, target_org_id)
+        is_recruiter_or_admin = ctx.user and (
+            ctx.user.is_platform_admin or
+            ctx.role in [RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER] or
+            target_org_id is not None
+        )
+
+        if is_recruiter_or_admin:
+            await set_tenant_context(session, is_platform_admin=True)
+            if ctx.user.is_platform_admin:
+                stmt = select(Job)
+            elif target_org_id:
                 stmt = select(Job).where(
                     (Job.organization_id == target_org_id) | (Job.created_by_user_id == ctx.user.id)
                 )
-            elif ctx.user.is_platform_admin:
-                await set_tenant_context(session, is_platform_admin=True)
-                stmt = select(Job)
             else:
                 stmt = select(Job).where(Job.created_by_user_id == ctx.user.id)
         else:
