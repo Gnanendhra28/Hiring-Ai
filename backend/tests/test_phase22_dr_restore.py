@@ -58,7 +58,7 @@ async def test_isolated_database_restore_and_rls_survival():
             title="DR Test Job B",
             slug=f"job-b-{uuid.uuid4().hex[:6]}",
             description="DR Description B",
-            status=JobStatusEnum.PUBLISHED,
+            status=JobStatusEnum.DRAFT,
         )
         session.add(job_b)
 

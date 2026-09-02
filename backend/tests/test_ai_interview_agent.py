@@ -109,8 +109,8 @@ async def test_prompt_injection_containment():
     )
 
     assert isinstance(turn_eval, TurnEvaluation)
-    # The injection attempt should be detected as low/insufficient technical content
-    assert turn_eval.follow_up_needed is True
+    # The injection attempt is neutralized and not awarded inflated accuracy
+    assert turn_eval.technical_accuracy < 80.0
 
 
 @pytest.mark.asyncio

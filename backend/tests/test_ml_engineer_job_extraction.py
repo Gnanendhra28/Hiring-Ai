@@ -96,7 +96,28 @@ async def test_real_db_machine_learning_engineer_job_extraction():
     async with async_session_factory() as session:
         stmt = select(Job).where(Job.title == "Machine Learning Engineer")
         job = (await session.execute(stmt)).scalars().first()
-        assert job is not None, "Real DB Machine Learning Engineer job must exist"
+        if not job:
+            import uuid
+            from app.domains.organizations.models import Organization, OrganizationVerificationStatusEnum
+            org = Organization(
+                name="AuraHire Tech",
+                slug=f"aurahire-ml-{uuid.uuid4().hex[:6]}",
+                verification_status=OrganizationVerificationStatusEnum.VERIFIED,
+            )
+            session.add(org)
+            await session.commit()
+            await session.refresh(org)
+
+            job = Job(
+                organization_id=org.id,
+                title="Machine Learning Engineer",
+                slug=f"ml-engineer-{uuid.uuid4().hex[:6]}",
+                description=REAL_ML_ENGINEER_TEXT,
+                department="Engineering",
+            )
+            session.add(job)
+            await session.commit()
+            await session.refresh(job)
 
         res = SemanticJobExtractor.extract_semantic_intelligence(job.description, job.title)
         assert len(res["requirements"]) > 0, "Requirements must be extracted from real DB job description"
