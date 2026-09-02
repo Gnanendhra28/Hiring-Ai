@@ -1,5 +1,0 @@
-environment    = "production"
-location       = "East US"
-location_short = "eus"
-tenant_id      = "00000000-0000-0000-0000-000000000000"
-db_password    = "CHANGE_ME_SECURE_PASSWORD_MIN_16_CHARS!"

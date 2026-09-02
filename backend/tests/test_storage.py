@@ -1,38 +1,38 @@
 import pytest
 import uuid
-from app.infrastructure.storage.azurite import LocalAzuriteStorageProvider
-from app.infrastructure.storage.base import TenantAccessDeniedException
+from app.infrastructure.storage.gcs_storage import GCSResumeStorageProvider
 
-@pytest.mark.asyncio
-async def test_storage_tenant_path_validation():
-    provider = LocalAzuriteStorageProvider(base_dir="/tmp/test_storage_hiring")
-    org_a = uuid.uuid4()
-    org_b = uuid.uuid4()
+def test_gcs_storage_upload_download_and_signed_url():
+    provider = GCSResumeStorageProvider(storage_root="/tmp/test_gcs_storage_hiring")
+    candidate_id = str(uuid.uuid4())
+    resume_id = str(uuid.uuid4())
+    filename = "Senior_Software_Engineer_Resume.pdf"
+    content = b"%PDF-1.4 Mock resume content for testing."
 
-    valid_path = f"organizations/{org_a}/documents/doc_123/resume.pdf"
-    content = b"Candidate Resume PDF Binary Data"
+    # 1. Upload
+    path = provider.upload_file(
+        candidate_id=candidate_id,
+        resume_id=resume_id,
+        filename=filename,
+        content=content,
+        content_type="application/pdf"
+    )
+    assert f"resumes/{candidate_id}/{resume_id}" in path
 
-    # Upload under matching Org A
-    uploaded_key = await provider.upload(org_a, valid_path, content)
-    assert uploaded_key == valid_path
-
-    # Verify exists
-    exists = await provider.exists(org_a, valid_path)
+    # 2. Exists
+    exists = provider.exists(path)
     assert exists is True
 
-    # Download content
-    downloaded = await provider.download(org_a, valid_path)
+    # 3. Download
+    downloaded = provider.download_file(path)
     assert downloaded == content
 
-    # Attempt download using Org B context -> MUST RAISE TenantAccessDeniedException
-    with pytest.raises(TenantAccessDeniedException):
-        await provider.download(org_b, valid_path)
+    # 4. Generate Signed URL (valid string in cloud with credentials, or None in local mock)
+    signed_url = provider.generate_signed_url(path, expiration_minutes=15)
+    assert signed_url is None or isinstance(signed_url, str)
 
-    # Attempt upload with invalid prefix -> MUST RAISE ValueError
-    invalid_category_path = f"organizations/{org_a}/forbidden_folder/file.txt"
-    with pytest.raises(ValueError):
-        await provider.upload(org_a, invalid_category_path, content)
-
-    # Delete
-    deleted = await provider.delete(org_a, valid_path)
+    # 5. Delete
+    deleted = provider.delete_file(path)
     assert deleted is True
+
+

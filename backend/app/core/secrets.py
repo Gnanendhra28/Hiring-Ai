@@ -21,23 +21,28 @@ class EnvironmentSecretProvider(SecretProvider):
             return getattr(settings, secret_name)
         return default
 
-class AzureKeyVaultSecretProvider(SecretProvider):
-    """Azure Key Vault secret provider with fallback to environment variables."""
+class GoogleSecretManagerProvider(SecretProvider):
+    """Google Cloud Secret Manager secret provider with fallback to environment variables."""
 
-    def __init__(self, key_vault_url: Optional[str] = None):
-        self.key_vault_url = key_vault_url or os.getenv("AZURE_KEYVAULT_URL")
+    def __init__(self, project_id: Optional[str] = None):
+        self.project_id = project_id or os.getenv("GCP_PROJECT_ID", "hiring-ai-507307")
         self._fallback = EnvironmentSecretProvider()
 
     def get_secret(self, secret_name: str, default: Optional[str] = None) -> Optional[str]:
-        # Returns secret from Azure Key Vault or falls back to environment secret provider
-        val = self._fallback.get_secret(secret_name, default)
-        return val
+        try:
+            from google.cloud import secretmanager
+            client = secretmanager.SecretManagerServiceClient()
+            name = f"projects/{self.project_id}/secrets/{secret_name}/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            return response.payload.data.decode("UTF-8")
+        except Exception:
+            return self._fallback.get_secret(secret_name, default)
 
 def get_secret_provider() -> SecretProvider:
     """Factory helper returning appropriate secret provider based on environment."""
     env = settings.APP_ENV.lower().strip()
-    if env == "production" and os.getenv("AZURE_KEYVAULT_URL"):
-        return AzureKeyVaultSecretProvider()
+    if env in ("production", "staging") and os.getenv("USE_GCP_SECRET_MANAGER") == "true":
+        return GoogleSecretManagerProvider()
     return EnvironmentSecretProvider()
 
 secret_provider = get_secret_provider()

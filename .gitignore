@@ -41,6 +41,11 @@ dist/
 *.log
 docker-volumes/
 scratch/
+storage/
+uploads/
+backend/storage/
+*.sqlite
+*.db
 
 # Terraform
 *.tfstate
@@ -49,5 +54,3 @@ scratch/
 *.plan
 terraform.tfvars
 .terraform/
-
-.env

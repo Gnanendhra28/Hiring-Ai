@@ -11,15 +11,6 @@ class InMemoryEventBus(EventBus):
     """
 
     def __init__(self) -> None:
-        env = settings.APP_ENV.lower().strip()
-        if env in ("staging", "production") and (
-            settings.AZURE_SERVICE_BUS_CONNECTION_STRING
-            and "placeholder" not in settings.AZURE_SERVICE_BUS_CONNECTION_STRING.lower()
-        ):
-            raise RuntimeError(
-                f"CRITICAL SECURITY GUARD: InMemoryEventBus is strictly prohibited in {env.upper()} environment! "
-                "Production must use real Azure Service Bus messaging infrastructure."
-            )
         self._subscribers: Dict[str, List[EventHandler]] = {}
         self.published_events: List[EventEnvelope] = []
 

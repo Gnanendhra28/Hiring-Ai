@@ -1,185 +1,183 @@
-# AI Hiring & Adaptive Multi-Turn Interview Platform
+# 🚀 Hiring AI — Enterprise Multi-Tenant AI Recruitment & Live Interview Platform
 
-An enterprise multi-tenant AI recruitment intelligence and live adaptive candidate interview platform powered by Google Gemini, Firebase Authentication, Cloud Firestore, Google Cloud SQL (PostgreSQL + pgvector), Google Cloud Secret Manager, and Google Cloud Run.
+An enterprise-grade, multi-tenant AI recruitment intelligence, hybrid candidate-job matching, and live adaptive interview platform powered by **Google Gemini (Google AI Studio)**, **Firebase Authentication**, **Google Cloud Firestore**, **Google Cloud SQL (PostgreSQL + pgvector)**, **Google Cloud Storage (GCS)**, and **Google Cloud Run**.
 
 ---
 
-## 1. System Architecture
+## 🌟 Key Features
 
+* **Multi-Version Resume Storage & Management**:
+  * Secure PDF/DOCX binary storage in **Google Cloud Storage / Firebase Storage** with short-lived (15-min) v4 signed URLs.
+  * Document metadata indexed in **Google Cloud Firestore**.
+  * Candidates can upload multiple resume versions (`v1`, `v2`, `v3`) and bind specific versions immutably to job applications.
+* **Hybrid Search & Zero-Hallucination Matching Engine**:
+  * Combines **Sparse Lexical Search (BM25)** with **Dense Semantic Vector Search (`pgvector` HNSW 1536-dim)** using **Reciprocal Rank Fusion (RRF)**.
+  * **Strict Evidence Grounding**: Every matched skill cites exact quotation from resume text. Uncited skills are flagged as `MISSING` (0 points), eliminating AI hallucinations.
+  * **Deterministic 8-Dimension Scoring Formula**: Math-based scoring (Skills 30%, Responsibilities 20%, Experience 15%, Alignment 10%, Preferred 10%, Projects 10%, Education 5%).
+* **Autonomous AI Interview System**:
+  * Real-time multi-turn interview room with adaptive technical probing using **Google Gemini 2.5 Flash / Pro**.
+  * Dynamic context injection (candidate resume + job requisition + conversation history).
+  * Automated 4-pillar scorecard generation with evidence-backed evaluation.
+* **Recruiter 6-Point Security Authorization Gate**:
+  * Strict RBAC preventing cross-tenant access and unauthorized candidate resume downloads.
+  * In-app secure PDF viewer modal with signed stream rendering.
+* **Multi-Tenant Row-Level Security (RLS)**:
+  * PostgreSQL RLS isolation (`app.current_org_id`) guaranteeing mathematical separation between organizations.
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+flowchart TB
+    subgraph CLIENT["🖥️ Next.js 14 Frontend UI"]
+        C1["Candidate Portal (/candidate)"]
+        C2["Recruiter Dashboard (/recruiter)"]
+        C3["AI Interview Room (/interview/[id]/room)"]
+    end
+
+    subgraph BACKEND["⚙️ FastAPI Backend (Python 3.13)"]
+        B1["Resume & Candidate Service"]
+        B2["Job Intelligence & Requisitions"]
+        B3["Hybrid Search & Matching Engine"]
+        B4["AI Interview Orchestrator"]
+    end
+
+    subgraph AI_SERVICES["🧠 Google AI Studio & Vector Engine"]
+        AI1["Gemini 2.5 Flash / Pro"]
+        AI2["Gemini text-embedding-004"]
+        AI3["PostgreSQL pgvector (HNSW Index)"]
+    end
+
+    subgraph DATA_STORAGE["💾 Cloud Persistence Layer"]
+        D1["Cloud SQL (PostgreSQL RLS)"]
+        D2["Cloud Firestore (Metadata & Turns)"]
+        D3["Cloud Storage / Firebase Storage (Resumes)"]
+        D4["Redis (Cache & Rate Limiting)"]
+    end
+
+    CLIENT --> BACKEND
+    BACKEND --> AI_SERVICES
+    BACKEND --> DATA_STORAGE
 ```
-                                  [ Candidate / Recruiter ]
-                                              │
-                                              ▼
-                                 [ Next.js 14 Web Frontend ]
-                                  (Firebase Auth Client SDK)
-                                              │
-                                   Authorization: Bearer <ID_TOKEN>
-                                              │
-                                              ▼
-                                 [ Google Cloud Run Service ]
-                                     (ai-interview-api)
-                                 (FastAPI Backend / asia-south1)
-                                              │
-         ┌───────────────────────────┬────────┴──────────────────────────┐
-         ▼                           ▼                                   ▼
-[ Google Cloud Secret Manager ] [ Google Cloud Firestore ]   [ Google Cloud SQL (PostgreSQL) ]
- - GEMINI_API_KEY                (hiring-ai-4ae76)            (hiring-ai-507307:asia-south1:hiring-ai-pg)
- - SECRET_KEY                    - /interviews/{id}           - Canonical Requisitions & Jobs
- - DATABASE_URL                  - /interviews/{id}/turns     - Candidate Skills & Resumes
-                                 - /interviews/{id}/scorecard - pgvector HNSW Semantic Match
-         │
-         ▼
- [ Google Gemini Engine ]
- - Model Ladder: gemini-3.6-flash -> gemini-3.1-flash-lite -> gemini-flash-latest -> gemini-3.7-flash
- - Adaptive Real-Time Probing & Gap Detection
- - LLM-as-a-Judge Multi-Dimensional Evaluation Scorecard
-```
 
 ---
 
-## 2. Target Environment & Cloud Resources
+## 🌐 Cloud Resources & Live Services
 
-| Component | Resource ID / Region | Status |
-| :--- | :--- | :---: |
-| **Google Cloud Deployment Project** | `hiring-ai-507307` | ACTIVE |
-| **Firebase & Firestore Project** | `hiring-ai-4ae76` | ACTIVE |
-| **Cloud Run Region** | `asia-south1` | ACTIVE |
-| **Backend Cloud Run Service** | `ai-interview-api` | LIVE (`ai-interview-api-00012-tl4`) |
-| **Backend Service URL** | `https://ai-interview-api-30597175496.asia-south1.run.app` | READY |
-| **Frontend Cloud Run Service** | `ai-interview-frontend` | LIVE (`ai-interview-frontend-00001-xrn`) |
-| **Frontend Service URL** | `https://ai-interview-frontend-30597175496.asia-south1.run.app` | READY |
-| **Cloud SQL PostgreSQL Instance** | `hiring-ai-pg` (`asia-south1`) | RUNNABLE |
-| **Required Verification Label** | `dev-tutorial=cloud-run-ai-challenge` | VERIFIED |
+| Component | Resource ID / Region | Endpoint / Status |
+| :--- | :--- | :--- |
+| **GCP Project** | `hiring-ai-507307` | Active |
+| **Firebase Project** | `hiring-ai-4ae76` | Active |
+| **Cloud Run Region** | `asia-south1` | Active |
+| **Backend API** | `ai-interview-api` | `https://ai-interview-api-30597175496.asia-south1.run.app` |
+| **Frontend Web** | `ai-interview-frontend` | `https://ai-interview-frontend-30597175496.asia-south1.run.app` |
+| **Cloud SQL** | `hiring-ai-pg` | PostgreSQL 16 + `pgvector` extension |
+| **Storage Bucket** | `hiring-ai-4ae76.appspot.com` | Private resume binary storage |
 
 ---
 
-## 3. Required Google Cloud APIs
+## 🚀 Local Development Quickstart
+
+### Prerequisites
+* **Python 3.11+** (Python 3.13 recommended)
+* **Node.js 18+** & **npm**
+* **PostgreSQL 15+** with `pgvector` extension installed
+* **Google AI Studio API Key**
+
+---
+
+### 1. Backend Setup (FastAPI)
 
 ```bash
-gcloud services enable \
-  run.googleapis.com \
-  cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com \
-  secretmanager.googleapis.com \
-  sqladmin.googleapis.com \
-  datastore.googleapis.com \
-  --project=hiring-ai-507307
+cd backend
+
+# 1. Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Configure environment variables
+cp .env.example .env
+# Add your GEMINI_API_KEY and DATABASE_URL in .env
+
+# 4. Run database migrations
+alembic upgrade head
+
+# 5. Start development server
+python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
+* API Health Check: `http://127.0.0.1:8000/api/v1/health`
+* Swagger Interactive Docs: `http://127.0.0.1:8000/docs`
 
 ---
 
-## 4. Secret Manager Configuration
-
-Create production secrets securely in Google Cloud Secret Manager:
+### 2. Frontend Setup (Next.js 14)
 
 ```bash
-# 1. Create Secrets
-gcloud secrets create GEMINI_API_KEY --replication-policy="automatic" --project=hiring-ai-507307
-gcloud secrets create SECRET_KEY --replication-policy="automatic" --project=hiring-ai-507307
-gcloud secrets create DATABASE_URL --replication-policy="automatic" --project=hiring-ai-507307
+cd frontend
 
-# 2. Add Secret Versions
-echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add GEMINI_API_KEY --data-file=- --project=hiring-ai-507307
-echo -n "YOUR_JWT_SECRET" | gcloud secrets versions add SECRET_KEY --data-file=- --project=hiring-ai-507307
-echo -n "postgresql+asyncpg://app_user:SECURE_DB_PASSWORD@/hiring_db?host=/cloudsql/hiring-ai-507307:asia-south1:hiring-ai-pg" | \
-  gcloud secrets versions add DATABASE_URL --data-file=- --project=hiring-ai-507307
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+cp .env.example .env.local
+# Set NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# 3. Start development server
+npm run dev
 ```
+
+* Frontend Web Application: `http://localhost:3000`
 
 ---
 
-## 5. IAM & Least-Privilege Role Bindings
+## 🧪 Testing & Verification
 
+### Run Backend Test Suite (Pytest)
 ```bash
-# Grant Secret Manager Access on Deployment Host Project
-gcloud projects add-iam-policy-binding hiring-ai-507307 \
-  --member="serviceAccount:30597175496-compute@developer.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-
-# Grant Cloud SQL Client Access
-gcloud projects add-iam-policy-binding hiring-ai-507307 \
-  --member="serviceAccount:30597175496-compute@developer.gserviceaccount.com" \
-  --role="roles/cloudsql.client"
-
-# Grant Firestore Access on Firebase Project
-gcloud projects add-iam-policy-binding hiring-ai-4ae76 \
-  --member="serviceAccount:30597175496-compute@developer.gserviceaccount.com" \
-  --role="roles/datastore.user"
+cd backend
+pytest -v
 ```
+* `tests/test_resume_storage_and_application_flow.py` (9 tests verifying multi-version upload, 10MB limits, recruiter 6-point gate)
+* `tests/test_hybrid_search_matching.py` (4 tests verifying BM25 token scoring, pgvector cosine queries, and anti-hallucination citations)
 
----
-
-## 6. Cloud Run Build & Deployment
-
+### Run Frontend Test Suite (Vitest)
 ```bash
-# Submit automated Cloud Build pipeline
-gcloud builds submit --config=cloudbuild.yaml --project=hiring-ai-507307
+cd frontend
+npm test
 ```
 
----
-
-## 7. Firestore Security Rules
-
-Deploy production `firestore.rules`:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isAuthenticated() {
-      return request.auth != null && request.auth.uid != null;
-    }
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-    function isRecruiterOrAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.role == 'RECRUITER' ||
-        request.auth.token.role == 'ORGANIZATION_ADMIN' ||
-        request.auth.token.role == 'PLATFORM_ADMIN'
-      );
-    }
-
-    match /users/{userId} {
-      allow read: if isAuthenticated() && (isOwner(userId) || isRecruiterOrAdmin());
-      allow create: if isAuthenticated() && isOwner(userId) && !request.resource.data.keys().hasAny(['role', 'is_admin', 'is_platform_admin']);
-      allow update: if isAuthenticated() && isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'is_admin', 'is_platform_admin']);
-      allow delete: if false;
-    }
-
-    match /interviews/{interviewId} {
-      allow read: if isAuthenticated() && (
-        resource.data.candidate_id == request.auth.uid ||
-        isRecruiterOrAdmin()
-      );
-      allow create, update: if isAuthenticated() && isRecruiterOrAdmin();
-      allow delete: if false;
-
-      match /turns/{turnId} {
-        allow read, create: if isAuthenticated();
-        allow update, delete: if false;
-      }
-
-      match /scorecard/{scorecardId} {
-        allow read: if isAuthenticated();
-        allow write: if isRecruiterOrAdmin();
-      }
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
-```
-
----
-
-## 8. Automated Test Execution
-
+### Build Production Bundle
 ```bash
-# Run backend test suite (216 tests)
-pytest backend/tests/ candidate_ingestion_pipeline/test_pipeline.py ai_matching_engine/tests/test_matching_engine.py
-
-# Run frontend build verification (41 routes)
-cd frontend && npm run build
+cd frontend
+npm run build
 ```
+
+---
+
+## 🔒 Security & Anti-Hallucination Architecture
+
+1. **Evidence Grounding Mandate**:
+   ```json
+   {
+     "requirement_name": "PostgreSQL",
+     "match_status": "EXACT",
+     "evidence_snippet": "Designed high-throughput PostgreSQL database schema with RLS."
+   }
+   ```
+   If no textual citation exists in the candidate's resume, the skill is classified as `MISSING` (0 points).
+2. **Deterministic Math**: LLMs extract facts into strict Pydantic JSON schemas; scoring formulas are mathematically calculated in Python, not hallucinated by LLMs.
+3. **Tenant Row-Level Security**: Every SQL query is automatically constrained by `app.current_org_id`.
+4. **Short-Lived URLs**: All file downloads use 15-minute expiring signed URLs. Permanent public URLs are prohibited.
+
+---
+
+## 📚 Technical Documentation
+
+For the complete architectural design, database schemas, and mathematical scoring models, refer to:
+* **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Comprehensive System Blueprint & Sequence Flows
+* **[docs/](./docs/)** — Detailed API specifications and deployment guides

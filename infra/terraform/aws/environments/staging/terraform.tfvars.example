@@ -1,8 +1,0 @@
-environment        = "staging"
-region             = "ap-south-2"
-aws_profile        = "hiring-ai-staging"
-db_password        = "CHANGE_ME_SECURE_PASSWORD_MIN_16_CHARS!"
-admin_cidr         = "YOUR_PUBLIC_IP/32"
-enable_nat_gateway = false
-enable_alb         = false
-multi_az           = false

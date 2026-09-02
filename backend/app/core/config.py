@@ -42,15 +42,10 @@ class Settings(BaseSettings):
     # Cache
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # Azure Services
-    AZURE_TENANT_ID: Optional[str] = None
-    AZURE_SUBSCRIPTION_ID: Optional[str] = None
-    AZURE_RESOURCE_GROUP: Optional[str] = None
-    AZURE_STORAGE_CONNECTION_STRING: Optional[str] = "UseDevelopmentStorage=true"
-    AZURE_STORAGE_ACCOUNT: Optional[str] = "staihiringdev"
-    AZURE_STORAGE_CONTAINER_DOCUMENTS: str = "documents"
-    AZURE_SERVICE_BUS_CONNECTION_STRING: Optional[str] = None
-    AZURE_SERVICE_BUS_TOPIC_APPLICATION_EVENTS: str = "application-events"
+    # Google Cloud Platform & Firebase Storage
+    GCP_PROJECT_ID: str = "hiring-ai-507307"
+    FIREBASE_PROJECT_ID: str = "hiring-ai-4ae76"
+    GCS_BUCKET_NAME: str = "hiring-ai-4ae76.appspot.com"
 
     # Security
     SECRET_KEY: str = "dev_secret_key_change_in_production_min_32_bytes_long"

@@ -27,16 +27,6 @@ services:
       timeout: 5s
       retries: 5
 
-  azurite:
-    image: mcr.microsoft.com/azure-storage/azurite
-    container_name: hiring_azurite
-    ports:
-      - "10000:10000" # Blob service
-      - "10001:10001" # Queue service
-      - "10002:10002" # Table service
-    volumes:
-      - azurite_data:/data
-
   mailpit:
     image: axllent/mailpit
     container_name: hiring_mailpit
@@ -46,4 +36,4 @@ services:
 
 volumes:
   postgres_data:
-  azurite_data:
+  redis_data:

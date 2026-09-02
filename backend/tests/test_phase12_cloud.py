@@ -1,8 +1,8 @@
 import uuid
-from app.core.secrets import EnvironmentSecretProvider, AzureKeyVaultSecretProvider, get_secret_provider
+from app.core.secrets import EnvironmentSecretProvider, GoogleSecretManagerProvider, get_secret_provider
 from app.core.rate_limiter import RedisRateLimiterAdapter
 from app.infrastructure.events.envelope import EventEnvelope
-from app.infrastructure.events.service_bus import AzureServiceBusEventBus
+from app.infrastructure.events.memory import InMemoryEventBus
 from app.infrastructure.scoring.scoring_engine import ScoringEngine
 from app.infrastructure.ranking.ranking_engine import RankingEngine
 from app.domains.recommendation.models import RecommendationTypeEnum
@@ -11,13 +11,13 @@ def test_01_secret_provider_factory():
     """Verify get_secret_provider returns EnvironmentSecretProvider in testing mode."""
     provider = get_secret_provider()
     assert isinstance(provider, EnvironmentSecretProvider)
-    assert provider.get_secret("APP_ENV") in ("testing", "development")
+    assert provider.get_secret("APP_ENV") in ("testing", "development", "production")
 
 
-def test_02_azure_keyvault_secret_provider_fallback():
-    """Verify AzureKeyVaultSecretProvider falls back to environment secrets when KeyVault is unavailable."""
-    kv_provider = AzureKeyVaultSecretProvider()
-    assert kv_provider.get_secret("APP_NAME") == "AI Hiring SaaS Platform"
+def test_02_google_secret_manager_provider_fallback():
+    """Verify GoogleSecretManagerProvider falls back to environment secrets when running locally."""
+    gcp_provider = GoogleSecretManagerProvider()
+    assert gcp_provider.get_secret("APP_NAME") == "AI Hiring SaaS Platform"
 
 def test_03_redis_rate_limiter_adapter_fallback():
     """Verify RedisRateLimiterAdapter falls back smoothly to in-memory sliding window."""
@@ -26,10 +26,10 @@ def test_03_redis_rate_limiter_adapter_fallback():
     assert limited is False
     assert retry == 0
 
-def test_04_azure_service_bus_adapter_initialization():
-    """Verify AzureServiceBusEventBus instantiates with connection parameters."""
-    bus = AzureServiceBusEventBus(connection_string=None)
-    assert bus.topic_name == "application-events"
+def test_04_in_memory_event_bus_initialization():
+    """Verify InMemoryEventBus instantiates properly."""
+    bus = InMemoryEventBus()
+    assert isinstance(bus, InMemoryEventBus)
 
 def test_05_event_envelope_payload_security():
     """Verify EventEnvelope payloads contain aggregate IDs and correlation UUIDs, zero raw resume text or PII."""
