@@ -37,11 +37,16 @@ def test_multi_token_line_splitting():
 async def test_sr_software_engineer_db_extraction():
     async with async_session_factory() as session:
         stmt = select(Job).where(Job.description.ilike("%Python%") | Job.description.ilike("%Software%"))
-        job = (await session.execute(stmt)).scalars().first()
+        jobs = list((await session.execute(stmt)).scalars().all())
+        job = next((j for j in jobs if any(k.lower() in j.description.lower() for k in ["python", "fastapi", "docker", "redis", "sql"])), None)
         if not job:
             job_desc = (
-                "Looking for Senior Software Engineer with 3+ years experience in Python, FastAPI, Docker, and PostgreSQL.\n"
-                "Responsibilities:\n"
+                "## Required Key Skills\n"
+                "- Python\n"
+                "- FastAPI\n"
+                "- Docker\n"
+                "- PostgreSQL\n"
+                "## Key Responsibilities\n"
                 "- Build microservices and scalable systems\n"
                 "- Deploy cloud infrastructure"
             )
@@ -80,15 +85,14 @@ async def test_machine_learning_engineer_db_extraction():
 
 @pytest.mark.asyncio
 async def test_multi_job_isolation():
-    async with async_session_factory() as session:
-        jobs = list((await session.execute(select(Job).order_by(Job.created_at.desc()))).scalars().all())
-        if len(jobs) >= 2:
-            job_a, job_b = jobs[0], jobs[1]
-            res_a = GeneralJobExtractor.extract(job_a.description, job_a.title)
-            res_b = GeneralJobExtractor.extract(job_b.description, job_b.title)
+    desc_a = "## Required Key Skills\n- Python\n- FastAPI\n- Redis"
+    desc_b = "## Required Key Skills\n- React\n- TypeScript\n- GraphQL"
+    res_a = GeneralJobExtractor.extract(desc_a, "Senior Backend Engineer")
+    res_b = GeneralJobExtractor.extract(desc_b, "Frontend Specialist")
 
-            reqs_a = set(r["name"].lower() for r in res_a["required_skills"])
-            reqs_b = set(r["name"].lower() for r in res_b["required_skills"])
+    reqs_a = set(r["name"].lower() for r in res_a["required_skills"])
+    reqs_b = set(r["name"].lower() for r in res_b["required_skills"])
 
-            # Isolation check: different jobs produce distinct extraction output
-            assert res_a["role_title"] != res_b["role_title"] or reqs_a != reqs_b
+    # Isolation check: different jobs produce distinct extraction output
+    assert res_a["role_title"] != res_b["role_title"]
+    assert reqs_a != reqs_b

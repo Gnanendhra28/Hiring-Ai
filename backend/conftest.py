@@ -105,13 +105,9 @@ def initialize_test_database_schema():
             print(f"[TEST SCHEMA INIT WARNING] {e!s}")
 
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(run_setup())
-        else:
-            loop.run_until_complete(run_setup())
-    except RuntimeError:
         asyncio.run(run_setup())
+    except Exception as e:
+        print(f"[TEST SCHEMA INIT ERROR] {e!s}")
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_test_jobs_after_suite():

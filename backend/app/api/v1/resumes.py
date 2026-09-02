@@ -144,6 +144,17 @@ async def upload_resume(
     async with async_session_factory() as session:
         await session.begin()
         await set_tenant_context(session, user_id=user.id, is_platform_admin=True)
+        user_exists = (await session.execute(select(User).where(User.id == user.id))).scalar_one_or_none()
+        if not user_exists:
+            session.add(User(
+                id=user.id,
+                email=user.email or f"candidate_{str(user.id)[:8]}@example.com",
+                full_name=user.full_name or "Candidate User",
+                password_hash="FIREBASE_AUTH",
+                is_active=True,
+            ))
+            await session.flush()
+
         stmt = select(CandidateProfile).where(CandidateProfile.user_id == user.id)
         profile = (await session.execute(stmt)).scalar_one_or_none()
 

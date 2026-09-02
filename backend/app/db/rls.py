@@ -13,6 +13,7 @@ async def set_tenant_context(
     Sets transaction-scoped session variables for PostgreSQL Row Level Security (RLS).
     Executes set_config for app.current_organization_id, app.current_user_id, and app.current_is_platform_admin.
     """
+
     if organization_id:
         org_str = str(organization_id)
         await session.execute(
