@@ -141,11 +141,10 @@ async def get_security_context(
             if membership:
                 return SecurityContext(
                     user=user,
-                    active_organization_id=membership.organization_id,
+                    active_organization_id=None,
                     role=membership.role,
                 )
 
-            # Auto-link recruiter if user created jobs in an organization
             from app.domains.jobs.models import Job
             stmt_job = select(Job.organization_id).where(Job.created_by_user_id == user.id)
             user_job_org = (await session.execute(stmt_job)).scalars().first()
@@ -153,7 +152,7 @@ async def get_security_context(
             if user_job_org:
                 return SecurityContext(
                     user=user,
-                    active_organization_id=user_job_org,
+                    active_organization_id=None,
                     role=RoleEnum.RECRUITER,
                 )
         return SecurityContext(user=user)

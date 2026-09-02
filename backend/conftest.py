@@ -69,6 +69,32 @@ def initialize_test_database_schema():
                     "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(500);",
                     "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS verification_status VARCHAR(50) NOT NULL DEFAULT 'UNVERIFIED';",
                     "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS submitted_at VARCHAR(100);",
+                    "ALTER TABLE rls_test_records ENABLE ROW LEVEL SECURITY;",
+                    "ALTER TABLE rls_test_records FORCE ROW LEVEL SECURITY;",
+                    "DROP POLICY IF EXISTS rls_test_records_tenant_isolation ON rls_test_records;",
+                    """CREATE POLICY rls_test_records_tenant_isolation ON rls_test_records
+                    FOR ALL
+                    USING (organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::uuid)
+                    WITH CHECK (organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::uuid);""",
+                    "ALTER TABLE candidate_recommendations ENABLE ROW LEVEL SECURITY;",
+                    "ALTER TABLE candidate_recommendations FORCE ROW LEVEL SECURITY;",
+                    "DROP POLICY IF EXISTS candidate_recommendations_tenant_isolation_policy ON candidate_recommendations;",
+                    """CREATE POLICY candidate_recommendations_tenant_isolation_policy ON candidate_recommendations
+                    FOR ALL
+                    USING (organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::uuid)
+                    WITH CHECK (organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::uuid);""",
+                    "ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;",
+                    "ALTER TABLE jobs FORCE ROW LEVEL SECURITY;",
+                    "DROP POLICY IF EXISTS jobs_tenant_isolation ON jobs;",
+                    """CREATE POLICY jobs_tenant_isolation ON jobs
+                    FOR ALL
+                    USING (
+                        organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::uuid
+                        OR (status = 'PUBLISHED' AND NULLIF(current_setting('app.current_organization_id', true), '') IS NULL)
+                    )
+                    WITH CHECK (
+                        organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::uuid
+                    );""",
                 ]
                 for ddl in schema_ddl:
                     try:
