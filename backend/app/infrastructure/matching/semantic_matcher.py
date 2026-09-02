@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Any, List
+from typing import Any
 from sqlalchemy import select, text
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,7 @@ class SemanticMatcher:
         job_intelligence_version_id: uuid.UUID,
         candidate_id: uuid.UUID,
         candidate_document_id: uuid.UUID,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Calculates context-aware vector similarities between Job embeddings and Candidate embeddings.
         Returns a list of semantic match records with query_context, candidate_context, and similarity_score.

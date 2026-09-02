@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 from pydantic import BaseModel, Field
 from app.core.config import settings
 from app.core.logging import logger
@@ -8,43 +8,43 @@ from app.core.logging import logger
 # --- Pydantic Schemas for Strict Output Validation ---
 class ExtractedSkillSchema(BaseModel):
     skill_name: str
-    years_experience: Optional[float] = None
+    years_experience: float | None = None
     confidence: float = Field(1.0, ge=0.0, le=1.0)
-    evidence_text: Optional[str] = ""
-    page_number: Optional[int] = 1
+    evidence_text: str | None = ""
+    page_number: int | None = 1
 
 class ExtractedExperienceSchema(BaseModel):
     company_name: str
     job_title: str
-    start_date_str: Optional[str] = None
-    end_date_str: Optional[str] = None
+    start_date_str: str | None = None
+    end_date_str: str | None = None
     is_current: bool = False
     confidence: float = Field(1.0, ge=0.0, le=1.0)
-    evidence_text: Optional[str] = ""
-    page_number: Optional[int] = 1
+    evidence_text: str | None = ""
+    page_number: int | None = 1
 
 class ExtractedEducationSchema(BaseModel):
     institution: str
-    degree: Optional[str] = None
-    field_of_study: Optional[str] = None
-    start_date_str: Optional[str] = None
-    end_date_str: Optional[str] = None
+    degree: str | None = None
+    field_of_study: str | None = None
+    start_date_str: str | None = None
+    end_date_str: str | None = None
     confidence: float = Field(1.0, ge=0.0, le=1.0)
-    evidence_text: Optional[str] = ""
-    page_number: Optional[int] = 1
+    evidence_text: str | None = ""
+    page_number: int | None = 1
 
 class ExtractedFactSchema(BaseModel):
     fact_type: str
     raw_value: str
-    evidence_text: Optional[str] = ""
-    page_number: Optional[int] = 1
+    evidence_text: str | None = ""
+    page_number: int | None = 1
     confidence: float = Field(1.0, ge=0.0, le=1.0)
 
 class CandidateExtractionSchema(BaseModel):
-    skills: List[ExtractedSkillSchema] = Field(default_factory=list)
-    experiences: List[ExtractedExperienceSchema] = Field(default_factory=list)
-    educations: List[ExtractedEducationSchema] = Field(default_factory=list)
-    facts: List[ExtractedFactSchema] = Field(default_factory=list)
+    skills: list[ExtractedSkillSchema] = Field(default_factory=list)
+    experiences: list[ExtractedExperienceSchema] = Field(default_factory=list)
+    educations: list[ExtractedEducationSchema] = Field(default_factory=list)
+    facts: list[ExtractedFactSchema] = Field(default_factory=list)
     overall_confidence: float = Field(0.9, ge=0.0, le=1.0)
 
 class AIResultEnvelope(BaseModel):
@@ -60,20 +60,20 @@ class AIResultEnvelope(BaseModel):
 class JobExtractedRequirementSchema(BaseModel):
     requirement_type: str = "SKILL"
     raw_value: str
-    canonical_value: Optional[str] = None
+    canonical_value: str | None = None
     requirement_level: str = "REQUIRED"  # REQUIRED, PREFERRED, INFORMATIONAL
     hard_constraint: bool = True
-    operator: Optional[str] = None  # GTE, LTE, EQUALS, RANGE
-    minimum_value: Optional[float] = None
-    maximum_value: Optional[float] = None
-    unit: Optional[str] = None
+    operator: str | None = None  # GTE, LTE, EQUALS, RANGE
+    minimum_value: float | None = None
+    maximum_value: float | None = None
+    unit: str | None = None
     priority: str = "MEDIUM"  # CRITICAL, HIGH, MEDIUM, LOW
     confidence: float = Field(1.0, ge=0.0, le=1.0)
     evidence_text: str
 
 class JobExtractedResponsibilitySchema(BaseModel):
     responsibility_text: str
-    associated_skills: List[str] = Field(default_factory=list)
+    associated_skills: list[str] = Field(default_factory=list)
     confidence: float = Field(1.0, ge=0.0, le=1.0)
 
 class JobExtractedIntentSchema(BaseModel):
@@ -82,9 +82,9 @@ class JobExtractedIntentSchema(BaseModel):
     confidence: float = Field(1.0, ge=0.0, le=1.0)
 
 class JobExtractionSchema(BaseModel):
-    requirements: List[JobExtractedRequirementSchema] = Field(default_factory=list)
-    responsibilities: List[JobExtractedResponsibilitySchema] = Field(default_factory=list)
-    intents: List[JobExtractedIntentSchema] = Field(default_factory=list)
+    requirements: list[JobExtractedRequirementSchema] = Field(default_factory=list)
+    responsibilities: list[JobExtractedResponsibilitySchema] = Field(default_factory=list)
+    intents: list[JobExtractedIntentSchema] = Field(default_factory=list)
     overall_confidence: float = Field(0.9, ge=0.0, le=1.0)
 
 class JobAIResultEnvelope(BaseModel):
@@ -114,10 +114,10 @@ class AIGatewayProvider(ABC):
     @abstractmethod
     async def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.2,
         max_tokens: int = 300,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate unstructured or narrative chat completion."""
         pass
 
@@ -303,10 +303,10 @@ class TestAIGatewayAdapter(AIGatewayProvider):
 
     async def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.2,
         max_tokens: int = 300,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test chat completion returning deterministic narrative for testing environments."""
         return {
             "content": "Candidate demonstrates high alignment with core technical requirements based on evaluation.",

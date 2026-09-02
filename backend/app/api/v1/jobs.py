@@ -1,7 +1,7 @@
 import os
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import datetime, UTC
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from slugify import slugify
 from sqlalchemy import delete, func, select, update
@@ -138,8 +138,8 @@ async def create_job(
 @router.patch("/{job_id}/applications/{application_id}/status", response_model=ApplicationResponse)
 async def update_application_status(
     application_id: uuid.UUID,
-    payload: Dict[str, Any],
-    job_id: Optional[uuid.UUID] = None,
+    payload: dict[str, Any],
+    job_id: uuid.UUID | None = None,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -189,7 +189,7 @@ async def update_application_status(
 
         app.status = new_status
         app.decided_by_user_id = ctx.user.id
-        app.decided_at = datetime.now(timezone.utc)
+        app.decided_at = datetime.now(UTC)
 
         audit = AuditLog(
             organization_id=app.organization_id,
@@ -213,7 +213,7 @@ async def update_application_status(
 @router.get("/{job_id}/applications/{application_id}", response_model=ApplicationResponse)
 async def get_application_by_id(
     application_id: uuid.UUID,
-    job_id: Optional[uuid.UUID] = None,
+    job_id: uuid.UUID | None = None,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -266,7 +266,7 @@ async def get_application_by_id(
 @router.get("/{job_id}/applications/{application_id}/resume")
 async def get_application_resume(
     application_id: uuid.UUID,
-    job_id: Optional[uuid.UUID] = None,
+    job_id: uuid.UUID | None = None,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -675,8 +675,8 @@ async def publish_job(
 
 @router.get("/public", response_model=JobListResponse)
 async def list_public_jobs(
-    status_filter: Optional[JobStatusEnum] = Query(None, alias="status"),
-    department_filter: Optional[str] = Query(None, alias="department"),
+    status_filter: JobStatusEnum | None = Query(None, alias="status"),
+    department_filter: str | None = Query(None, alias="department"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -712,8 +712,8 @@ async def list_public_jobs(
 @router.get("", response_model=JobListResponse)
 @router.get("/", response_model=JobListResponse, include_in_schema=False)
 async def list_jobs(
-    status_filter: Optional[JobStatusEnum] = Query(None, alias="status"),
-    department_filter: Optional[str] = Query(None, alias="department"),
+    status_filter: JobStatusEnum | None = Query(None, alias="status"),
+    department_filter: str | None = Query(None, alias="department"),
     public_only: bool = Query(False, alias="public_only"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -775,7 +775,7 @@ async def list_jobs(
         items = []
         for j in jobs:
             resp = JobResponse.model_validate(j)
-            
+
             # Real application counts
             app_count_stmt = select(func.count(Application.id)).where(Application.job_id == j.id)
             resp.applications_count = (await session.execute(app_count_stmt)).scalar_one()
@@ -858,7 +858,7 @@ async def get_job(
 @router.get("/{job_id}/applications", response_model=ApplicationListResponse)
 async def list_job_applications(
     job_id: uuid.UUID,
-    status_filter: Optional[ApplicationStatusEnum] = Query(None, alias="status"),
+    status_filter: ApplicationStatusEnum | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -947,7 +947,7 @@ async def list_job_applications(
 async def record_human_application_decision(
     application_id: uuid.UUID,
     payload: ApplicationDecisionRequest,
-    job_id: Optional[uuid.UUID] = None,
+    job_id: uuid.UUID | None = None,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -987,7 +987,7 @@ async def record_human_application_decision(
 
         app.status = new_status
         app.decided_by_user_id = ctx.user.id
-        app.decided_at = datetime.now(timezone.utc)
+        app.decided_at = datetime.now(UTC)
         app.decision_reason = payload.reason
 
         audit_action = f"application.{new_status.value.lower()}"
@@ -1016,7 +1016,7 @@ async def record_human_application_decision(
 @router.get("/{job_id}/applications/{application_id}/decision-history")
 async def get_application_decision_history(
     application_id: uuid.UUID,
-    job_id: Optional[uuid.UUID] = None,
+    job_id: uuid.UUID | None = None,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -1043,7 +1043,7 @@ async def get_application_decision_history(
             AuditLog.resource_id == str(application_id),
             AuditLog.resource_type == "application"
         ).order_by(AuditLog.created_at.desc())
-        
+
         audits = (await session.execute(stmt_audit)).scalars().all()
 
         history_items = []

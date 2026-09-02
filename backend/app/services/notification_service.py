@@ -1,7 +1,7 @@
 import logging
 import uuid
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone
+from typing import Any
+from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +32,9 @@ class OperationalNotificationService:
         self,
         event_name: str,
         organization_id: uuid.UUID,
-        payload: Dict[str, Any],
-        recipient_email: Optional[str] = None,
-        idempotency_key: Optional[str] = None,
+        payload: dict[str, Any],
+        recipient_email: str | None = None,
+        idempotency_key: str | None = None,
     ) -> bool:
         """
         Dispatches read-only operational notification safely with idempotency.
@@ -54,8 +54,8 @@ class OperationalNotificationService:
         self,
         recipient_email: str,
         template_name: str,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Dispatches candidate-safe email notification.
         CRITICAL PRIVACY CONTROL:
@@ -75,7 +75,7 @@ class OperationalNotificationService:
             "status": "SENT",
             "recipient": recipient_email,
             "template": template_name,
-            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "sent_at": datetime.now(UTC).isoformat(),
         }
 
     async def dispatch_recruiter_alert(
@@ -85,7 +85,7 @@ class OperationalNotificationService:
         alert_title: str,
         message: str,
         resource_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Dispatches in-app and email alert to authorized recruiter.
         """
@@ -99,5 +99,5 @@ class OperationalNotificationService:
             "title": alert_title,
             "message": message,
             "resource_id": resource_id,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }

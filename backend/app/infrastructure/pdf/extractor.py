@@ -1,5 +1,5 @@
 import fitz  # PyMuPDF
-from typing import Any, Dict, List, Tuple
+from typing import Any
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -7,7 +7,7 @@ class TextQualityEvaluator:
     """Evaluates text quality extracted from native PDF to determine if OCR fallback is required."""
 
     @staticmethod
-    def evaluate(extracted_text: str, total_pages: int) -> Tuple[float, bool]:
+    def evaluate(extracted_text: str, total_pages: int) -> tuple[float, bool]:
         if not extracted_text or len(extracted_text.strip()) == 0:
             return 0.0, True  # Needs OCR
 
@@ -36,11 +36,11 @@ class PDFExtractor:
     """Extracts text from PDF documents using PyMuPDF (fitz)."""
 
     @staticmethod
-    def extract_text(file_bytes: bytes) -> Dict[str, Any]:
+    def extract_text(file_bytes: bytes) -> dict[str, Any]:
         try:
             doc = fitz.open(stream=file_bytes, filetype="pdf")
             total_pages = doc.page_count
-            pages_data: List[Dict[str, Any]] = []
+            pages_data: list[dict[str, Any]] = []
             full_text_parts = []
 
             for page_num in range(total_pages):
@@ -65,7 +65,7 @@ class PDFExtractor:
                 "error": None,
             }
         except Exception as e:
-            logger.error(f"PyMuPDF text extraction failed: {str(e)}")
+            logger.error(f"PyMuPDF text extraction failed: {e!s}")
             return {
                 "success": False,
                 "total_pages": 0,

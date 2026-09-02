@@ -3,10 +3,8 @@ import uuid
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.domains.identity.models import User
-from app.domains.candidates.models import CandidateProfile
 from app.core.security import create_access_token
 from app.db.session import async_session_factory
-from sqlalchemy import select
 
 @pytest.mark.asyncio
 async def test_unauthenticated_candidate_profile_returns_401():

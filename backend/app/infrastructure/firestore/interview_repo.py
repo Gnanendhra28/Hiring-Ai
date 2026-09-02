@@ -8,12 +8,10 @@ Integrates directly with Google Cloud Firestore AsyncClient in production.
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from app.core.config import settings
+from typing import Any
 from app.core.logging import logger
 from app.domains.interviews.ai_agent import (
     CandidateAnswerTurn,
-    InterviewQuestion,
     InterviewScorecard,
     TurnEvaluation,
 )
@@ -25,7 +23,7 @@ class FirestoreInterviewRepository:
     Supports Google Cloud Firestore AsyncClient with fallback to isolated local store for testing.
     """
 
-    def __init__(self, project_id: Optional[str] = None, storage_dir: Optional[str] = None):
+    def __init__(self, project_id: str | None = None, storage_dir: str | None = None):
         self.project_id = project_id or os.getenv("FIRESTORE_PROJECT_ID") or os.getenv("FIREBASE_PROJECT_ID") or "hiring-ai-4ae76"
         self.storage_dir = Path(storage_dir or "backend/storage/firestore_interviews")
         self.storage_dir.mkdir(parents=True, exist_ok=True)
@@ -51,7 +49,7 @@ class FirestoreInterviewRepository:
         self,
         interview_id: str,
         turn: CandidateAnswerTurn,
-        turn_eval: Optional[TurnEvaluation] = None,
+        turn_eval: TurnEvaluation | None = None,
     ) -> None:
         """
         Persists a candidate interview turn and optional Gemini turn evaluation.
@@ -72,10 +70,10 @@ class FirestoreInterviewRepository:
 
         # Local document persistence fallback
         file_path = self._get_session_file(interview_id)
-        data: Dict[str, Any] = {"turns": [], "scorecard": None}
+        data: dict[str, Any] = {"turns": [], "scorecard": None}
         if file_path.exists():
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
             except Exception as ex:
                 logger.warning(f"[Firestore Repo] Could not load session {interview_id}: {ex}")
@@ -89,7 +87,7 @@ class FirestoreInterviewRepository:
             logger.error(f"[Firestore Repo] Failed to persist turn for {interview_id}: {ex}")
             raise
 
-    async def get_turns(self, interview_id: str) -> List[CandidateAnswerTurn]:
+    async def get_turns(self, interview_id: str) -> list[CandidateAnswerTurn]:
         """
         Loads all recorded turns for an interview session from persistent storage.
         """
@@ -120,7 +118,7 @@ class FirestoreInterviewRepository:
             return []
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
                 raw_turns = data.get("turns", [])
                 turns = []
@@ -156,10 +154,10 @@ class FirestoreInterviewRepository:
                 logger.warning(f"[Firestore Repo] Cloud Firestore scorecard write failed ({ex}); persisting to disk store.")
 
         file_path = self._get_session_file(interview_id)
-        data: Dict[str, Any] = {"turns": [], "scorecard": None}
+        data: dict[str, Any] = {"turns": [], "scorecard": None}
         if file_path.exists():
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
             except Exception:
                 pass
@@ -173,7 +171,7 @@ class FirestoreInterviewRepository:
             logger.error(f"[Firestore Repo] Failed to persist scorecard for {interview_id}: {ex}")
             raise
 
-    async def get_scorecard(self, interview_id: str) -> Optional[InterviewScorecard]:
+    async def get_scorecard(self, interview_id: str) -> InterviewScorecard | None:
         """
         Retrieves the persistent scorecard for an interview session.
         """
@@ -191,7 +189,7 @@ class FirestoreInterviewRepository:
             return None
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
                 card_data = data.get("scorecard")
                 if card_data:

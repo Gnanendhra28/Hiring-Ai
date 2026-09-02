@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime, UTC
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -27,7 +26,7 @@ router = APIRouter(prefix="/jobs", tags=["Candidate Deterministic Scoring Engine
 
 class ProcessScoringRequest(BaseModel):
     candidate_id: uuid.UUID
-    application_id: Optional[uuid.UUID] = None
+    application_id: uuid.UUID | None = None
 
 @router.post("/{job_id}/scoring/process", response_model=CandidateJobScoreResponse, status_code=status.HTTP_202_ACCEPTED)
 async def trigger_candidate_scoring(
@@ -174,11 +173,10 @@ async def get_candidate_score_breakdown(
                 logging.getLogger(__name__).warning("On-demand scoring generation skipped: %s", e)
 
         if not score_rec:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             from app.domains.scoring.models import (
                 ConfidenceTierEnum,
                 EligibilityStatusEnum,
-                FactorTypeEnum,
                 ScoringProcessingStatusEnum,
             )
             score_id = uuid.uuid4()

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from sqlalchemy import DateTime, String, UniqueConstraint, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +20,7 @@ class ProcessedEvent(Base, UUIDMixin):
     event_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     consumer_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     processed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
 
 class EventIdempotencyTracker:

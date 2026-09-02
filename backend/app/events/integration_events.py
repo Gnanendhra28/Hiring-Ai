@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel
 
 class IntegrationBaseEvent(BaseModel):
@@ -33,5 +32,5 @@ class CandidateHiredEvent(IntegrationBaseEvent):
     job_id: uuid.UUID
     application_id: uuid.UUID
     candidate_id: uuid.UUID
-    time_to_fill_days: Optional[float] = None
-    time_to_hire_days: Optional[float] = None
+    time_to_fill_days: float | None = None
+    time_to_hire_days: float | None = None

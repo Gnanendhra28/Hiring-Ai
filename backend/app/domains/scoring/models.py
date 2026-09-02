@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy import (
     Boolean,
@@ -64,7 +64,7 @@ class ScoringConfiguration(Base):
     other_requirements_weight = Column(Float, nullable=False, default=0.10)
 
     created_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class CandidateJobScore(Base):
     """
@@ -87,7 +87,7 @@ class CandidateJobScore(Base):
     candidate_id = Column(UUID(as_uuid=True), ForeignKey("candidate_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     candidate_document_id = Column(UUID(as_uuid=True), ForeignKey("candidate_documents.id", ondelete="CASCADE"), nullable=False, index=True)
     application_id = Column(UUID(as_uuid=True), ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, index=True)
-    
+
     scoring_configuration_id = Column(UUID(as_uuid=True), ForeignKey("scoring_configurations.id", ondelete="CASCADE"), nullable=False)
     scoring_configuration_version = Column(Integer, nullable=False, default=1)
 
@@ -95,13 +95,13 @@ class CandidateJobScore(Base):
     overall_score = Column(Float, nullable=False, default=0.0)
     score_confidence = Column(Float, nullable=False, default=1.0)
     confidence_tier = Column(SQLEnum(ConfidenceTierEnum, name="confidencetierenum"), nullable=False, default=ConfidenceTierEnum.HIGH)
-    
+
     status = Column(SQLEnum(ScoringProcessingStatusEnum, name="scoringprocessingstatusenum"), nullable=False, default=ScoringProcessingStatusEnum.COMPLETED)
     safe_error_message = Column(Text, nullable=True)
 
-    calculated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    calculated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateFactorScore(Base):
     """
@@ -112,19 +112,19 @@ class CandidateFactorScore(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     candidate_job_score_id = Column(UUID(as_uuid=True), ForeignKey("candidate_job_scores.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     factor_type = Column(SQLEnum(FactorTypeEnum, name="factortypeenum"), nullable=False, index=True)
     raw_score = Column(Float, nullable=False, default=0.0)          # 0 - 100
     normalized_score = Column(Float, nullable=False, default=0.0)   # 0.0 - 1.0
     configured_weight = Column(Float, nullable=False, default=0.0)  # Configured weight
     normalized_weight = Column(Float, nullable=False, default=0.0)  # Applicable weight normalized
     weighted_contribution = Column(Float, nullable=False, default=0.0) # normalized_score * normalized_weight * 100
-    
+
     applicable = Column(Boolean, nullable=False, default=True)
     reason = Column(Text, nullable=True)
     confidence = Column(Float, nullable=False, default=1.0)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class CandidateHardRequirementResult(Base):
     """
@@ -136,7 +136,7 @@ class CandidateHardRequirementResult(Base):
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     candidate_job_score_id = Column(UUID(as_uuid=True), ForeignKey("candidate_job_scores.id", ondelete="CASCADE"), nullable=False, index=True)
     requirement_id = Column(UUID(as_uuid=True), ForeignKey("job_requirements.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     status = Column(String(50), nullable=False, default="MATCHED")
     candidate_value = Column(String(500), nullable=True)
     required_value = Column(String(500), nullable=True)
@@ -145,7 +145,7 @@ class CandidateHardRequirementResult(Base):
     confidence = Column(Float, nullable=False, default=1.0)
     evidence_text = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class ScoringProcessingAudit(Base):
     """
@@ -156,13 +156,13 @@ class ScoringProcessingAudit(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     candidate_job_score_id = Column(UUID(as_uuid=True), ForeignKey("candidate_job_scores.id", ondelete="CASCADE"), nullable=False, index=True)
-    
-    processing_started_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    processing_completed_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    processing_started_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    processing_completed_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
     processing_duration_ms = Column(Float, nullable=False, default=0.0)
-    
+
     status = Column(String(50), nullable=False, default="COMPLETED")
     error_message_safe = Column(Text, nullable=True)
     correlation_id = Column(String(100), nullable=False, default=lambda: str(uuid.uuid4()))
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))

@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import datetime, UTC
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
@@ -121,7 +120,7 @@ async def approve_communication(
         if comm.status == CommunicationStatusEnum.CANCELLED or comm.status == CommunicationStatusEnum.DELETED:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot approve cancelled or deleted communication.")
 
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         comm.status = CommunicationStatusEnum.APPROVED
         comm.approved_by_user_id = ctx.user.id
         comm.approved_at = now_utc
@@ -176,7 +175,7 @@ async def send_communication(
             body=comm.body,
         )
 
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         comm.status = CommunicationStatusEnum.SENT
         comm.sent_at = now_utc
 
@@ -246,10 +245,10 @@ async def cancel_communication(
         await set_tenant_context(session, ctx.active_organization_id)
         return (await session.execute(stmt)).scalar_one()
 
-@router.get("/jobs/{job_id}/communications", response_model=List[CommunicationResponse])
+@router.get("/jobs/{job_id}/communications", response_model=list[CommunicationResponse])
 async def list_job_communications(
     job_id: uuid.UUID,
-    status_filter: Optional[CommunicationStatusEnum] = Query(None, alias="status"),
+    status_filter: CommunicationStatusEnum | None = Query(None, alias="status"),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """Lists email communications for a job requisition in active tenant context."""
@@ -267,7 +266,7 @@ async def list_job_communications(
         results = list((await session.execute(stmt)).scalars().all())
         return results
 
-@router.get("/candidate/communications", response_model=List[CommunicationResponse])
+@router.get("/candidate/communications", response_model=list[CommunicationResponse])
 async def list_my_candidate_communications(user: User = Depends(get_current_user)):
     """Candidate endpoint: Lists sent communications for the authenticated candidate."""
     async with async_session_factory() as session:

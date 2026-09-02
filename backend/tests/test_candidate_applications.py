@@ -47,7 +47,7 @@ async def test_public_job_directory_filters_draft_jobs():
         public_resp = await client.get("/api/v1/jobs/public")
         assert public_resp.status_code == 200
         public_data = public_resp.json()
-        
+
         # Verify ONLY the APPROVED & PUBLISHED job is visible
         public_titles = [item["title"] for item in public_data["items"]]
         assert "Public Staff Architect" in public_titles

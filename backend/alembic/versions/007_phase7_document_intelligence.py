@@ -5,16 +5,16 @@ Revises: 006_phase6_workflow_engine
 Create Date: 2026-08-14 16:10:00.000000
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from pgvector.sqlalchemy import Vector
 
 revision: str = "007_phase7_document_intelligence"
-down_revision: Union[str, None] = "006_phase6_workflow_engine"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "006_phase6_workflow_engine"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     # 1. Candidate Documents Table

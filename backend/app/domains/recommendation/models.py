@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy import (
     Column,
@@ -75,7 +75,7 @@ class CandidateRecommendation(Base):
     job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True)
     candidate_id = Column(UUID(as_uuid=True), ForeignKey("candidate_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     application_id = Column(UUID(as_uuid=True), ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, index=True)
-    
+
     job_intelligence_version_id = Column(UUID(as_uuid=True), ForeignKey("job_intelligence_versions.id", ondelete="CASCADE"), nullable=False)
     candidate_document_id = Column(UUID(as_uuid=True), ForeignKey("candidate_documents.id", ondelete="CASCADE"), nullable=False)
     candidate_job_score_id = Column(UUID(as_uuid=True), ForeignKey("candidate_job_scores.id", ondelete="CASCADE"), nullable=False)
@@ -84,13 +84,13 @@ class CandidateRecommendation(Base):
     recommendation_type = Column(SQLEnum(RecommendationTypeEnum, name="recommendationtypeenum"), nullable=False, default=RecommendationTypeEnum.RECOMMEND_REVIEW)
     recommendation_confidence = Column(Float, nullable=False, default=0.90)
     status = Column(String(50), nullable=False, default="COMPLETED")
-    
+
     summary = Column(Text, nullable=False, default="")
     strengths = Column(JSON, nullable=False, default=list) # List of strings
     gaps = Column(JSON, nullable=False, default=list)      # List of strings
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateRecommendationReason(Base):
     """
@@ -101,13 +101,13 @@ class CandidateRecommendationReason(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     recommendation_id = Column(UUID(as_uuid=True), ForeignKey("candidate_recommendations.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     reason_code = Column(SQLEnum(ReasonCodeEnum, name="reasoncodeenum"), nullable=False)
     reason_type = Column(String(50), nullable=False, default="POSITIVE") # POSITIVE, NEGATIVE, NEUTRAL
     description = Column(Text, nullable=False)
     evidence_reference = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class CandidateRecommendationEvidence(Base):
     """
@@ -118,14 +118,14 @@ class CandidateRecommendationEvidence(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     recommendation_id = Column(UUID(as_uuid=True), ForeignKey("candidate_recommendations.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     source_type = Column(String(50), nullable=False, default="CANDIDATE_DOCUMENT")
     document_id = Column(UUID(as_uuid=True), ForeignKey("candidate_documents.id", ondelete="CASCADE"), nullable=False)
     page_number = Column(Integer, nullable=False, default=1)
     evidence_text = Column(Text, nullable=False)
     verification_status = Column(String(50), nullable=False, default="VERIFIED")
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class CandidateDecision(Base):
     """
@@ -150,8 +150,8 @@ class CandidateDecision(Base):
     decided_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     decided_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateDecisionAudit(Base):
     """
@@ -172,10 +172,10 @@ class CandidateDecisionAudit(Base):
     decision_reason = Column(Text, nullable=True)
 
     decided_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    decided_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    decided_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
     correlation_id = Column(String(100), nullable=False, default=lambda: str(uuid.uuid4()))
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class RecommendationProcessingAudit(Base):
     """
@@ -198,4 +198,4 @@ class RecommendationProcessingAudit(Base):
     error_message_safe = Column(Text, nullable=True)
     correlation_id = Column(String(100), nullable=False, default=lambda: str(uuid.uuid4()))
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))

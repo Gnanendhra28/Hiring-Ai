@@ -3,9 +3,9 @@ import pytest
 from sqlalchemy import text
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory, engine
-from app.domains.applications.models import Application, ApplicationStatusEnum, CandidatePlacement, OfferStatusEnum
+from app.domains.applications.models import Application, ApplicationStatusEnum
 from app.domains.candidates.models import CandidateProfile
-from app.domains.document_intelligence.models import CandidateDocument, DocumentProcessingStatusEnum
+from app.domains.document_intelligence.models import CandidateDocument
 from app.domains.identity.models import User
 from app.domains.job_intelligence.models import JobIntelligenceVersion, JobIntelligenceVersionStatusEnum
 from app.domains.jobs.models import Job, JobStatusEnum
@@ -43,7 +43,7 @@ async def test_requisition_reporting_service_basic():
 
     async with async_session_factory() as session:
         await session.begin()
-        
+
         org = Organization(id=org_id, name="Test Org", slug=f"test-org-{org_id}")
         session.add(org)
 

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 import pytest
 from httpx import AsyncClient, ASGITransport
 
@@ -9,16 +9,13 @@ from sqlalchemy import text
 from app.db.rls import set_tenant_context
 from app.domains.organizations.models import Organization, OrganizationMembership, RoleEnum
 from app.domains.identity.models import User
-from app.domains.webhooks.models import WebhookSubscription, WebhookEvent, WebhookDeliveryStatusEnum
-from app.domains.webhooks.schemas import ALLOWED_WEBHOOK_EVENTS
 from app.core.security import create_access_token
 from app.core.webhook_security import (
     compute_hmac_signature,
-    generate_webhook_secret,
     validate_webhook_url,
     verify_hmac_signature,
 )
-from app.events.integration_events import CandidateHiredEvent, OfferAcceptedEvent, OfferCreatedEvent, JobIntelligenceCompletedEvent
+from app.events.integration_events import CandidateHiredEvent
 from app.services.webhook_service import WebhookService
 
 async def ensure_webhook_tables():
@@ -85,7 +82,7 @@ async def test_webhook_security_and_ssrf_protection():
 @pytest.mark.asyncio
 async def test_hmac_sha256_signing_and_replay_protection():
     secret = "whsec_test_secret_123456789"
-    ts = str(int(datetime.now(timezone.utc).timestamp()))
+    ts = str(int(datetime.now(UTC).timestamp()))
     payload = '{"event":"candidate.hired","job_id":"123"}'
 
     sig = compute_hmac_signature(secret=secret, timestamp=ts, payload_body=payload)
@@ -101,7 +98,7 @@ async def test_hmac_sha256_signing_and_replay_protection():
     assert verify_hmac_signature(secret="whsec_wrong_secret", timestamp=ts, payload_body=payload, signature_header=sig) is False
 
     # Expired Timestamp (> 300s) -> Verification FAIL
-    old_ts = str(int((datetime.now(timezone.utc) - timedelta(seconds=400)).timestamp()))
+    old_ts = str(int((datetime.now(UTC) - timedelta(seconds=400)).timestamp()))
     old_sig = compute_hmac_signature(secret=secret, timestamp=old_ts, payload_body=payload)
     assert verify_hmac_signature(secret=secret, timestamp=old_ts, payload_body=payload, signature_header=old_sig) is False
 
@@ -204,7 +201,7 @@ async def test_webhook_event_publication_idempotency_and_governance():
         job_id=uuid.uuid4(),
         application_id=uuid.uuid4(),
         candidate_id=uuid.uuid4(),
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         time_to_fill_days=5.0,
     )
 

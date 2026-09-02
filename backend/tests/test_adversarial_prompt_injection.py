@@ -5,7 +5,6 @@ delimiter breakouts, rubric modifications, and persona attacks are neutralized.
 """
 
 import pytest
-import asyncio
 from app.domains.interviews.ai_agent import AIInterviewAgent
 
 

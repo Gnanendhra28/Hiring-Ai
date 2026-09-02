@@ -1,19 +1,12 @@
 import hashlib
-import time
 import uuid
-from datetime import datetime, timezone, timedelta
 import pytest
 from sqlalchemy import text
-from httpx import AsyncClient, ASGITransport
 
-from app.main import app
-from app.db.session import async_session_factory, engine
+from app.db.session import async_session_factory
 from app.db.rls import set_tenant_context
-from app.domains.organizations.models import Organization, OrganizationMembership, RoleEnum
-from app.domains.identity.models import User
+from app.domains.organizations.models import Organization
 from app.domains.jobs.models import Job, JobStatusEnum
-from app.domains.webhooks.models import WebhookSubscription
-from app.core.security import create_access_token
 
 @pytest.mark.asyncio
 async def test_backup_creation_and_integrity_verification(tmp_path):

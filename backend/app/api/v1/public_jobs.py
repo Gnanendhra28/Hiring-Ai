@@ -1,4 +1,3 @@
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
@@ -13,9 +12,9 @@ router = APIRouter(prefix="/jobs/public", tags=["Public Job Directory"])
 @router.get("", response_model=PublicJobListResponse)
 @router.get("/", response_model=PublicJobListResponse, include_in_schema=False)
 async def list_public_jobs(
-    department_filter: Optional[str] = Query(None, alias="department"),
-    location_filter: Optional[str] = Query(None, alias="location"),
-    search: Optional[str] = Query(None),
+    department_filter: str | None = Query(None, alias="department"),
+    location_filter: str | None = Query(None, alias="location"),
+    search: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -28,7 +27,7 @@ async def list_public_jobs(
 
         stmt = (
             select(Job)
-            .options(selectinload(Job.organization_id))  # noqa: F841
+            .options(selectinload(Job.organization_id))
             .join(Organization, Job.organization_id == Organization.id)
             .where(
                 Job.created_by_user_id.isnot(None),

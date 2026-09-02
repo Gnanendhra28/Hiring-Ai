@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 from app.domains.matching.models import MatchStatusEnum
 from app.infrastructure.pdf.evidence_verifier import EvidenceVerifier
 from app.infrastructure.skills.normalizer import SkillNormalizer
@@ -14,10 +14,10 @@ class SkillMatcher:
     def match_skill(
         raw_required_skill: str,
         canonical_required_skill: str,
-        candidate_skills: List[Dict[str, Any]],
+        candidate_skills: list[dict[str, Any]],
         candidate_resume_text: str = "",
         is_protected_feature: bool = False,
-    ) -> Tuple[MatchStatusEnum, float, str, Optional[str], str]:
+    ) -> tuple[MatchStatusEnum, float, str, str | None, str]:
         """
         Evaluates a single skill requirement against candidate extracted skills and resume text.
         Returns (match_status, confidence, reason, evidence_quote, verification_status).

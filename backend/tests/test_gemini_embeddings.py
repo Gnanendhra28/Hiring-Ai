@@ -9,7 +9,7 @@ from app.infrastructure.factories import EmbeddingProviderFactory
 @pytest.mark.asyncio
 async def test_gemini_embedding_adapter_success():
     adapter = GeminiEmbeddingAdapter(api_key="test_real_gemini_key_123", model="gemini-embedding-001")
-    
+
     fake_vector = [0.1] * 1536
     mock_resp = MagicMock()
     mock_resp.status_code = 200
@@ -27,7 +27,7 @@ async def test_gemini_embedding_adapter_success():
         # Unit norm check
         norm = sum(x * x for x in vec) ** 0.5
         assert pytest.approx(norm, 1e-5) == 1.0
-        
+
         # Verify request parameters
         mock_post.assert_called_once()
         _, kwargs = mock_post.call_args
@@ -37,7 +37,7 @@ async def test_gemini_embedding_adapter_success():
 @pytest.mark.asyncio
 async def test_gemini_embedding_adapter_dimension_mismatch():
     adapter = GeminiEmbeddingAdapter(api_key="test_real_gemini_key_123")
-    
+
     fake_vector = [0.1] * 768  # Wrong dimension (768 instead of 1536)
     mock_resp = MagicMock()
     mock_resp.status_code = 200

@@ -1,4 +1,3 @@
-import pytest
 from app.infrastructure.parsing.section_parser import JobSectionParser
 from app.infrastructure.skills.normalizer import SkillNormalizer
 from app.infrastructure.validation.job_intelligence_validator import JobIntelligenceValidator

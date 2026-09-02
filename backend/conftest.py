@@ -54,7 +54,7 @@ def cleanup_test_jobs_after_suite():
                 ))
                 await session.commit()
             except Exception as e:
-                print(f"[TEST CLEANUP ERROR] {e}")
+                print(f"[TEST CLEANUP ERROR] {e!s}")
 
     try:
         loop = asyncio.get_event_loop()
@@ -62,5 +62,5 @@ def cleanup_test_jobs_after_suite():
             loop.create_task(run_cleanup())
         else:
             loop.run_until_complete(run_cleanup())
-    except Exception:
+    except RuntimeError:
         asyncio.run(run_cleanup())

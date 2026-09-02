@@ -1,5 +1,4 @@
-import uuid
-from typing import Any, Dict
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, func
 
@@ -19,7 +18,7 @@ async def operations_health_check():
 @router.get("/metrics")
 async def get_operations_metrics(
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Returns tenant-isolated operational metrics and system health indicators.
     Aggregates API throughput, 429 rate limits, webhook delivery health, and AI telemetry.
@@ -104,7 +103,7 @@ async def get_operations_metrics(
 @router.get("/security-events")
 async def get_security_events(
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Returns tenant-isolated security and audit events for CloudWatch / SIEM observability.
     Enforces RLS, X-Organization-ID, and tenant role authorization.

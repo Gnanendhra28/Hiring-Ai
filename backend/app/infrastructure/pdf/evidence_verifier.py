@@ -1,5 +1,4 @@
 import re
-from typing import Tuple
 from app.domains.document_intelligence.models import EvidenceVerificationStatusEnum
 
 class EvidenceVerifier:
@@ -17,7 +16,7 @@ class EvidenceVerifier:
         return re.sub(r"\s+", " ", text.strip().lower())
 
     @classmethod
-    def verify_evidence(cls, evidence_quote: str, full_extracted_text: str) -> Tuple[EvidenceVerificationStatusEnum, float]:
+    def verify_evidence(cls, evidence_quote: str, full_extracted_text: str) -> tuple[EvidenceVerificationStatusEnum, float]:
         """
         Returns (EvidenceVerificationStatusEnum, confidence_multiplier).
         VERIFIED: 1.0 multiplier

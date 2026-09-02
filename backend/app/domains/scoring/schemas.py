@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domains.scoring.models import (
@@ -44,7 +43,7 @@ class CandidateFactorScoreResponse(BaseModel):
     normalized_weight: float
     weighted_contribution: float
     applicable: bool
-    reason: Optional[str] = None
+    reason: str | None = None
     confidence: float
 
 class HardRequirementResultResponse(BaseModel):
@@ -53,12 +52,12 @@ class HardRequirementResultResponse(BaseModel):
     id: uuid.UUID
     requirement_id: uuid.UUID
     status: str
-    candidate_value: Optional[str] = None
-    required_value: Optional[str] = None
-    operator: Optional[str] = None
-    reason: Optional[str] = None
+    candidate_value: str | None = None
+    required_value: str | None = None
+    operator: str | None = None
+    reason: str | None = None
     confidence: float
-    evidence_text: Optional[str] = None
+    evidence_text: str | None = None
 
 class CandidateJobScoreResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -69,7 +68,7 @@ class CandidateJobScoreResponse(BaseModel):
     job_intelligence_version_id: uuid.UUID
     candidate_id: uuid.UUID
     candidate_document_id: uuid.UUID
-    application_id: Optional[uuid.UUID] = None
+    application_id: uuid.UUID | None = None
     scoring_configuration_id: uuid.UUID
     scoring_configuration_version: int
     eligibility_status: EligibilityStatusEnum
@@ -77,11 +76,11 @@ class CandidateJobScoreResponse(BaseModel):
     score_confidence: float
     confidence_tier: ConfidenceTierEnum
     status: ScoringProcessingStatusEnum
-    safe_error_message: Optional[str] = None
+    safe_error_message: str | None = None
     calculated_at: datetime
     created_at: datetime
 
 class ScoreBreakdownDetailResponse(BaseModel):
     score: CandidateJobScoreResponse
-    factor_scores: List[CandidateFactorScoreResponse]
-    hard_requirement_results: List[HardRequirementResultResponse]
+    factor_scores: list[CandidateFactorScoreResponse]
+    hard_requirement_results: list[HardRequirementResultResponse]

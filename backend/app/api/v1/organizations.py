@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -73,7 +72,7 @@ async def create_organization(
 
         return org
 
-@router.get("/me", response_model=List[OrganizationMembershipResponse])
+@router.get("/me", response_model=list[OrganizationMembershipResponse])
 async def list_my_organization_memberships(user: User = Depends(get_current_user)):
     """Returns list of organizations where current authenticated user holds active membership."""
     async with async_session_factory() as session:

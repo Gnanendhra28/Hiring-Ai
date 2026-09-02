@@ -1,5 +1,4 @@
 import uuid
-from typing import List, Optional
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
@@ -34,7 +33,7 @@ class DocumentUploadResponse(BaseModel):
     file_name: str
     file_size_bytes: int
     processing_status: DocumentProcessingStatusEnum
-    safe_error_message: Optional[str]
+    safe_error_message: str | None
 
 class CandidateSkillResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -42,10 +41,10 @@ class CandidateSkillResponse(BaseModel):
     id: uuid.UUID
     raw_skill_name: str
     canonical_skill_name: str
-    years_experience: Optional[float]
+    years_experience: float | None
     confidence: float
-    evidence_text: Optional[str]
-    page_number: Optional[int]
+    evidence_text: str | None
+    page_number: int | None
 
 class CandidateExperienceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -53,24 +52,24 @@ class CandidateExperienceResponse(BaseModel):
     id: uuid.UUID
     company_name: str
     job_title: str
-    raw_start_date: Optional[str]
-    raw_end_date: Optional[str]
+    raw_start_date: str | None
+    raw_end_date: str | None
     duration_months: int
     is_current: bool
     confidence: float
-    evidence_text: Optional[str]
-    page_number: Optional[int]
+    evidence_text: str | None
+    page_number: int | None
 
 class CandidateEducationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     institution: str
-    degree: Optional[str]
-    field_of_study: Optional[str]
+    degree: str | None
+    field_of_study: str | None
     confidence: float
-    evidence_text: Optional[str]
-    page_number: Optional[int]
+    evidence_text: str | None
+    page_number: int | None
 
 class CandidateExtractedFactResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -79,8 +78,8 @@ class CandidateExtractedFactResponse(BaseModel):
     fact_type: str
     raw_value: str
     canonical_value: str
-    evidence_text: Optional[str]
-    page_number: Optional[int]
+    evidence_text: str | None
+    page_number: int | None
     confidence: float
 
 class DocumentIntelligenceEvidenceResponse(BaseModel):
@@ -89,11 +88,11 @@ class DocumentIntelligenceEvidenceResponse(BaseModel):
     application_id: uuid.UUID
     processing_status: DocumentProcessingStatusEnum
     ocr_used: bool
-    text_quality_score: Optional[float]
-    skills: List[CandidateSkillResponse]
-    experiences: List[CandidateExperienceResponse]
-    educations: List[CandidateEducationResponse]
-    facts: List[CandidateExtractedFactResponse]
+    text_quality_score: float | None
+    skills: list[CandidateSkillResponse]
+    experiences: list[CandidateExperienceResponse]
+    educations: list[CandidateEducationResponse]
+    facts: list[CandidateExtractedFactResponse]
 
 @router.post("/applications/{application_id}/documents", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_candidate_resume(

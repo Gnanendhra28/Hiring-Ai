@@ -2,17 +2,13 @@ import csv
 import io
 import statistics
 import uuid
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from datetime import datetime
 from sqlalchemy import func, select
 
-from app.core.logging import logger
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.applications.models import Application, ApplicationStatusEnum, CandidatePlacement, OfferStatusEnum
-from app.domains.identity.models import User
-from app.domains.organizations.models import OrganizationMembership
-from app.domains.job_intelligence.models import JobIntelligenceVersion, JobIntelligenceVersionStatusEnum
+from app.domains.job_intelligence.models import JobIntelligenceVersion
 from app.domains.jobs.models import Job, JobStatusEnum
 from app.domains.ranking.models import CandidateJobRanking
 from app.domains.recommendation.models import (
@@ -47,7 +43,7 @@ class RequisitionReportingService:
 
     async def get_requisition_report(
         self, job_id: uuid.UUID, organization_id: uuid.UUID
-    ) -> Optional[RequisitionReportResponse]:
+    ) -> RequisitionReportResponse | None:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)
@@ -349,7 +345,7 @@ class RequisitionReportingService:
 
     async def export_requisition_report_csv(
         self, job_id: uuid.UUID, organization_id: uuid.UUID
-    ) -> Optional[str]:
+    ) -> str | None:
         report = await self.get_requisition_report(job_id=job_id, organization_id=organization_id)
         if not report:
             return None
@@ -422,12 +418,12 @@ class RequisitionReportingService:
     async def get_organization_dashboard(
         self,
         organization_id: uuid.UUID,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        status: Optional[str] = None,
-        department: Optional[str] = None,
-        employment_type: Optional[str] = None,
-        location: Optional[str] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        status: str | None = None,
+        department: str | None = None,
+        employment_type: str | None = None,
+        location: str | None = None,
     ) -> OrganizationDashboardResponse:
         async with async_session_factory() as session:
             await session.begin()
@@ -548,8 +544,8 @@ class RequisitionReportingService:
     async def get_tenant_audit_analytics(
         self,
         organization_id: uuid.UUID,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> AuditAnalyticsResponse:
         async with async_session_factory() as session:
             await session.begin()
@@ -577,7 +573,7 @@ class RequisitionReportingService:
             off_acc = sum(1 for p in placements if p.offer_status in [OfferStatusEnum.OFFER_ACCEPTED, OfferStatusEnum.HIRED])
             cand_hired = sum(1 for p in placements if p.offer_status == OfferStatusEnum.HIRED)
 
-            req_activity: Dict[str, int] = {}
+            req_activity: dict[str, int] = {}
             for a in audits:
                 j_id = str(a.job_id)
                 req_activity[j_id] = req_activity.get(j_id, 0) + 1
@@ -598,8 +594,8 @@ class RequisitionReportingService:
     async def get_tenant_ai_governance_analytics(
         self,
         organization_id: uuid.UUID,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> AIGovernanceAnalyticsResponse:
         async with async_session_factory() as session:
             await session.begin()
@@ -676,12 +672,12 @@ class RequisitionReportingService:
     async def export_organization_report_csv(
         self,
         organization_id: uuid.UUID,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        status: Optional[str] = None,
-        department: Optional[str] = None,
-        employment_type: Optional[str] = None,
-        location: Optional[str] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        status: str | None = None,
+        department: str | None = None,
+        employment_type: str | None = None,
+        location: str | None = None,
     ) -> str:
         dashboard = await self.get_organization_dashboard(
             organization_id=organization_id,

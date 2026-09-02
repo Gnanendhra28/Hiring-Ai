@@ -71,7 +71,7 @@ async def _setup_scoring_context(client: AsyncClient):
     async with async_session_factory() as session:
         await session.begin()
         await set_tenant_context(session, uuid.UUID(org_id))
-        
+
         cand_user = User(
             email=f"cand_p9b_{uuid.uuid4().hex[:8]}@example.com",
             password_hash="hashed_pw_test",
@@ -191,7 +191,7 @@ async def test_scoring_configuration_weight_validation():
 @pytest.mark.asyncio
 async def test_hard_requirement_gate_failure_overrides_high_semantic_score():
     cfg = ScoringConfiguration()
-    
+
     # Requirement match item with failed hard constraint
     req_matches = [
         CandidateRequirementMatch(
@@ -219,7 +219,7 @@ async def test_hard_requirement_gate_failure_overrides_high_semantic_score():
     ]
 
     result = ScoringEngine.calculate_candidate_score(cfg, req_matches, sem_matches)
-    
+
     # High semantic similarity MUST NOT compensate for hard requirement failure
     assert result["eligibility_status"] == EligibilityStatusEnum.FAIL
     assert len(result["hard_requirement_results"]) == 1
@@ -261,7 +261,7 @@ async def test_applicable_weight_normalization():
     ]
 
     result = ScoringEngine.calculate_candidate_score(cfg, req_matches, sem_matches)
-    
+
     req_factor = next(f for f in result["factor_scores"] if f["factor_type"] == FactorTypeEnum.REQUIRED_SKILLS)
     sem_factor = next(f for f in result["factor_scores"] if f["factor_type"] == FactorTypeEnum.SEMANTIC_MATCH)
     pref_factor = next(f for f in result["factor_scores"] if f["factor_type"] == FactorTypeEnum.PREFERRED_SKILLS)
@@ -351,7 +351,7 @@ async def test_negative_governance_no_ranking_or_llm_invocation():
             await set_tenant_context(session, data["org_id"])
             stmt = select(Application).where(Application.id == data["application_id"])
             app_obj = (await session.execute(stmt)).scalar_one()
-            
+
             # Application status MUST remain SUBMITTED; scoring MUST NOT mutate state
             assert app_obj.status == ApplicationStatusEnum.SUBMITTED
 

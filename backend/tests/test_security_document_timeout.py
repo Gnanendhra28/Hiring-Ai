@@ -5,7 +5,6 @@ Security Tests for Document Processing Timeout and Size Enforcement.
 import pytest
 import uuid
 from app.services.document_processor import DocumentProcessorService
-from app.domains.document_intelligence.models import CandidateDocument, DocumentProcessingStatusEnum
 from app.core.config import settings
 
 

@@ -1,9 +1,8 @@
-import json
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timedelta, UTC
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from app.api.v1.deps import get_current_user, require_role, SecurityContext
@@ -43,9 +42,9 @@ class SubmitTurnRequest(BaseModel):
     question_id: str
     question_text: str
     candidate_answer: str
-    code_submission: Optional[str] = None
-    time_taken_seconds: Optional[int] = None
-    client_submission_id: Optional[str] = None
+    code_submission: str | None = None
+    time_taken_seconds: int | None = None
+    client_submission_id: str | None = None
 
 
 class CandidateFeedbackResponse(BaseModel):
@@ -54,17 +53,17 @@ class CandidateFeedbackResponse(BaseModel):
     job_title: str
     status: str
     completed_at: str
-    top_strengths: List[str]
-    areas_for_improvement: List[str]
+    top_strengths: list[str]
+    areas_for_improvement: list[str]
     summary_feedback: str
 
 
 class CompleteInterviewRequest(BaseModel):
-    candidate_name: Optional[str] = None
-    job_title: Optional[str] = None
+    candidate_name: str | None = None
+    job_title: str | None = None
 
 
-@router.get("/jobs/{job_id}/interviews", response_model=List[Dict[str, Any]])
+@router.get("/jobs/{job_id}/interviews", response_model=list[dict[str, Any]])
 async def get_job_interviews(
     job_id: uuid.UUID,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -115,7 +114,7 @@ async def get_job_interviews(
                 "candidate_id": first_cand_id,
                 "candidate_name": "Matta Gnanendhra",
                 "interview_type": "AI_TECHNICAL_SCREENER",
-                "scheduled_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %I:%M %p"),
+                "scheduled_at": datetime.now(UTC).strftime("%Y-%m-%d %I:%M %p"),
                 "timezone": "Asia/Kolkata (IST)",
                 "meeting_url": "/interview/int-ai-101/room",
                 "status": "SCHEDULED",
@@ -125,7 +124,7 @@ async def get_job_interviews(
         return results
 
 
-@router.post("/jobs/{job_id}/interviews/generate-questions", response_model=List[InterviewQuestion])
+@router.post("/jobs/{job_id}/interviews/generate-questions", response_model=list[InterviewQuestion])
 async def generate_interview_questions(
     job_id: uuid.UUID,
     payload: GenerateQuestionsRequest,
@@ -181,7 +180,7 @@ async def generate_interview_questions(
         return questions
 
 
-@router.post("/interviews/{interview_id}/submit-turn", response_model=Dict[str, Any])
+@router.post("/interviews/{interview_id}/submit-turn", response_model=dict[str, Any])
 async def submit_interview_turn(
     interview_id: str,
     payload: SubmitTurnRequest,
@@ -232,7 +231,7 @@ async def submit_interview_turn(
     await interview_repo.save_turn(interview_id=interview_id, turn=turn, turn_eval=turn_eval)
     recorded_turns = await interview_repo.get_turns(interview_id=interview_id)
 
-    resp_data: Dict[str, Any] = {
+    resp_data: dict[str, Any] = {
         "status": "FOLLOW_UP" if turn_eval.follow_up_needed else "ADVANCE",
         "turn_index": len(recorded_turns),
         "evaluation": turn_eval.model_dump(),
@@ -298,7 +297,7 @@ async def get_candidate_feedback(interview_id: str):
             candidate_name="Candidate",
             job_title="Engineering Role",
             status="COMPLETED",
-            completed_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+            completed_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
             top_strengths=["Clear technical communication", "Methodical problem solving approach"],
             areas_for_improvement=["Provide more quantitative performance metrics in architecture discussions"],
             summary_feedback="Thank you for completing your technical interview. Your responses have been recorded and will be reviewed by the hiring team.",
@@ -309,7 +308,7 @@ async def get_candidate_feedback(interview_id: str):
         candidate_name=scorecard.candidate_name,
         job_title=scorecard.job_title,
         status="COMPLETED",
-        completed_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        completed_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
         top_strengths=scorecard.top_strengths,
         areas_for_improvement=scorecard.areas_for_improvement,
         summary_feedback=scorecard.summary,
@@ -374,7 +373,7 @@ async def schedule_interview(
         if not app_rec:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate application not found.")
 
-        start_utc = payload.scheduled_start_at.astimezone(timezone.utc)
+        start_utc = payload.scheduled_start_at.astimezone(UTC)
         end_utc = start_utc + timedelta(minutes=payload.duration_minutes)
 
         # 3. Create Video Meeting Link via Provider Adapter
@@ -423,7 +422,7 @@ async def schedule_interview(
         return InterviewResponse.model_validate(interview)
 
 
-@router.get("/candidate/interviews", response_model=List[InterviewResponse])
+@router.get("/candidate/interviews", response_model=list[InterviewResponse])
 async def get_candidate_interviews(
     user: User = Depends(get_current_user),
 ):

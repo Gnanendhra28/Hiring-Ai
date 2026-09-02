@@ -4,11 +4,8 @@ Validates Firebase ID Tokens, extracts verified UIDs & email claims,
 and resolves user identity context against database records.
 """
 
-import json
-import os
-from typing import Any, Dict, Optional
+from typing import Any
 import httpx
-from app.core.config import settings
 from app.core.logging import logger
 
 class FirebaseAuthService:
@@ -18,7 +15,7 @@ class FirebaseAuthService:
     """
 
     @classmethod
-    async def verify_id_token(cls, token: str) -> Optional[Dict[str, Any]]:
+    async def verify_id_token(cls, token: str) -> dict[str, Any] | None:
         """
         Verifies a Firebase ID token and returns decoded payload (uid, email, custom claims).
         Returns None if token is invalid or expired.

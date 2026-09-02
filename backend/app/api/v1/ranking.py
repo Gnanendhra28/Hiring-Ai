@@ -1,6 +1,5 @@
 import math
 import uuid
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, func
 
@@ -54,7 +53,7 @@ async def generate_candidate_ranking(
 @router.get("/{job_id}/ranking", response_model=RankingListPaginatedResponse)
 async def get_candidate_rankings(
     job_id: uuid.UUID,
-    version_number: Optional[int] = Query(None, description="Ranking snapshot version number. Defaults to latest version."),
+    version_number: int | None = Query(None, description="Ranking snapshot version number. Defaults to latest version."),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -140,7 +139,7 @@ async def get_candidate_rankings(
             total_pages=total_pages,
         )
 
-@router.get("/{job_id}/ranking/versions", response_model=List[CandidateRankingVersionResponse])
+@router.get("/{job_id}/ranking/versions", response_model=list[CandidateRankingVersionResponse])
 async def get_ranking_versions(
     job_id: uuid.UUID,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -164,7 +163,7 @@ async def get_ranking_versions(
 @router.get("/{job_id}/ranking/top-k", response_model=TopKRankingResponse)
 async def get_top_k_rankings(
     job_id: uuid.UUID,
-    limit: Optional[int] = Query(None, ge=1, le=500, description="Override Top-K limit filter for display"),
+    limit: int | None = Query(None, ge=1, le=500, description="Override Top-K limit filter for display"),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """Retrieves Top-K eligible candidate rankings for a job."""

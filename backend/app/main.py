@@ -1,6 +1,7 @@
 import uuid
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, Any
+from typing import Any
+from collections.abc import AsyncGenerator
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -40,19 +41,19 @@ from app.db.session import engine
 setup_logging()
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION} [{settings.APP_ENV}]")
     try:
         from app.db.base import Base
-        import app.domains.identity.models  # noqa: F401
-        import app.domains.organizations.models  # noqa: F401
-        import app.domains.jobs.models  # noqa: F401
-        import app.domains.candidates.models  # noqa: F401
-        import app.domains.applications.models  # noqa: F401
-        import app.domains.interviews.models  # noqa: F401
-        import app.domains.audit.models  # noqa: F401
-        import app.domains.recommendation.models  # noqa: F401
-        import app.domains.document_intelligence.models  # noqa: F401
+        import app.domains.identity.models
+        import app.domains.organizations.models
+        import app.domains.jobs.models
+        import app.domains.candidates.models
+        import app.domains.applications.models
+        import app.domains.interviews.models
+        import app.domains.audit.models
+        import app.domains.recommendation.models
+        import app.domains.document_intelligence.models
         import app.domains.recruiters.models  # noqa: F401
 
         async with engine.begin() as conn:
@@ -235,7 +236,7 @@ async def get_metrics():
 @app.get("/ready", tags=["Health"])
 @app.get("/api/v1/health/readiness", tags=["Health"])
 async def readiness_probe():
-    checks: Dict[str, Any] = {}
+    checks: dict[str, Any] = {}
     is_ready = True
 
     if settings.READINESS_CHECK_DB:
@@ -246,7 +247,7 @@ async def readiness_probe():
             if not db_healthy:
                 is_ready = False
         except Exception as e:
-            logger.error(f"Readiness check failed for database: {str(e)}")
+            logger.error(f"Readiness check failed for database: {e!s}")
             checks["database"] = {"status": "error", "message": str(e)}
             is_ready = False
 
@@ -259,7 +260,7 @@ async def readiness_probe():
             "provider": provider.__class__.__name__,
         }
     except Exception as e:
-        logger.warning(f"AI Provider degraded: {str(e)}")
+        logger.warning(f"AI Provider degraded: {e!s}")
         checks["ai_provider"] = {
             "status": "degraded",
             "message": str(e),

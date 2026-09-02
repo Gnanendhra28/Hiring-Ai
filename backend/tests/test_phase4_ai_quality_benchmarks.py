@@ -5,7 +5,6 @@ adaptive follow-up quality, fairness, and scorecard immutability.
 """
 
 import pytest
-import asyncio
 from app.domains.interviews.ai_agent import AIInterviewAgent, CandidateAnswerTurn, InterviewScorecard
 
 

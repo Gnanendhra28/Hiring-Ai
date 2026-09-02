@@ -1,5 +1,4 @@
 import uuid
-from typing import List, Optional
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
@@ -8,7 +7,7 @@ from app.core.security import decode_token
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.identity.models import User
-from app.domains.organizations.models import MembershipStatusEnum, Organization, OrganizationMembership, RoleEnum
+from app.domains.organizations.models import MembershipStatusEnum, OrganizationMembership, RoleEnum
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -19,9 +18,9 @@ class SecurityContext:
     def __init__(
         self,
         user: User,
-        active_organization_id: Optional[uuid.UUID] = None,
-        role: Optional[RoleEnum] = None,
-        permissions: Optional[List[str]] = None,
+        active_organization_id: uuid.UUID | None = None,
+        role: RoleEnum | None = None,
+        permissions: list[str] | None = None,
     ) -> None:
         self.user = user
         self.active_organization_id = active_organization_id
@@ -33,7 +32,7 @@ class SecurityContext:
         return self.user.is_platform_admin or self.role == RoleEnum.PLATFORM_ADMIN
 
 async def get_current_user(
-    auth_credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    auth_credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
 ) -> User:
     """Decodes JWT Bearer token or verifies Firebase ID token and loads authenticated User identity."""
     if not auth_credentials:
@@ -44,9 +43,9 @@ async def get_current_user(
         )
 
     token_str = auth_credentials.credentials
-    user_id: Optional[uuid.UUID] = None
-    firebase_email: Optional[str] = None
-    firebase_name: Optional[str] = None
+    user_id: uuid.UUID | None = None
+    firebase_email: str | None = None
+    firebase_name: str | None = None
 
     # 1. Try decoding local JWT Access Token
     try:
@@ -123,7 +122,7 @@ async def get_current_user(
 
 async def get_security_context(
     user: User = Depends(get_current_user),
-    x_organization_id: Optional[str] = Header(None, alias="X-Organization-ID"),
+    x_organization_id: str | None = Header(None, alias="X-Organization-ID"),
 ) -> SecurityContext:
     """
     Core Tenant Authorization Dependency:
@@ -205,7 +204,7 @@ async def get_security_context(
             role=membership.role,
         )
 
-def require_role(allowed_roles: List[RoleEnum]):
+def require_role(allowed_roles: list[RoleEnum]):
     """Role-Based Access Control (RBAC) Guard."""
     async def role_checker(ctx: SecurityContext = Depends(get_security_context)) -> SecurityContext:
         if ctx.user.is_platform_admin:
@@ -219,8 +218,8 @@ def require_role(allowed_roles: List[RoleEnum]):
     return role_checker
 
 async def get_optional_user(
-    auth_credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
-) -> Optional[User]:
+    auth_credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+) -> User | None:
     """Decodes optional JWT Bearer token if present; returns None if unauthenticated."""
     if not auth_credentials:
         return None
@@ -240,8 +239,8 @@ async def get_optional_user(
         return None
 
 async def get_optional_security_context(
-    user: Optional[User] = Depends(get_optional_user),
-    x_organization_id: Optional[str] = Header(None, alias="X-Organization-ID"),
+    user: User | None = Depends(get_optional_user),
+    x_organization_id: str | None = Header(None, alias="X-Organization-ID"),
 ) -> SecurityContext:
     """Optional Tenant Security Context Dependency for public endpoints."""
     if not user:

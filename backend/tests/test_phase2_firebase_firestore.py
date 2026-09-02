@@ -6,11 +6,9 @@ restart statelessness, and tenant isolation.
 
 import pytest
 import shutil
-from pathlib import Path
 from app.domains.interviews.ai_agent import (
     CandidateAnswerTurn,
     InterviewScorecard,
-    QuestionEvaluation,
     TurnEvaluation,
 )
 from app.infrastructure.firebase.auth import FirebaseAuthService

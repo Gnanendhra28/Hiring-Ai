@@ -1,8 +1,7 @@
-import pytest, uuid
+import pytest
 from app.infrastructure.parsing.general_extractor import GeneralJobExtractor
 from app.domains.jobs.models import Job
 from app.db.session import async_session_factory
-from app.db.rls import set_tenant_context
 from sqlalchemy import select
 
 MULTI_SKILL_UNHEADED_TEXT = """

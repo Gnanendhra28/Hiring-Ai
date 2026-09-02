@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 from app.domains.matching.models import (
     CandidateRequirementMatch,
@@ -47,9 +47,9 @@ class ScoringEngine:
     def calculate_candidate_score(
         cls,
         config: ScoringConfiguration,
-        req_matches: List[CandidateRequirementMatch],
-        sem_matches: List[CandidateSemanticMatch],
-    ) -> Dict[str, Any]:
+        req_matches: list[CandidateRequirementMatch],
+        sem_matches: list[CandidateSemanticMatch],
+    ) -> dict[str, Any]:
         """
         Calculates deterministic candidate score, factor breakdown, eligibility, and confidence.
         """
@@ -63,7 +63,7 @@ class ScoringEngine:
                 if rm.match_status == MatchStatusEnum.NOT_MATCHED:
                     eligibility_status = EligibilityStatusEnum.FAIL
                     failed_hard_reqs += 1
-                
+
                 hard_results.append({
                     "requirement_id": rm.job_requirement_id,
                     "status": rm.match_status.value if hasattr(rm.match_status, "value") else str(rm.match_status),
@@ -185,7 +185,7 @@ class ScoringEngine:
         # 6. Score Confidence Calculation
         all_confidences = [rm.confidence for rm in req_matches if rm.confidence is not None]
         all_confidences.extend([sm.similarity_score for sm in sem_matches if sm.similarity_score is not None])
-        
+
         avg_conf = sum(all_confidences) / len(all_confidences) if all_confidences else 0.85
         avg_conf = round(max(0.0, min(1.0, avg_conf)), 2)
 
@@ -213,7 +213,7 @@ class ScoringEngine:
         normalized_weight: float,
         applicable: bool,
         reason: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         raw_score = round(normalized_score * 100.0, 1)
         weighted_contrib = round(normalized_score * normalized_weight * 100.0, 1) if applicable else 0.0
 
@@ -230,7 +230,7 @@ class ScoringEngine:
         }
 
     @staticmethod
-    def _calculate_skill_factor_score(skills: List[CandidateRequirementMatch], label: str) -> Tuple[float, str]:
+    def _calculate_skill_factor_score(skills: list[CandidateRequirementMatch], label: str) -> tuple[float, str]:
         if not skills:
             return 0.0, f"No {label.lower()} specified for job requisition."
 
@@ -251,7 +251,7 @@ class ScoringEngine:
         return score, reason
 
     @staticmethod
-    def _calculate_semantic_factor_score(sem_matches: List[CandidateSemanticMatch]) -> Tuple[float, str]:
+    def _calculate_semantic_factor_score(sem_matches: list[CandidateSemanticMatch]) -> tuple[float, str]:
         if not sem_matches:
             return 0.0, "No semantic context embeddings available."
 
@@ -262,7 +262,7 @@ class ScoringEngine:
         return score, reason
 
     @staticmethod
-    def _calculate_experience_factor_score(exp_reqs: List[CandidateRequirementMatch]) -> Tuple[float, str]:
+    def _calculate_experience_factor_score(exp_reqs: list[CandidateRequirementMatch]) -> tuple[float, str]:
         if not exp_reqs:
             return 1.0, "No explicit experience requirements specified."
 
@@ -282,7 +282,7 @@ class ScoringEngine:
         return score, reason
 
     @staticmethod
-    def _calculate_education_factor_score(edu_reqs: List[CandidateRequirementMatch]) -> Tuple[float, str]:
+    def _calculate_education_factor_score(edu_reqs: list[CandidateRequirementMatch]) -> tuple[float, str]:
         if not edu_reqs:
             return 1.0, "No explicit education requirements specified."
 
@@ -302,7 +302,7 @@ class ScoringEngine:
         return score, reason
 
     @staticmethod
-    def _calculate_other_factor_score(other_reqs: List[CandidateRequirementMatch]) -> Tuple[float, str]:
+    def _calculate_other_factor_score(other_reqs: list[CandidateRequirementMatch]) -> tuple[float, str]:
         if not other_reqs:
             return 1.0, "No other requirements specified."
 

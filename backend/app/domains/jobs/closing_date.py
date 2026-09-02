@@ -1,8 +1,7 @@
 import re
-from datetime import datetime, timezone
-from typing import Optional, Tuple
+from datetime import datetime, UTC
 
-def parse_job_closing_date(description: Optional[str]) -> Tuple[Optional[str], bool]:
+def parse_job_closing_date(description: str | None) -> tuple[str | None, bool]:
     """
     Parses Application Closing Date from job description markdown:
     - **Application Closing Date**: YYYY-MM-DD or DD/MM/YYYY
@@ -34,7 +33,7 @@ def parse_job_closing_date(description: Optional[str]) -> Tuple[Optional[str], b
             pass
 
     if closing_dt:
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
         if today > closing_dt:
             return raw_date_str, True
         return raw_date_str, False

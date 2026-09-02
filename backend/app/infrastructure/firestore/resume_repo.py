@@ -11,9 +11,9 @@ and automatic local JSON store fallback for local development and test isolation
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 from app.core.logging import logger
 
 
@@ -24,8 +24,8 @@ class FirestoreResumeRepository:
 
     def __init__(
         self,
-        project_id: Optional[str] = None,
-        storage_dir: Optional[str] = None,
+        project_id: str | None = None,
+        storage_dir: str | None = None,
     ) -> None:
         self.project_id = (
             project_id
@@ -55,7 +55,7 @@ class FirestoreResumeRepository:
     # RESUMES COLLECTION: resumes/{resumeId}
     # =========================================================================
 
-    async def save_resume(self, resume_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def save_resume(self, resume_data: dict[str, Any]) -> dict[str, Any]:
         """
         Saves or updates a resume metadata document.
         Schema: {resumeId, candidateId, fileName, contentType, storagePath, fileSize, uploadedAt, status, version}
@@ -65,7 +65,7 @@ class FirestoreResumeRepository:
         doc_data["resumeId"] = resume_id
         doc_data["candidateId"] = str(doc_data["candidateId"])
         if "uploadedAt" not in doc_data or not doc_data["uploadedAt"]:
-            doc_data["uploadedAt"] = datetime.now(timezone.utc).isoformat()
+            doc_data["uploadedAt"] = datetime.now(UTC).isoformat()
         if "status" not in doc_data:
             doc_data["status"] = "active"
 
@@ -91,10 +91,10 @@ class FirestoreResumeRepository:
 
         return doc_data
 
-    async def get_resume(self, resume_id: str) -> Optional[Dict[str, Any]]:
+    async def get_resume(self, resume_id: str) -> dict[str, Any] | None:
         """Fetches a resume document by resumeId."""
         resume_id = str(resume_id)
-        
+
         # 1. Try Cloud Firestore
         client = await self._get_client()
         if client:
@@ -111,17 +111,17 @@ class FirestoreResumeRepository:
         local_file = self.resumes_dir / f"{resume_id}.json"
         if local_file.exists():
             try:
-                with open(local_file, "r", encoding="utf-8") as f:
+                with open(local_file, encoding="utf-8") as f:
                     return json.load(f)
             except Exception:
                 pass
 
         return None
 
-    async def list_resumes_by_candidate(self, candidate_id: str) -> List[Dict[str, Any]]:
+    async def list_resumes_by_candidate(self, candidate_id: str) -> list[dict[str, Any]]:
         """Lists all active resume documents for a candidate, ordered by version descending."""
         cand_str = str(candidate_id)
-        resumes: List[Dict[str, Any]] = []
+        resumes: list[dict[str, Any]] = []
 
         # 1. Try Cloud Firestore
         client = await self._get_client()
@@ -141,7 +141,7 @@ class FirestoreResumeRepository:
         # 2. Local fallback
         for fpath in self.resumes_dir.glob("*.json"):
             try:
-                with open(fpath, "r", encoding="utf-8") as f:
+                with open(fpath, encoding="utf-8") as f:
                     data = json.load(f)
                     if str(data.get("candidateId")) == cand_str and data.get("status") != "deleted":
                         resumes.append(data)
@@ -159,7 +159,7 @@ class FirestoreResumeRepository:
             return False
 
         data["status"] = "deleted"
-        data["deletedAt"] = datetime.now(timezone.utc).isoformat()
+        data["deletedAt"] = datetime.now(UTC).isoformat()
         await self.save_resume(data)
         return True
 
@@ -167,7 +167,7 @@ class FirestoreResumeRepository:
     # APPLICATIONS COLLECTION: applications/{applicationId}
     # =========================================================================
 
-    async def save_application(self, app_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def save_application(self, app_data: dict[str, Any]) -> dict[str, Any]:
         """
         Saves or updates a job application document.
         Schema: {applicationId, jobId, candidateId, resumeId, status, appliedAt, updatedAt}
@@ -177,11 +177,11 @@ class FirestoreResumeRepository:
         doc_data["applicationId"] = app_id
         doc_data["jobId"] = str(doc_data["jobId"])
         doc_data["candidateId"] = str(doc_data["candidateId"])
-        if "resumeId" in doc_data and doc_data["resumeId"]:
+        if doc_data.get("resumeId"):
             doc_data["resumeId"] = str(doc_data["resumeId"])
         if "appliedAt" not in doc_data or not doc_data["appliedAt"]:
-            doc_data["appliedAt"] = datetime.now(timezone.utc).isoformat()
-        doc_data["updatedAt"] = datetime.now(timezone.utc).isoformat()
+            doc_data["appliedAt"] = datetime.now(UTC).isoformat()
+        doc_data["updatedAt"] = datetime.now(UTC).isoformat()
 
         # 1. Local fallback
         local_file = self.applications_dir / f"{app_id}.json"
@@ -200,7 +200,7 @@ class FirestoreResumeRepository:
 
         return doc_data
 
-    async def get_application(self, application_id: str) -> Optional[Dict[str, Any]]:
+    async def get_application(self, application_id: str) -> dict[str, Any] | None:
         """Fetches application document by applicationId."""
         app_id = str(application_id)
 
@@ -219,17 +219,17 @@ class FirestoreResumeRepository:
         local_file = self.applications_dir / f"{app_id}.json"
         if local_file.exists():
             try:
-                with open(local_file, "r", encoding="utf-8") as f:
+                with open(local_file, encoding="utf-8") as f:
                     return json.load(f)
             except Exception:
                 pass
 
         return None
 
-    async def list_applications_by_job(self, job_id: str) -> List[Dict[str, Any]]:
+    async def list_applications_by_job(self, job_id: str) -> list[dict[str, Any]]:
         """Lists all applications for a given job."""
         j_str = str(job_id)
-        apps: List[Dict[str, Any]] = []
+        apps: list[dict[str, Any]] = []
 
         # 1. Cloud Firestore
         client = await self._get_client()
@@ -246,7 +246,7 @@ class FirestoreResumeRepository:
         # 2. Local fallback
         for fpath in self.applications_dir.glob("*.json"):
             try:
-                with open(fpath, "r", encoding="utf-8") as f:
+                with open(fpath, encoding="utf-8") as f:
                     data = json.load(f)
                     if str(data.get("jobId")) == j_str:
                         apps.append(data)

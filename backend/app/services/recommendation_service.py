@@ -1,7 +1,6 @@
 import time
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime, UTC
 from sqlalchemy import delete, select, func
 
 from app.core.config import settings
@@ -11,7 +10,6 @@ from app.db.session import async_session_factory
 from app.domains.applications.models import Application, ApplicationStatusEnum, CandidatePlacement, OfferStatusEnum
 from app.domains.jobs.models import Job
 from app.domains.identity.models import User
-from app.domains.organizations.models import OrganizationMembership
 from app.domains.audit.models import AuditLog
 from app.domains.candidates.models import CandidateProfile
 from app.domains.document_intelligence.models import CandidateDocument
@@ -53,9 +51,9 @@ class RecommendationService:
         job_id: uuid.UUID,
         candidate_id: uuid.UUID,
         organization_id: uuid.UUID,
-        user_id: Optional[uuid.UUID] = None,
-        application_id: Optional[uuid.UUID] = None,
-    ) -> Optional[CandidateRecommendation]:
+        user_id: uuid.UUID | None = None,
+        application_id: uuid.UUID | None = None,
+    ) -> CandidateRecommendation | None:
         logger.info(f"Starting candidate recommendation generation for job_id={job_id}, candidate_id={candidate_id} under org_id={organization_id}")
         start_time = time.time()
 
@@ -317,8 +315,8 @@ class RecommendationService:
         decision: RecruiterDecisionEnum,
         organization_id: uuid.UUID,
         user_id: uuid.UUID,
-        decision_reason: Optional[str] = None,
-    ) -> Optional[CandidateDecision]:
+        decision_reason: str | None = None,
+    ) -> CandidateDecision | None:
         """
         Records explicit recruiter hiring decision.
         CRITICAL AI GOVERNANCE RULE:
@@ -432,7 +430,7 @@ class RecommendationService:
         self,
         application_id: uuid.UUID,
         organization_id: uuid.UUID,
-    ) -> Optional[CandidatePlacement]:
+    ) -> CandidatePlacement | None:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)
@@ -447,7 +445,7 @@ class RecommendationService:
         application_id: uuid.UUID,
         organization_id: uuid.UUID,
         user_id: uuid.UUID,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> CandidatePlacement:
         async with async_session_factory() as session:
             await session.begin()
@@ -471,7 +469,7 @@ class RecommendationService:
             usr_obj = (await session.execute(stmt_usr)).scalar_one_or_none()
             valid_user_id = user_id if usr_obj else None
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if not pl_obj:
                 pl_obj = CandidatePlacement(
                     organization_id=organization_id,
@@ -519,7 +517,7 @@ class RecommendationService:
         application_id: uuid.UUID,
         organization_id: uuid.UUID,
         user_id: uuid.UUID,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> CandidatePlacement:
         async with async_session_factory() as session:
             await session.begin()
@@ -536,7 +534,7 @@ class RecommendationService:
             usr_obj = (await session.execute(stmt_usr)).scalar_one_or_none()
             valid_user_id = user_id if usr_obj else None
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             pl_obj.offer_status = OfferStatusEnum.OFFER_ACCEPTED
             pl_obj.offer_accepted_at = now
             if notes:
@@ -575,7 +573,7 @@ class RecommendationService:
         application_id: uuid.UUID,
         organization_id: uuid.UUID,
         user_id: uuid.UUID,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> CandidatePlacement:
         async with async_session_factory() as session:
             await session.begin()
@@ -593,7 +591,7 @@ class RecommendationService:
             usr_obj = (await session.execute(stmt_usr)).scalar_one_or_none()
             valid_user_id = user_id if usr_obj else None
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             prev_status = pl_obj.offer_status.value
             pl_obj.offer_status = OfferStatusEnum.HIRED
             pl_obj.placed_at = now

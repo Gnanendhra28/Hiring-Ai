@@ -3,7 +3,6 @@ Comprehensive Test Suite for Candidate Resume Upload, Multi-Version Management,
 Job Application Binding, and Recruiter Authorized Resume Access.
 """
 
-import io
 import uuid
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -12,8 +11,7 @@ from sqlalchemy import select
 from app.core.security import create_access_token
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
-from app.domains.applications.models import Application, ApplicationStatusEnum
-from app.domains.candidates.models import CandidateProfile
+from app.domains.applications.models import Application
 from app.domains.identity.models import User
 from app.domains.jobs.models import Job, JobStatusEnum, JobVerificationStatusEnum
 from app.domains.organizations.models import (
@@ -22,8 +20,6 @@ from app.domains.organizations.models import (
     OrganizationMembership,
     RoleEnum,
 )
-from app.infrastructure.firestore.resume_repo import FirestoreResumeRepository
-from app.infrastructure.storage.gcs_storage import GCSResumeStorageProvider
 from app.main import app
 
 

@@ -1,6 +1,4 @@
-import os
 import re
-from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 from app.infrastructure.pdf.extractor import PDFExtractor
 from app.infrastructure.skills.normalizer import SkillNormalizer
@@ -15,36 +13,36 @@ class CandidateSkill(BaseModel):
 class CandidateExperience(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     role: str
-    company: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    duration: Optional[str] = None
-    description: Optional[str] = None
-    technologies: List[str] = []
-    responsibilities: List[str] = []
+    company: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    duration: str | None = None
+    description: str | None = None
+    technologies: list[str] = []
+    responsibilities: list[str] = []
     evidence: str
 
 class CandidateProject(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str
-    description: Optional[str] = None
-    technologies: List[str] = []
-    role: Optional[str] = None
+    description: str | None = None
+    technologies: list[str] = []
+    role: str | None = None
     evidence: str
 
 class CandidateEducation(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    degree: Optional[str] = None
-    field: Optional[str] = None
-    institution: Optional[str] = None
-    graduation_year: Optional[str] = None
+    degree: str | None = None
+    field: str | None = None
+    institution: str | None = None
+    graduation_year: str | None = None
     evidence: str
 
 class CandidateCertification(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str
-    issuer: Optional[str] = None
-    year: Optional[str] = None
+    issuer: str | None = None
+    year: str | None = None
     evidence: str
 
 class CandidateResponsibility(BaseModel):
@@ -56,13 +54,13 @@ class CandidateIntelligenceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     candidate_id: str
     name: str
-    target_roles: List[str] = []
-    skills: List[CandidateSkill] = []
-    experience: List[CandidateExperience] = []
-    projects: List[CandidateProject] = []
-    education: List[CandidateEducation] = []
-    certifications: List[CandidateCertification] = []
-    responsibilities: List[CandidateResponsibility] = []
+    target_roles: list[str] = []
+    skills: list[CandidateSkill] = []
+    experience: list[CandidateExperience] = []
+    projects: list[CandidateProject] = []
+    education: list[CandidateEducation] = []
+    certifications: list[CandidateCertification] = []
+    responsibilities: list[CandidateResponsibility] = []
 
 class CandidateIntelligenceExtractor:
     """
@@ -124,8 +122,8 @@ class CandidateIntelligenceExtractor:
         cls,
         profile: CandidateProfile,
         user_full_name: str,
-        pdf_bytes: Optional[bytes] = None,
-        raw_resume_text: Optional[str] = None,
+        pdf_bytes: bytes | None = None,
+        raw_resume_text: str | None = None,
     ) -> CandidateIntelligenceResponse:
         candidate_id = str(profile.user_id)
         name = user_full_name or "Candidate"
@@ -157,7 +155,7 @@ class CandidateIntelligenceExtractor:
         combined_source_lower = combined_source_text.lower()
 
         # 1. Target Roles Extraction
-        target_roles: List[str] = []
+        target_roles: list[str] = []
         if profile.headline and len(profile.headline.strip()) > 2:
             target_roles.append(profile.headline.strip())
         elif "position / title:" in combined_source_lower:
@@ -166,7 +164,7 @@ class CandidateIntelligenceExtractor:
                 target_roles.append(m.group(1).strip())
 
         # 2. Skills Extraction with Ground-Truth Evidence Verification
-        extracted_skills: List[CandidateSkill] = []
+        extracted_skills: list[CandidateSkill] = []
         seen_skills: set = set()
 
         # Process profile.skills
@@ -199,7 +197,7 @@ class CandidateIntelligenceExtractor:
                     )
 
         # 3. Experience Extraction
-        extracted_experience: List[CandidateExperience] = []
+        extracted_experience: list[CandidateExperience] = []
         if profile.experience and isinstance(profile.experience, list):
             for exp in profile.experience:
                 if isinstance(exp, dict):
@@ -236,7 +234,7 @@ class CandidateIntelligenceExtractor:
                     break
 
         # 4. Projects Extraction
-        extracted_projects: List[CandidateProject] = []
+        extracted_projects: list[CandidateProject] = []
         if profile.projects and isinstance(profile.projects, list):
             for proj in profile.projects:
                 if isinstance(proj, dict):
@@ -252,7 +250,7 @@ class CandidateIntelligenceExtractor:
                     )
 
         # 5. Education Extraction
-        extracted_education: List[CandidateEducation] = []
+        extracted_education: list[CandidateEducation] = []
         if profile.degree or profile.college:
             deg = profile.degree
             col = profile.college
@@ -280,7 +278,7 @@ class CandidateIntelligenceExtractor:
                     )
 
         # 6. Certifications Extraction
-        extracted_certs: List[CandidateCertification] = []
+        extracted_certs: list[CandidateCertification] = []
         if profile.accomplishments and isinstance(profile.accomplishments, dict):
             certs = profile.accomplishments.get("certifications") or []
             if isinstance(certs, list):
@@ -294,7 +292,7 @@ class CandidateIntelligenceExtractor:
                         )
 
         # 7. Responsibilities Extraction
-        extracted_resps: List[CandidateResponsibility] = []
+        extracted_resps: list[CandidateResponsibility] = []
         for exp in extracted_experience:
             if exp.description:
                 extracted_resps.append(

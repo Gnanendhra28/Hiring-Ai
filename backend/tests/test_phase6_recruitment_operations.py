@@ -6,7 +6,7 @@ recruiter collaboration alerts, offer lifecycle, and audit trail consistency.
 
 import pytest
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from app.services.notification_service import OperationalNotificationService, NotificationTypeEnum
 from app.domains.applications.models import CandidatePlacement, OfferStatusEnum
 from app.domains.recommendation.models import CandidateDecisionAudit, RecruiterDecisionEnum
@@ -153,7 +153,7 @@ async def test_offer_lifecycle_and_audit_persistence():
             application_id=app_obj.id,
             candidate_id=cand_user.id,
             offer_status=OfferStatusEnum.OFFER_EXTENDED,
-            offer_created_at=datetime.now(timezone.utc),
+            offer_created_at=datetime.now(UTC),
             created_by_user_id=recruiter.id,
             notes="Standard senior package with stock options.",
         )

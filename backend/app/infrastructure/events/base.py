@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Awaitable, Callable, List
+from collections.abc import Awaitable, Callable
 from app.infrastructure.events.envelope import EventEnvelope
 
 EventHandler = Callable[[EventEnvelope], Awaitable[None]]
@@ -13,7 +13,7 @@ class EventBus(ABC):
         pass
 
     @abstractmethod
-    async def publish_batch(self, events: List[EventEnvelope]) -> None:
+    async def publish_batch(self, events: list[EventEnvelope]) -> None:
         """Publishes a batch of event envelopes."""
         pass
 

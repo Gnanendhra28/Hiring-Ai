@@ -1,4 +1,3 @@
-from typing import List, Optional
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -53,25 +52,25 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENCRYPTION_KEY: str = "dev_encryption_key_32_bytes_long!!"
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://ai-interview-frontend-30597175496.asia-south1.run.app",
     ]
 
     # OIDC / OAuth2
-    OIDC_CLIENT_ID: Optional[str] = None
-    OIDC_CLIENT_SECRET: Optional[str] = None
-    OIDC_ISSUER: Optional[str] = None
-    GOOGLE_CLIENT_ID: Optional[str] = None
-    GOOGLE_CLIENT_SECRET: Optional[str] = None
-    GOOGLE_REDIRECT_URI: Optional[str] = "http://localhost:3000/auth/callback/google"
+    OIDC_CLIENT_ID: str | None = None
+    OIDC_CLIENT_SECRET: str | None = None
+    OIDC_ISSUER: str | None = None
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    GOOGLE_REDIRECT_URI: str | None = "http://localhost:3000/auth/callback/google"
 
     # AI Gateway & Cost Safeguards
     AI_PROVIDER: str = "gemini"
     LLM_PROVIDER: str = "gemini"
-    AI_API_KEY: Optional[str] = "placeholder_ai_api_key"
-    GEMINI_API_KEY: Optional[str] = "placeholder_gemini_api_key"
+    AI_API_KEY: str | None = "placeholder_ai_api_key"
+    GEMINI_API_KEY: str | None = "placeholder_gemini_api_key"
     GEMINI_MODEL: str = "gemini-3.5-flash"
     AI_FAST_MODEL: str = "gpt-4o-mini"
     AI_STRONG_MODEL: str = "gpt-4o"
@@ -95,8 +94,8 @@ class Settings(BaseSettings):
     EMAIL_PROVIDER: str = "smtp"
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 1025
-    SMTP_USER: Optional[str] = ""
-    SMTP_PASSWORD: Optional[str] = ""
+    SMTP_USER: str | None = ""
+    SMTP_PASSWORD: str | None = ""
     EMAIL_FROM: str = "AI Hiring Platform <noreply@hiringplatform.com>"
 
     # Readiness Policy Configuration

@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 from sqlalchemy import delete, select, update
 
 from app.core.config import settings
@@ -51,7 +50,7 @@ class JobProcessorService:
         self,
         job_id: uuid.UUID,
         organization_id: uuid.UUID,
-        user_id: Optional[uuid.UUID] = None,
+        user_id: uuid.UUID | None = None,
     ) -> bool:
         logger.info(f"Starting job intelligence processing for job_id={job_id} under org_id={organization_id}")
 
@@ -411,8 +410,8 @@ class JobProcessorService:
                 return True
 
             except Exception as e:
-                logger.error(f"Error processing job intelligence for job {job_id}: {str(e)}")
+                logger.error(f"Error processing job intelligence for job {job_id}: {e!s}")
                 version.status = JobIntelligenceVersionStatusEnum.FAILED
-                version.safe_error_message = f"Job intelligence processing failed: {str(e)}"
+                version.safe_error_message = f"Job intelligence processing failed: {e!s}"
                 await session.commit()
                 return False

@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin, UUIDMixin
@@ -16,12 +16,12 @@ class User(Base, UUIDMixin, TimestampMixin):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), default="FIREBASE_AUTH", nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    phone_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Relationships
-    memberships: Mapped[List["OrganizationMembership"]] = relationship(
+    memberships: Mapped[list["OrganizationMembership"]] = relationship(
         "OrganizationMembership", back_populates="user", cascade="all, delete-orphan"
     )

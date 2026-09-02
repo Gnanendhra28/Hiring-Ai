@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any
 
 class ConfidenceCalculator:
     """
@@ -22,7 +22,7 @@ class ConfidenceCalculator:
         verified_evidence_ratio: float,
         schema_valid: bool = True,
         dates_valid: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         c_llm = max(0.0, min(1.0, llm_confidence))
         s_text = max(0.0, min(1.0, text_quality_score))
         s_ev = max(0.0, min(1.0, verified_evidence_ratio))

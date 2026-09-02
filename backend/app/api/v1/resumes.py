@@ -4,23 +4,18 @@ Supports multi-version PDF/DOCX resume uploads, secure storage in GCS/Firebase S
 and metadata indexing in Firestore and PostgreSQL.
 """
 
-import os
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime, UTC
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
-from app.core.config import settings
 from app.core.logging import logger
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.candidates.models import CandidateProfile
 from app.domains.identity.models import User
-from app.api.v1.deps import get_current_user, get_security_context, SecurityContext, require_role
-from app.infrastructure.firebase.auth import FirebaseAuthService
+from app.api.v1.deps import get_current_user
 from app.infrastructure.firestore.resume_repo import FirestoreResumeRepository
 from app.infrastructure.storage.gcs_storage import GCSResumeStorageProvider
 
@@ -50,7 +45,7 @@ class ResumeMetadataResponse(BaseModel):
     uploaded_at: str
     status: str
     version: int
-    download_url: Optional[str] = None
+    download_url: str | None = None
 
 
 class ResumeAccessResponse(BaseModel):
@@ -115,7 +110,7 @@ async def upload_resume(
 
     resume_id = str(uuid.uuid4())
     candidate_id = str(user.id)
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
 
     # 1. Upload to Storage (GCS / Firebase Storage + local mirror)
     storage_provider = GCSResumeStorageProvider()
@@ -188,8 +183,8 @@ async def upload_resume(
     )
 
 
-@router.get("", response_model=List[ResumeMetadataResponse])
-@router.get("/list", response_model=List[ResumeMetadataResponse])
+@router.get("", response_model=list[ResumeMetadataResponse])
+@router.get("/list", response_model=list[ResumeMetadataResponse])
 async def list_candidate_resumes(
     user: User = Depends(get_current_user),
 ):

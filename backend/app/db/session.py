@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from sqlalchemy import text
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import (
@@ -41,7 +41,7 @@ async_session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
     autocommit=False,
 )
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession]:
     """Dependency for providing a transactional async database session."""
     async with async_session_factory() as session:
         try:
@@ -59,5 +59,5 @@ async def check_database_health() -> bool:
             result = await conn.execute(text("SELECT 1"))
             return result.scalar() == 1
     except Exception as e:
-        logger.error(f"Database health check failed: {str(e)}")
+        logger.error(f"Database health check failed: {e!s}")
         return False

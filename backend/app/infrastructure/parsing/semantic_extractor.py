@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from app.infrastructure.skills.normalizer import SkillNormalizer
 
 class SemanticJobExtractor:
@@ -11,11 +11,11 @@ class SemanticJobExtractor:
     """
 
     @classmethod
-    def extract_semantic_intelligence(cls, raw_text: str, job_title: Optional[str] = None) -> Dict[str, Any]:
+    def extract_semantic_intelligence(cls, raw_text: str, job_title: str | None = None) -> dict[str, Any]:
         lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
 
-        requirements: List[Dict[str, Any]] = []
-        responsibilities: List[str] = []
+        requirements: list[dict[str, Any]] = []
+        responsibilities: list[str] = []
         seen_canonical_skills: set = set()
         seen_responsibilities: set = set()
 

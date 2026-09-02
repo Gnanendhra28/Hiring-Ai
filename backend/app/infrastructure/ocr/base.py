@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 from app.core.logging import logger
 
 class OCRProvider(ABC):
     """Abstract Base Class for OCR Providers (PaddleOCR, Tesseract, Azure Read API)."""
 
     @abstractmethod
-    async def extract_text_from_pdf(self, file_bytes: bytes) -> Dict[str, Any]:
+    async def extract_text_from_pdf(self, file_bytes: bytes) -> dict[str, Any]:
         pass
 
 class TestOCRAdapter(OCRProvider):
     """Controlled OCR Adapter for Scanned Document Fallback in Development/Testing."""
 
-    async def extract_text_from_pdf(self, file_bytes: bytes) -> Dict[str, Any]:
+    async def extract_text_from_pdf(self, file_bytes: bytes) -> dict[str, Any]:
         logger.info(f"Executed Test OCR fallback on PDF ({len(file_bytes)} bytes)")
         ocr_text = (
             "SENIOR SOFTWARE ENGINEER - RESUME\n"

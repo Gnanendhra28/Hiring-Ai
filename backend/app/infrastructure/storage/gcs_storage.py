@@ -11,7 +11,6 @@ import os
 import re
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -24,8 +23,8 @@ class GCSResumeStorageProvider:
 
     def __init__(
         self,
-        bucket_name: Optional[str] = None,
-        storage_root: Optional[str] = None,
+        bucket_name: str | None = None,
+        storage_root: str | None = None,
     ) -> None:
         self.bucket_name = (
             bucket_name
@@ -61,7 +60,7 @@ class GCSResumeStorageProvider:
     def build_storage_path(self, candidate_id: str, resume_id: str, filename: str) -> str:
         """Constructs canonical storage path: resumes/{candidateId}/{resumeId}/{filename}"""
         clean_file = self.sanitize_filename(filename)
-        return f"resumes/{str(candidate_id)}/{str(resume_id)}/{clean_file}"
+        return f"resumes/{candidate_id!s}/{resume_id!s}/{clean_file}"
 
     def upload_file(
         self,
@@ -76,13 +75,13 @@ class GCSResumeStorageProvider:
         Returns canonical storage_path.
         """
         storage_path = self.build_storage_path(candidate_id, resume_id, filename)
-        
+
         # 1. Write to local storage mirror
         local_full_path = self.storage_root / storage_path
         local_full_path.parent.mkdir(parents=True, exist_ok=True)
         with open(local_full_path, "wb") as f:
             f.write(content)
-            
+
         # 2. Upload to GCS if client available
         client = self._get_gcs_client()
         if client:
@@ -93,7 +92,7 @@ class GCSResumeStorageProvider:
                 logger.info(f"[GCS Storage] Uploaded {len(content)} bytes to gs://{self.bucket_name}/{storage_path}")
             except Exception as ex:
                 logger.warning(f"[GCS Storage] Upload to gs://{self.bucket_name}/{storage_path} failed, local mirror preserved: {ex}")
-                
+
         return storage_path
 
     def download_file(self, storage_path: str) -> bytes:
@@ -103,11 +102,11 @@ class GCSResumeStorageProvider:
         """
         clean_path = storage_path.lstrip("/")
         local_full_path = self.storage_root / clean_path
-        
+
         if local_full_path.exists():
             with open(local_full_path, "rb") as f:
                 return f.read()
-                
+
         client = self._get_gcs_client()
         if client:
             try:
@@ -121,10 +120,10 @@ class GCSResumeStorageProvider:
                 return data
             except Exception as ex:
                 logger.error(f"[GCS Storage] Failed downloading gs://{self.bucket_name}/{clean_path}: {ex}")
-                
+
         raise FileNotFoundError(f"Resume artifact '{clean_path}' not found on storage.")
 
-    def generate_signed_url(self, storage_path: str, expiration_minutes: int = 15) -> Optional[str]:
+    def generate_signed_url(self, storage_path: str, expiration_minutes: int = 15) -> str | None:
         """
         Generates a v4 signed URL for secure, temporary browser access (15 min default).
         Returns None if GCS signing credentials are not available in current environment.
@@ -151,11 +150,11 @@ class GCSResumeStorageProvider:
         clean_path = storage_path.lstrip("/")
         local_full_path = self.storage_root / clean_path
         deleted = False
-        
+
         if local_full_path.exists():
             local_full_path.unlink(missing_ok=True)
             deleted = True
-            
+
         client = self._get_gcs_client()
         if client:
             try:
@@ -166,7 +165,7 @@ class GCSResumeStorageProvider:
                     deleted = True
             except Exception as ex:
                 logger.warning(f"[GCS Storage] Delete failed on gs://{self.bucket_name}/{clean_path}: {ex}")
-                
+
         return deleted
 
     def exists(self, storage_path: str) -> bool:
@@ -174,7 +173,7 @@ class GCSResumeStorageProvider:
         local_full_path = self.storage_root / clean_path
         if local_full_path.exists():
             return True
-            
+
         client = self._get_gcs_client()
         if client:
             try:

@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 class TenantAccessDeniedException(Exception):
     """Raised when an object storage path does not match the active organization_id context."""
@@ -40,7 +40,7 @@ class StorageProvider(ABC):
         path: str,
         content: bytes,
         content_type: str = "application/octet-stream",
-        metadata: Optional[Dict[str, str]] = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         """Uploads content to storage and returns object key."""
         pass
@@ -61,6 +61,6 @@ class StorageProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_metadata(self, organization_id: uuid.UUID, path: str) -> Dict[str, Any]:
+    async def get_metadata(self, organization_id: uuid.UUID, path: str) -> dict[str, Any]:
         """Fetches object metadata."""
         pass

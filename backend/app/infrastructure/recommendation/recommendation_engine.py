@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 from app.core.logging import logger
 from app.domains.recommendation.models import (
@@ -27,7 +27,7 @@ class RecommendationEngine:
         score_confidence: float,
         is_top_k: bool,
         failed_hard_reqs_count: int,
-    ) -> Tuple[RecommendationTypeEnum, float]:
+    ) -> tuple[RecommendationTypeEnum, float]:
         """
         Deterministically evaluates recommendation classification and recommendation confidence.
         """
@@ -60,9 +60,9 @@ class RecommendationEngine:
         score_confidence: float,
         is_top_k: bool,
         failed_hard_reqs_count: int,
-        matched_skills: List[str],
-        unmatched_skills: List[str],
-    ) -> List[Dict[str, Any]]:
+        matched_skills: list[str],
+        unmatched_skills: list[str],
+    ) -> list[dict[str, Any]]:
         """
         Generates deterministic backend reason codes.
         """
@@ -125,10 +125,10 @@ class RecommendationEngine:
         rank_position: int,
         is_top_k: bool,
         eligibility_status: EligibilityStatusEnum,
-        matched_skills: List[str],
-        unmatched_skills: List[str],
+        matched_skills: list[str],
+        unmatched_skills: list[str],
         extracted_text_excerpt: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Invokes Gemini AI Gateway provider to generate structured recruiter narrative summary, strengths, and gaps.
         Protected Feature Allowlist is strictly enforced.
@@ -182,7 +182,7 @@ class RecommendationEngine:
                 "status": "COMPLETED",
             }
         except Exception as e:
-            logger.warning(f"AI Gateway provider invocation failed: {str(e)}. Falling back to deterministic narrative.")
+            logger.warning(f"AI Gateway provider invocation failed: {e!s}. Falling back to deterministic narrative.")
             return {
                 "summary": f"Candidate evaluated with authoritative score of {overall_score}/100 and rank position #{rank_position}. (AI explanation narrative offline)",
                 "strengths": [f"Matched skill: {sk}" for sk in matched_skills[:3]],

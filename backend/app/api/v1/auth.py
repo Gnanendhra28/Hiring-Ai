@@ -1,8 +1,7 @@
 import re
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from datetime import datetime, UTC
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -15,7 +14,6 @@ from app.api.v1.schemas import (
     UserProfileResponse,
     UserResponse,
 )
-from app.core.config import settings
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.audit.models import AuditLog
@@ -34,9 +32,9 @@ router = APIRouter(prefix="/auth", tags=["Firebase Authentication"])
 
 class OnboardRoleRequest(BaseModel):
     role: str = "RECRUITER"  # "RECRUITER" or "CANDIDATE"
-    company_name: Optional[str] = None
-    job_title: Optional[str] = None
-    phone_number: Optional[str] = None
+    company_name: str | None = None
+    job_title: str | None = None
+    phone_number: str | None = None
 
 
 @router.get("/me", response_model=UserProfileResponse)
@@ -273,7 +271,7 @@ async def submit_recruiter_verification(ctx: SecurityContext = Depends(get_secur
             session.add(profile)
 
         profile.verification_status = "PENDING_VERIFICATION"
-        profile.submitted_at = datetime.now(timezone.utc).isoformat()
+        profile.submitted_at = datetime.now(UTC).isoformat()
 
         if ctx.active_organization_id:
             audit = AuditLog(

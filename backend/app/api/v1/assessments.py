@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import List
+from datetime import datetime, timedelta, UTC
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
@@ -75,7 +74,7 @@ async def create_assessment(
         stmt_created = select(Assessment).where(Assessment.id == assessment.id)
         return (await session.execute(stmt_created)).scalar_one()
 
-@router.get("/jobs/{job_id}/assessments", response_model=List[AssessmentResponse])
+@router.get("/jobs/{job_id}/assessments", response_model=list[AssessmentResponse])
 async def list_job_assessments(
     job_id: uuid.UUID,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -118,7 +117,7 @@ async def assign_assessment(
         if not app_rec:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate application not found.")
 
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         due_at = now_utc + timedelta(days=payload.due_days)
 
         assignment = AssessmentAssignment(
@@ -161,7 +160,7 @@ async def assign_assessment(
         stmt_created = select(AssessmentAssignment).where(AssessmentAssignment.id == assignment.id)
         return (await session.execute(stmt_created)).scalar_one()
 
-@router.get("/candidate/assessments", response_model=List[AssessmentAssignmentResponse])
+@router.get("/candidate/assessments", response_model=list[AssessmentAssignmentResponse])
 async def list_my_candidate_assessments(user: User = Depends(get_current_user)):
     """Candidate endpoint: Lists assessments assigned to the authenticated candidate."""
     async with async_session_factory() as session:
@@ -191,7 +190,7 @@ async def submit_candidate_assessment(
         if assignment.status == AssessmentAssignmentStatusEnum.COMPLETED:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Assessment is already completed.")
 
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         assignment.status = AssessmentAssignmentStatusEnum.COMPLETED
         assignment.completed_at = now_utc
 

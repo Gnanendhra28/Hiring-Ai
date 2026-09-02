@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 import pytest
 from httpx import AsyncClient, ASGITransport
 
@@ -11,17 +11,15 @@ from app.domains.identity.models import User
 from app.domains.jobs.models import Job, JobStatusEnum, EmploymentTypeEnum
 from app.domains.applications.models import Application, ApplicationStatusEnum, CandidatePlacement, OfferStatusEnum
 from app.domains.candidates.models import CandidateProfile
-from app.domains.recommendation.models import CandidateDecisionAudit, CandidateRecommendation, RecruiterDecisionEnum, ReviewStateEnum
-from app.domains.scoring.models import CandidateJobScore
 from app.core.security import create_access_token
-from app.events.integration_events import CandidateHiredEvent, OfferAcceptedEvent, OfferCreatedEvent, JobIntelligenceCompletedEvent
+from app.events.integration_events import CandidateHiredEvent
 from app.services.notification_service import OperationalNotificationService
 
 @pytest.mark.asyncio
 async def test_phase19_organization_dashboard_and_reporting():
     async with async_session_factory() as session:
         await session.begin()
-        
+
         # 1. Create Organization
         slug = f"org-p19-{uuid.uuid4().hex[:6]}"
         org = Organization(name=f"Enterprise Org {uuid.uuid4().hex[:6]}", slug=slug)
@@ -234,7 +232,7 @@ async def test_integration_events_and_notification_service():
         job_id=uuid.uuid4(),
         application_id=uuid.uuid4(),
         candidate_id=uuid.uuid4(),
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         time_to_fill_days=10.5,
     )
     payload = evt.model_dump()

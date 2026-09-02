@@ -7,7 +7,6 @@ and candidate PII are never leaked in client responses or logs.
 import pytest
 import json
 import logging
-from fastapi import Request
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.core.logging import JSONFormatter

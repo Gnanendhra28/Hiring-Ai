@@ -3,7 +3,7 @@ import hashlib
 import ipaddress
 import secrets
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 PRIVATE_IP_NETWORKS = [
     ipaddress.ip_network("127.0.0.0/8"),
@@ -60,7 +60,7 @@ def compute_hmac_signature(secret: str, timestamp: str, payload_body: str) -> st
     Canonical signing string format: timestamp + '.' + payload_body
     Returns signature string formatted as 'sha256=<hex_digest>'
     """
-    to_sign = f"{timestamp}.{payload_body}".encode("utf-8")
+    to_sign = f"{timestamp}.{payload_body}".encode()
     sig = hmac.new(secret.encode("utf-8"), to_sign, hashlib.sha256).hexdigest()
     return f"sha256={sig}"
 
@@ -74,7 +74,7 @@ def verify_hmac_signature(secret: str, timestamp: str, payload_body: str, signat
     # Check timestamp replay window
     try:
         ts_val = int(timestamp)
-        now_ts = int(datetime.now(timezone.utc).timestamp())
+        now_ts = int(datetime.now(UTC).timestamp())
         if abs(now_ts - ts_val) > tolerance_seconds:
             return False
     except ValueError:

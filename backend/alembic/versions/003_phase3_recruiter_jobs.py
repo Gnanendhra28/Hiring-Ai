@@ -5,15 +5,15 @@ Revises: 002_phase2_identity_org_rbac
 Create Date: 2026-08-14 15:20:00.000000
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "003_phase3_recruiter_jobs"
-down_revision: Union[str, None] = "002_phase2_identity_org_rbac"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "002_phase2_identity_org_rbac"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     # 1. Recruiter Profiles Table

@@ -1,7 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import datetime, UTC
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -29,7 +28,7 @@ router = APIRouter(prefix="/jobs", tags=["Candidate Feature Matching"])
 
 class ProcessMatchingRequest(BaseModel):
     candidate_id: uuid.UUID
-    application_id: Optional[uuid.UUID] = None
+    application_id: uuid.UUID | None = None
 
 @router.post("/{job_id}/matching/process", response_model=CandidateJobMatchResponse, status_code=status.HTTP_202_ACCEPTED)
 async def trigger_candidate_matching(
@@ -47,7 +46,7 @@ async def trigger_candidate_matching(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
 
     service = MatchingService()
-    
+
     # Process matching asynchronously via FastAPI BackgroundTasks
     background_tasks.add_task(
         service.process_candidate_matching,
@@ -83,7 +82,7 @@ async def trigger_candidate_matching(
 
         return match_rec
 
-@router.get("/{job_id}/matching/status", response_model=List[CandidateJobMatchResponse])
+@router.get("/{job_id}/matching/status", response_model=list[CandidateJobMatchResponse])
 async def get_job_matching_statuses(
     job_id: uuid.UUID,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -202,7 +201,7 @@ async def get_candidate_feature_matches(
 
         if not match_rec:
             # Return transient match representation
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             return FeatureMatchDetailResponse(
                 match=CandidateJobMatchResponse(
                     id=uuid.uuid4(),
@@ -235,7 +234,7 @@ async def get_candidate_feature_matches(
             semantic_matches=[SemanticMatchResponse.model_validate(s) for s in sem_matches],
         )
 
-@router.get("/{job_id}/matching/requirements/{candidate_id}", response_model=List[RequirementMatchResponse])
+@router.get("/{job_id}/matching/requirements/{candidate_id}", response_model=list[RequirementMatchResponse])
 async def get_candidate_requirement_matches(
     job_id: uuid.UUID,
     candidate_id: uuid.UUID,
@@ -289,7 +288,7 @@ async def get_candidate_requirement_matches(
         req_matches = list((await session.execute(stmt_reqs)).scalars().all())
         return [RequirementMatchResponse.model_validate(r) for r in req_matches]
 
-@router.get("/{job_id}/matching/semantic/{candidate_id}", response_model=List[SemanticMatchResponse])
+@router.get("/{job_id}/matching/semantic/{candidate_id}", response_model=list[SemanticMatchResponse])
 async def get_candidate_semantic_matches(
     job_id: uuid.UUID,
     candidate_id: uuid.UUID,
@@ -593,7 +592,7 @@ async def get_candidate_hybrid_match(
         prof = (await session.execute(stmt_p)).scalar_one_or_none()
 
         job_intel = GeneralJobExtractor.extract(job.description or "", job.title or "")
-        
+
         cand_skills = []
         cand_text = ""
         cand_exp_years = 0.0

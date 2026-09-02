@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, HttpUrl, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 ALLOWED_WEBHOOK_EVENTS = [
     "job.intelligence.completed",
@@ -12,15 +11,15 @@ ALLOWED_WEBHOOK_EVENTS = [
 
 class WebhookSubscriptionCreate(BaseModel):
     endpoint_url: str = Field(..., description="Target HTTPS destination URL for webhook POST requests")
-    subscribed_events: List[str] = Field(
+    subscribed_events: list[str] = Field(
         ...,
         description="List of event types to subscribe to (e.g. ['offer.accepted', 'candidate.hired'])",
     )
 
 class WebhookSubscriptionUpdate(BaseModel):
-    endpoint_url: Optional[str] = None
-    enabled: Optional[bool] = None
-    subscribed_events: Optional[List[str]] = None
+    endpoint_url: str | None = None
+    enabled: bool | None = None
+    subscribed_events: list[str] | None = None
 
 class WebhookSubscriptionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -29,7 +28,7 @@ class WebhookSubscriptionResponse(BaseModel):
     organization_id: uuid.UUID
     endpoint_url: str
     enabled: bool
-    subscribed_events: List[str]
+    subscribed_events: list[str]
     created_at: datetime
     updated_at: datetime
 
@@ -50,16 +49,16 @@ class WebhookEventResponse(BaseModel):
     event_type: str
     delivery_status: str
     attempt_count: int
-    first_attempt_at: Optional[datetime] = None
-    last_attempt_at: Optional[datetime] = None
-    delivered_at: Optional[datetime] = None
-    last_http_status: Optional[int] = None
-    last_error_code: Optional[str] = None
+    first_attempt_at: datetime | None = None
+    last_attempt_at: datetime | None = None
+    delivered_at: datetime | None = None
+    last_http_status: int | None = None
+    last_error_code: str | None = None
     created_at: datetime
 
 class WebhookTestResponse(BaseModel):
     subscription_id: uuid.UUID
     event_type: str = "webhook.test"
     delivery_status: str
-    http_status: Optional[int] = None
+    http_status: int | None = None
     delivered: bool

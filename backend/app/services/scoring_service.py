@@ -1,6 +1,5 @@
 import time
 import uuid
-from typing import Optional
 from sqlalchemy import delete, select
 
 from app.core.logging import logger
@@ -42,7 +41,7 @@ class ScoringService:
     async def get_or_create_active_configuration(
         self,
         organization_id: uuid.UUID,
-        user_id: Optional[uuid.UUID] = None,
+        user_id: uuid.UUID | None = None,
     ) -> ScoringConfiguration:
         async with async_session_factory() as session:
             await session.begin()
@@ -52,7 +51,7 @@ class ScoringService:
                 ScoringConfiguration.organization_id == organization_id,
                 ScoringConfiguration.is_active.is_(True),
             ).order_by(ScoringConfiguration.version_number.desc())
-            
+
             config = (await session.execute(stmt)).scalars().first()
 
             if not config:
@@ -79,8 +78,8 @@ class ScoringService:
         job_id: uuid.UUID,
         candidate_id: uuid.UUID,
         organization_id: uuid.UUID,
-        user_id: Optional[uuid.UUID] = None,
-        application_id: Optional[uuid.UUID] = None,
+        user_id: uuid.UUID | None = None,
+        application_id: uuid.UUID | None = None,
     ) -> bool:
         logger.info(f"Starting deterministic candidate scoring for job_id={job_id}, candidate_id={candidate_id} under org_id={organization_id}")
         start_time = time.time()
@@ -155,7 +154,7 @@ class ScoringService:
                 if not match_success:
                     logger.error(f"Candidate feature matching failed for job {job_id} and candidate {candidate_id}.")
                     return False
-                
+
                 match_rec = (await session.execute(stmt_match)).scalars().first()
                 if not match_rec:
                     logger.error(f"CandidateJobMatch record missing after matching execution for job {job_id} and candidate {candidate_id}.")

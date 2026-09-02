@@ -1,5 +1,4 @@
 import re
-from typing import Dict, List, Optional
 
 class JobSectionParser:
     """
@@ -68,7 +67,7 @@ class JobSectionParser:
     ]
 
     @classmethod
-    def parse_sections(cls, text: str) -> Dict[str, str]:
+    def parse_sections(cls, text: str) -> dict[str, str]:
         """
         Parses job description into a dictionary mapping section keys to section text.
         Always includes 'FULL_TEXT' representing the raw un-altered job description.
@@ -76,16 +75,16 @@ class JobSectionParser:
         if not text:
             return {"FULL_TEXT": ""}
 
-        sections: Dict[str, str] = {"FULL_TEXT": text}
+        sections: dict[str, str] = {"FULL_TEXT": text}
         lines = text.split("\n")
 
         current_section = "GENERAL_SUMMARY"
-        buffer: List[str] = []
+        buffer: list[str] = []
 
         for line in lines:
             stripped = line.strip()
             # Check if line matches a known section header
-            matched_header_key: Optional[str] = None
+            matched_header_key: str | None = None
 
             cleaned_header = re.sub(r"^[:\-\*#\s]+|[:\-\*#\s]+$", "", stripped).strip().lower()
 

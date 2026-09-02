@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from pydantic import BaseModel, ConfigDict
 from app.domains.candidates.candidate_intelligence import CandidateIntelligenceResponse
 from app.infrastructure.skills.normalizer import SkillNormalizer
@@ -9,8 +9,8 @@ class RequirementMatchItem(BaseModel):
     requirement_name: str
     requirement_level: str  # REQUIRED, PREFERRED, GOOD_TO_HAVE
     match_status: str       # EXACT, NORMALIZED, SEMANTIC, MISSING
-    candidate_value: Optional[str] = None
-    evidence: Optional[str] = None
+    candidate_value: str | None = None
+    evidence: str | None = None
 
 class MatchExplanationBreakdown(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -32,8 +32,8 @@ class RealCandidateMatchResult(BaseModel):
     required_skill_coverage: float
     eligibility_status: str  # PASS / FAIL
     explanation: MatchExplanationBreakdown
-    matched_requirements: List[RequirementMatchItem] = []
-    missing_requirements: List[RequirementMatchItem] = []
+    matched_requirements: list[RequirementMatchItem] = []
+    missing_requirements: list[RequirementMatchItem] = []
 
 class RealJobCandidateMatcher:
     """
@@ -57,7 +57,7 @@ class RealJobCandidateMatcher:
     def match(
         cls,
         job_id: str,
-        job_intelligence: Dict[str, Any],
+        job_intelligence: dict[str, Any],
         candidate_intelligence: CandidateIntelligenceResponse
     ) -> RealCandidateMatchResult:
         role_title = job_intelligence.get("role_title", "Job Requisition")
@@ -76,8 +76,8 @@ class RealJobCandidateMatcher:
         cand_experience = candidate_intelligence.experience
         cand_education = candidate_intelligence.education
 
-        matched_requirements: List[RequirementMatchItem] = []
-        missing_requirements: List[RequirementMatchItem] = []
+        matched_requirements: list[RequirementMatchItem] = []
+        missing_requirements: list[RequirementMatchItem] = []
 
         # Skill Domain Equivalence Clusters for High-Affinity Matching
         DOMAIN_CLUSTERS = {

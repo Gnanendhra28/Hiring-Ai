@@ -82,7 +82,7 @@ class DocumentProcessorService:
                         asyncio.to_thread(PDFExtractor.extract_text, file_bytes),
                         timeout=10.0
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning(f"Document {document_id} parsing timed out (>10s).")
                     doc.processing_status = DocumentProcessingStatusEnum.FAILED
                     doc.safe_error_message = "Document processing exceeded the 10-second processing timeout limit."
@@ -346,8 +346,8 @@ class DocumentProcessorService:
                 return True
 
             except Exception as e:
-                logger.error(f"Error processing candidate document {document_id}: {str(e)}")
+                logger.error(f"Error processing candidate document {document_id}: {e!s}")
                 doc.processing_status = DocumentProcessingStatusEnum.FAILED
-                doc.safe_error_message = f"Document processing failed: {str(e)}"
+                doc.safe_error_message = f"Document processing failed: {e!s}"
                 await session.commit()
                 return False

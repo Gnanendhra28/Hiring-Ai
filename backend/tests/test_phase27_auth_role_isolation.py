@@ -2,7 +2,7 @@ import pytest
 import uuid
 from httpx import AsyncClient, ASGITransport
 from app.main import app
-from app.db.session import engine, async_session_factory
+from app.db.session import async_session_factory
 from app.db.rls import set_tenant_context
 from app.core.security import create_access_token, create_refresh_token, hash_password
 from app.domains.identity.models import User

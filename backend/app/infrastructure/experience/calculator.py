@@ -1,6 +1,6 @@
 import re
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 class ExperienceCalculator:
     """
@@ -10,7 +10,7 @@ class ExperienceCalculator:
     """
 
     @staticmethod
-    def parse_date(date_str: Optional[str]) -> Tuple[Optional[date], bool]:
+    def parse_date(date_str: str | None) -> tuple[date | None, bool]:
         if not date_str or not date_str.strip():
             return None, False
 
@@ -40,7 +40,7 @@ class ExperienceCalculator:
         return None, False
 
     @classmethod
-    def calculate_employment_duration_months(cls, start_date: Optional[date], end_date: Optional[date]) -> int:
+    def calculate_employment_duration_months(cls, start_date: date | None, end_date: date | None) -> int:
         if not start_date:
             return 0
 
@@ -52,11 +52,11 @@ class ExperienceCalculator:
         return max(1, months)
 
     @classmethod
-    def calculate_total_experience(cls, experiences: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def calculate_total_experience(cls, experiences: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Merges overlapping date ranges and computes net total experience in months and years.
         """
-        ranges: List[Tuple[date, date]] = []
+        ranges: list[tuple[date, date]] = []
 
         for exp in experiences:
             start, _ = cls.parse_date(exp.get("raw_start_date") or str(exp.get("start_date") or ""))
@@ -75,7 +75,7 @@ class ExperienceCalculator:
         ranges.sort(key=lambda r: r[0])
 
         # Merge overlapping ranges
-        merged: List[Tuple[date, date]] = []
+        merged: list[tuple[date, date]] = []
         for curr_start, curr_end in ranges:
             if not merged:
                 merged.append((curr_start, curr_end))

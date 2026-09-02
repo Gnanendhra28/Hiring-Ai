@@ -1,4 +1,3 @@
-import pytest
 import uuid
 from app.infrastructure.storage.gcs_storage import GCSResumeStorageProvider
 

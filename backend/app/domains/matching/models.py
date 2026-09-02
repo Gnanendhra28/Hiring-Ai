@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from sqlalchemy import (
     Boolean,
     Column,
@@ -56,7 +56,7 @@ class CandidateJobMatch(Base):
 
     matching_version = Column(Integer, nullable=False, default=1)
     status = Column(Enum(MatchProcessingStatusEnum, name="match_processing_status_enum", create_type=False), nullable=False, default=MatchProcessingStatusEnum.PENDING, index=True)
-    
+
     total_requirements_count = Column(Integer, nullable=False, default=0)
     matched_requirements_count = Column(Integer, nullable=False, default=0)
     hard_requirements_failed_count = Column(Integer, nullable=False, default=0)
@@ -67,8 +67,8 @@ class CandidateJobMatch(Base):
     overall_confidence = Column(Float, nullable=False, default=0.0)
     safe_error_message = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     __table_args__ = (
         Index(
@@ -103,13 +103,13 @@ class CandidateRequirementMatch(Base):
     match_status = Column(Enum(MatchStatusEnum, name="match_status_enum", create_type=False), nullable=False, default=MatchStatusEnum.UNKNOWN, index=True)
     candidate_value = Column(Text, nullable=True)
     normalized_candidate_value = Column(String(255), nullable=True)
-    
+
     confidence = Column(Float, nullable=False, default=0.0)
     reason = Column(Text, nullable=True)
     evidence_text = Column(Text, nullable=True)
     evidence_verification_status = Column(String(50), nullable=False, default="UNVERIFIED")
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
 class CandidateSemanticMatch(Base):
     """
@@ -126,11 +126,11 @@ class CandidateSemanticMatch(Base):
     query_context = Column(String(50), nullable=False)  # e.g., REQUIRED_SKILLS, RESPONSIBILITIES, JOB_INTENT
     candidate_context = Column(String(50), nullable=False)  # e.g., SKILL_CONTEXT, EXPERIENCE_CONTEXT, SUMMARY
     similarity_score = Column(Float, nullable=False)
-    
+
     embedding_model = Column(String(100), nullable=False)
     dimension = Column(Integer, nullable=False, default=1536)
-    
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
 class MatchEvidence(Base):
     """
@@ -148,7 +148,7 @@ class MatchEvidence(Base):
     verification_status = Column(String(50), nullable=False, default="UNVERIFIED")
     confidence = Column(Float, nullable=False, default=0.0)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
 class MatchProcessingAudit(Base):
     """
@@ -168,4 +168,4 @@ class MatchProcessingAudit(Base):
     estimated_cost = Column(Float, nullable=False, default=0.0)
     latency_ms = Column(Float, nullable=False, default=0.0)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)

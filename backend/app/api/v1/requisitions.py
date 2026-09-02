@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.api.v1.deps import require_role, SecurityContext
@@ -33,12 +32,12 @@ async def get_tenant_aggregated_report(
 
 @router.get("/dashboard", response_model=OrganizationDashboardResponse)
 async def get_organization_dashboard(
-    start_date: Optional[datetime] = Query(None, description="Optional start timestamp filter"),
-    end_date: Optional[datetime] = Query(None, description="Optional end timestamp filter"),
-    status_filter: Optional[str] = Query(None, alias="status", description="Optional requisition status filter"),
-    department: Optional[str] = Query(None, description="Optional department filter"),
-    employment_type: Optional[str] = Query(None, description="Optional employment type filter"),
-    location: Optional[str] = Query(None, description="Optional location filter"),
+    start_date: datetime | None = Query(None, description="Optional start timestamp filter"),
+    end_date: datetime | None = Query(None, description="Optional end timestamp filter"),
+    status_filter: str | None = Query(None, alias="status", description="Optional requisition status filter"),
+    department: str | None = Query(None, description="Optional department filter"),
+    employment_type: str | None = Query(None, description="Optional employment type filter"),
+    location: str | None = Query(None, description="Optional location filter"),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -61,8 +60,8 @@ async def get_organization_dashboard(
 
 @router.get("/audit-analytics", response_model=AuditAnalyticsResponse)
 async def get_audit_analytics(
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -80,8 +79,8 @@ async def get_audit_analytics(
 
 @router.get("/ai-governance-analytics", response_model=AIGovernanceAnalyticsResponse)
 async def get_ai_governance_analytics(
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """
@@ -112,12 +111,12 @@ async def get_ai_telemetry(
 
 @router.get("/report/export")
 async def export_organization_report_csv(
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
-    status_filter: Optional[str] = Query(None, alias="status"),
-    department: Optional[str] = Query(None),
-    employment_type: Optional[str] = Query(None),
-    location: Optional[str] = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+    department: str | None = Query(None),
+    employment_type: str | None = Query(None),
+    location: str | None = Query(None),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """

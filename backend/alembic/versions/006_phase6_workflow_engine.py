@@ -5,15 +5,15 @@ Revises: 005_phase5_job_verification
 Create Date: 2026-08-14 15:35:00.000000
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "006_phase6_workflow_engine"
-down_revision: Union[str, None] = "005_phase5_job_verification"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "005_phase5_job_verification"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     # 1. Assessments Table

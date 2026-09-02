@@ -1,13 +1,12 @@
 import uuid
-from typing import Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import logger
 
 async def set_tenant_context(
     session: AsyncSession,
-    organization_id: Optional[uuid.UUID] = None,
-    user_id: Optional[uuid.UUID] = None,
+    organization_id: uuid.UUID | None = None,
+    user_id: uuid.UUID | None = None,
     is_platform_admin: bool = False,
 ) -> None:
     """

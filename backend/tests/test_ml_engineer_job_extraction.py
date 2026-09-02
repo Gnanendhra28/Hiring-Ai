@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from app.infrastructure.parsing.semantic_extractor import SemanticJobExtractor
 from app.infrastructure.validation.job_intelligence_validator import JobIntelligenceValidator
 from app.domains.jobs.models import Job

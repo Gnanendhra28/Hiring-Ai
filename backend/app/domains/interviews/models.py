@@ -1,7 +1,6 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Optional
 from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -58,5 +57,5 @@ class Interview(Base, UUIDMixin, TimestampMixin, TenantMixin):
     meeting_provider: Mapped[MeetingProviderEnum] = mapped_column(
         SQLEnum(MeetingProviderEnum), default=MeetingProviderEnum.TEST, nullable=False
     )
-    meeting_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    meeting_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)

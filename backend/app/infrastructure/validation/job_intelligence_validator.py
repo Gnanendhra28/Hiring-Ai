@@ -1,5 +1,4 @@
-import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from app.infrastructure.parsing.section_parser import JobSectionParser
 from app.infrastructure.skills.normalizer import SkillNormalizer
 
@@ -14,9 +13,9 @@ class JobIntelligenceValidator:
     def validate_and_filter_requirements(
         cls,
         raw_text: str,
-        requirements: List[Dict[str, Any]],
-        sections: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        requirements: list[dict[str, Any]],
+        sections: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Validates extracted requirements against raw job text.
         Filters out hallucinated requirements lacking source evidence.
@@ -27,8 +26,8 @@ class JobIntelligenceValidator:
 
         raw_text_lower = raw_text.lower()
 
-        validated_requirements: List[Dict[str, Any]] = []
-        filtered_out: List[Dict[str, Any]] = []
+        validated_requirements: list[dict[str, Any]] = []
+        filtered_out: list[dict[str, Any]] = []
 
         for req in requirements:
             raw_val = req.get("raw_value", "").strip()
@@ -81,10 +80,10 @@ class JobIntelligenceValidator:
     @classmethod
     def detect_conflicts(
         cls,
-        existing_skills: List[str],
-        extracted_requirements: List[Dict[str, Any]],
+        existing_skills: list[str],
+        extracted_requirements: list[dict[str, Any]],
         raw_text: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detects conflicts between pre-existing job skills and AI-extracted requirements.
         Identifies legacy skills that are unsupported by the actual job description text.
@@ -97,7 +96,7 @@ class JobIntelligenceValidator:
             if r.get("canonical_value")
         }
 
-        conflicts: List[Dict[str, Any]] = []
+        conflicts: list[dict[str, Any]] = []
 
         for skill in existing_skills:
             norm_skill = SkillNormalizer.normalize(skill)

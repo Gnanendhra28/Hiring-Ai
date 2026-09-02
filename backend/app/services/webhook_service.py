@@ -2,9 +2,8 @@ import hashlib
 import json
 import uuid
 import httpx
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional, Tuple
-from sqlalchemy import select, func
+from datetime import datetime, timedelta, UTC
+from sqlalchemy import select
 
 from app.core.logging import logger
 from app.core.webhook_security import (
@@ -29,7 +28,7 @@ class WebhookService:
         self,
         organization_id: uuid.UUID,
         endpoint_url: str,
-        subscribed_events: List[str],
+        subscribed_events: list[str],
         user_id: uuid.UUID,
     ) -> WebhookSubscription:
         # 1. SSRF & URL Validation
@@ -59,7 +58,7 @@ class WebhookService:
             await session.refresh(sub)
             return sub
 
-    async def get_subscriptions(self, organization_id: uuid.UUID) -> List[WebhookSubscription]:
+    async def get_subscriptions(self, organization_id: uuid.UUID) -> list[WebhookSubscription]:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)
@@ -71,7 +70,7 @@ class WebhookService:
 
     async def get_subscription(
         self, subscription_id: uuid.UUID, organization_id: uuid.UUID
-    ) -> Optional[WebhookSubscription]:
+    ) -> WebhookSubscription | None:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)
@@ -86,10 +85,10 @@ class WebhookService:
         self,
         subscription_id: uuid.UUID,
         organization_id: uuid.UUID,
-        endpoint_url: Optional[str] = None,
-        enabled: Optional[bool] = None,
-        subscribed_events: Optional[List[str]] = None,
-    ) -> Optional[WebhookSubscription]:
+        endpoint_url: str | None = None,
+        enabled: bool | None = None,
+        subscribed_events: list[str] | None = None,
+    ) -> WebhookSubscription | None:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)
@@ -137,7 +136,7 @@ class WebhookService:
 
     async def rotate_secret(
         self, subscription_id: uuid.UUID, organization_id: uuid.UUID
-    ) -> Optional[str]:
+    ) -> str | None:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)
@@ -155,7 +154,7 @@ class WebhookService:
             await session.commit()
             return new_secret
 
-    async def publish_integration_event(self, event: IntegrationBaseEvent) -> List[uuid.UUID]:
+    async def publish_integration_event(self, event: IntegrationBaseEvent) -> list[uuid.UUID]:
         """
         Idempotently publishes an integration event to all enabled webhook subscriptions for the tenant.
         """
@@ -234,7 +233,7 @@ class WebhookService:
                 await session.commit()
                 return False
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             we.attempt_count += 1
             if not we.first_attempt_at:
                 we.first_attempt_at = now
@@ -295,7 +294,7 @@ class WebhookService:
 
     async def send_test_webhook(
         self, subscription_id: uuid.UUID, organization_id: uuid.UUID
-    ) -> Tuple[bool, Optional[int]]:
+    ) -> tuple[bool, int | None]:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)
@@ -308,7 +307,7 @@ class WebhookService:
             if not sub:
                 return False, None
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             test_event_id = uuid.uuid4()
             payload = {
                 "event_id": str(test_event_id),
@@ -336,13 +335,16 @@ class WebhookService:
                 async with httpx.AsyncClient(timeout=5.0) as client:
                     res = await client.post(sub.endpoint_url, content=payload_json, headers=headers)
                     return (200 <= res.status_code < 300), res.status_code
+            except (httpx.HTTPError, TimeoutError, ConnectionError) as ex:
+                logger.error(f"[WEBHOOK TEST ERROR] Sub: {subscription_id} | Network Error: {ex!s}")
+                return False, None
             except Exception as ex:
-                logger.error(f"[WEBHOOK TEST ERROR] Sub: {subscription_id} | Error: {ex}")
+                logger.error(f"[WEBHOOK TEST ERROR] Sub: {subscription_id} | Unexpected Error: {ex!s}")
                 return False, None
 
     async def get_delivery_history(
-        self, organization_id: uuid.UUID, subscription_id: Optional[uuid.UUID] = None
-    ) -> List[WebhookEvent]:
+        self, organization_id: uuid.UUID, subscription_id: uuid.UUID | None = None
+    ) -> list[WebhookEvent]:
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, organization_id=organization_id)

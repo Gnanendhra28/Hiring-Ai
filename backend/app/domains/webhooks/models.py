@@ -1,7 +1,6 @@
 import enum
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Enum as SQLEnum, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,12 +25,12 @@ class WebhookSubscription(Base, UUIDMixin, TimestampMixin, TenantMixin):
     secret: Mapped[str] = mapped_column(String(255), nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     subscribed_events: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
-    created_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 
     # Relationships
-    events: Mapped[List["WebhookEvent"]] = relationship(
+    events: Mapped[list["WebhookEvent"]] = relationship(
         "WebhookEvent", back_populates="subscription", cascade="all, delete-orphan"
     )
 
@@ -58,13 +57,13 @@ class WebhookEvent(Base, UUIDMixin, TimestampMixin, TenantMixin):
         index=True,
     )
     attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    first_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    next_retry_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
-    delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    first_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    last_http_status: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    last_error_code: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    last_http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_error_code: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relationship
     subscription: Mapped["WebhookSubscription"] = relationship("WebhookSubscription", back_populates="events")

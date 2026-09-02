@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime, UTC
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, func, select
 
@@ -58,7 +57,7 @@ async def list_pending_jobs(
 
 @router.get("/jobs", response_model=JobListResponse)
 async def list_all_platform_jobs(
-    verification_status: Optional[JobVerificationStatusEnum] = Query(None, alias="verification_status"),
+    verification_status: JobVerificationStatusEnum | None = Query(None, alias="verification_status"),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=5000),
     admin: User = Depends(require_platform_admin),
@@ -187,7 +186,7 @@ async def verify_job_posting(
             audit_action = "job.rejected"
 
         job.verified_by_user_id = admin.id
-        job.verified_at = datetime.now(timezone.utc)
+        job.verified_at = datetime.now(UTC)
 
         audit = AuditLog(
             organization_id=job.organization_id,
@@ -339,7 +338,6 @@ async def add_platform_admin(
         await session.commit()
         return {"status": "success", "message": f"Successfully created Platform Admin account for '{email_clean}'."}
 
-from app.domains.applications.models import Application
 
 @router.get("/analytics")
 async def get_admin_analytics(admin: User = Depends(require_platform_admin)):
@@ -406,5 +404,5 @@ async def get_admin_analytics(admin: User = Depends(require_platform_admin)):
             "total_applications_count": total_applications_count,
             "shortlisted_applications_count": shortlisted_applications_count,
             "system_health": "99.98% Operational",
-            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "last_updated": datetime.now(UTC).isoformat(),
         }

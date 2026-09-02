@@ -1,5 +1,5 @@
 import time
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from fastapi import Request
 from app.core.config import settings
 from app.core.metrics import metrics
@@ -8,11 +8,11 @@ class InMemoryRateLimiterAdapter:
     """In-memory sliding window rate limiter adapter for single-instance or local execution."""
 
     def __init__(self):
-        self._storage: Dict[str, List[float]] = {}
+        self._storage: dict[str, list[float]] = {}
 
     def is_rate_limited(
-        self, key: Tuple[str, str], max_requests: int = 60, window_seconds: int = 60
-    ) -> Tuple[bool, int]:
+        self, key: tuple[str, str], max_requests: int = 60, window_seconds: int = 60
+    ) -> tuple[bool, int]:
         """
         Backward compatible 2-tuple return: (is_limited, retry_after_seconds)
         """
@@ -22,8 +22,8 @@ class InMemoryRateLimiterAdapter:
         return limited, retry_after
 
     def is_rate_limited_extended(
-        self, key: Tuple[str, str], max_requests: int = 60, window_seconds: int = 60
-    ) -> Tuple[bool, int, int, int]:
+        self, key: tuple[str, str], max_requests: int = 60, window_seconds: int = 60
+    ) -> tuple[bool, int, int, int]:
         """
         Extended 4-tuple return: (is_limited, remaining_quota, reset_timestamp, retry_after_seconds)
         """
@@ -52,12 +52,12 @@ class InMemoryRateLimiterAdapter:
 class RedisRateLimiterAdapterStub:
     """Redis rate limiter adapter stub with graceful fallback to in-memory adapter."""
 
-    def __init__(self, fallback_limiter: Optional[InMemoryRateLimiterAdapter] = None):
+    def __init__(self, fallback_limiter: InMemoryRateLimiterAdapter | None = None):
         self.fallback = fallback_limiter or InMemoryRateLimiterAdapter()
 
     def is_rate_limited(
-        self, key: Tuple[str, str], max_requests: int = 60, window_seconds: int = 60
-    ) -> Tuple[bool, int]:
+        self, key: tuple[str, str], max_requests: int = 60, window_seconds: int = 60
+    ) -> tuple[bool, int]:
         return self.fallback.is_rate_limited(key, max_requests=max_requests, window_seconds=window_seconds)
 
 
@@ -92,7 +92,7 @@ class InMemoryRateLimiter:
         }
 
     @property
-    def _requests(self) -> Dict[str, List[float]]:
+    def _requests(self) -> dict[str, list[float]]:
         return self.adapter._storage
 
     def _get_client_ip(self, request: Request) -> str:
@@ -116,7 +116,7 @@ class InMemoryRateLimiter:
         # 3. Fall back to client IP for unauthenticated routes
         return f"ip:{self._get_client_ip(request)}"
 
-    def get_route_tier_and_limit(self, path: str, method: str) -> Tuple[str, int, int]:
+    def get_route_tier_and_limit(self, path: str, method: str) -> tuple[str, int, int]:
         """
         Determines endpoint tier and quota (tier_name, max_requests, window_seconds).
         """
@@ -186,7 +186,7 @@ class InMemoryRateLimiter:
 
             return limited, max_reqs, remaining, reset_ts, retry_after
 
-        except Exception as ex:
+        except Exception:
             # Storage failure policy: Fail-Open for Read APIs, Fail-Closed for Expensive/State-Changing
             if tier in ("read", "default"):
                 return False, max_reqs, max_reqs, int(time.time() + window_seconds), 0

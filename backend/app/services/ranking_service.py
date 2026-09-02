@@ -1,7 +1,6 @@
 import time
 import uuid
-from typing import Optional
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func
 
 from app.core.config import settings
 from app.core.logging import logger
@@ -46,8 +45,8 @@ class RankingService:
         job_id: uuid.UUID,
         organization_id: uuid.UUID,
         top_k: int = 10,
-        user_id: Optional[uuid.UUID] = None,
-    ) -> Optional[CandidateRankingVersion]:
+        user_id: uuid.UUID | None = None,
+    ) -> CandidateRankingVersion | None:
         logger.info(f"Starting deterministic ranking generation for job_id={job_id}, top_k={top_k} under org_id={organization_id}")
         start_time = time.time()
 

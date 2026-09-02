@@ -1,5 +1,4 @@
 import asyncio
-from typing import List, Optional
 import httpx
 
 from app.core.config import settings
@@ -12,7 +11,7 @@ class GeminiEmbeddingAdapter(EmbeddingProvider):
     compatible with the pgvector database schema.
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or settings.AI_API_KEY
         self.model = model or getattr(settings, "EMBEDDING_MODEL", "gemini-embedding-001")
 
@@ -34,7 +33,7 @@ class GeminiEmbeddingAdapter(EmbeddingProvider):
                 f"does not match standard database schema dimension (1536)."
             )
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         logger.info(f"[Gemini Embedding] Generating vector embedding for text segment ({len(text)} chars) using model={self.model}")
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:embedContent"
@@ -105,6 +104,6 @@ class GeminiEmbeddingAdapter(EmbeddingProvider):
                     continue
                 else:
                     logger.error(f"[Gemini Embedding] Max retries exhausted for network error: {net_err}")
-                    raise RuntimeError(f"Gemini Embedding network error after {max_attempts} attempts: {str(net_err)}")
+                    raise RuntimeError(f"Gemini Embedding network error after {max_attempts} attempts: {net_err!s}")
 
         raise RuntimeError("Gemini Embedding API call failed: Max attempts reached.")

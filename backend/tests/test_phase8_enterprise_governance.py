@@ -6,15 +6,12 @@ audit log preservation, server-side usage quota enforcement, and tenant cache is
 
 import pytest
 import uuid
-from datetime import datetime, timezone
 from sqlalchemy import select, func
 
 from app.db.session import async_session_factory
 from app.db.rls import set_tenant_context
 from app.domains.organizations.models import Organization, OrganizationMembership, RoleEnum, MembershipStatusEnum
 from app.domains.identity.models import User
-from app.domains.jobs.models import Job, JobStatusEnum, JobVerificationStatusEnum
-from app.domains.applications.models import Application, ApplicationStatusEnum
 from app.domains.audit.models import AuditLog
 
 

@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from sqlalchemy import (
     Boolean,
     Column,
@@ -87,8 +87,8 @@ class JobIntelligenceVersion(Base):
     safe_error_message = Column(Text, nullable=True)
 
     created_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class JobRequirement(Base):
     __tablename__ = "job_requirements"
@@ -134,7 +134,7 @@ class JobRequirement(Base):
 
     is_protected_feature = Column(Boolean, nullable=False, default=False, index=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class JobResponsibility(Base):
     __tablename__ = "job_responsibilities"
@@ -148,7 +148,7 @@ class JobResponsibility(Base):
     associated_skills = Column(JSON, nullable=True)
     confidence = Column(Float, nullable=False, default=1.0)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class JobIntent(Base):
     __tablename__ = "job_intents"
@@ -162,7 +162,7 @@ class JobIntent(Base):
     canonical_intent = Column(String(255), nullable=False)
     confidence = Column(Float, nullable=False, default=1.0)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class JobEmbedding(Base):
     __tablename__ = "job_embeddings"
@@ -179,4 +179,4 @@ class JobEmbedding(Base):
     dimension = Column(Integer, nullable=False, default=1536)
     metadata_json = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))

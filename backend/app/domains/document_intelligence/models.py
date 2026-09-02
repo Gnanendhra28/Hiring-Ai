@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from sqlalchemy import (
     Boolean,
     Column,
@@ -75,8 +75,8 @@ class CandidateDocument(Base):
     safe_error_message = Column(Text, nullable=True)
     retry_count = Column(Integer, nullable=False, default=0)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateSkill(Base):
     __tablename__ = "candidate_skills"
@@ -103,8 +103,8 @@ class CandidateSkill(Base):
     )
     page_number = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateExperience(Base):
     __tablename__ = "candidate_experiences"
@@ -131,8 +131,8 @@ class CandidateExperience(Base):
     )
     page_number = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateEducation(Base):
     __tablename__ = "candidate_educations"
@@ -156,8 +156,8 @@ class CandidateEducation(Base):
     )
     page_number = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateExtractedFact(Base):
     __tablename__ = "candidate_extracted_facts"
@@ -180,8 +180,8 @@ class CandidateExtractedFact(Base):
     extraction_method = Column(String(50), nullable=False, default="LLM")
     confidence = Column(Float, nullable=False, default=1.0)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 class CandidateEmbedding(Base):
     __tablename__ = "candidate_embeddings"
@@ -198,7 +198,7 @@ class CandidateEmbedding(Base):
     dimension = Column(Integer, nullable=False, default=1536)
     metadata_json = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 class AIProcessingAudit(Base):
     __tablename__ = "ai_processing_audits"
@@ -217,4 +217,4 @@ class AIProcessingAudit(Base):
     confidence = Column(Float, nullable=False, default=1.0)
     escalation_triggered = Column(Boolean, nullable=False, default=False)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))

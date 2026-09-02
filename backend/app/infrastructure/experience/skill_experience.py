@@ -1,4 +1,4 @@
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Any
 from app.domains.document_intelligence.models import SkillDurationStatusEnum
 from app.infrastructure.experience.calculator import ExperienceCalculator
 
@@ -15,9 +15,9 @@ class SkillExperienceCalculator:
         cls,
         raw_skill_name: str,
         canonical_skill_name: str,
-        evidence_text: Optional[str],
-        experiences: List[Dict[str, Any]],
-    ) -> Tuple[Optional[float], SkillDurationStatusEnum]:
+        evidence_text: str | None,
+        experiences: list[dict[str, Any]],
+    ) -> tuple[float | None, SkillDurationStatusEnum]:
         if not experiences or not evidence_text:
             return None, SkillDurationStatusEnum.UNKNOWN
 

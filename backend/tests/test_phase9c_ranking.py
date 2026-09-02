@@ -62,7 +62,7 @@ async def _setup_ranking_context(client: AsyncClient):
         async with async_session_factory() as session:
             await session.begin()
             await set_tenant_context(session, uuid.UUID(org_id))
-            
+
             cand_user = User(
                 email=f"cand_p9c_{name_suffix}_{uuid.uuid4().hex[:6]}@example.com",
                 password_hash="hashed_pw_test",
@@ -168,7 +168,7 @@ async def test_deterministic_ranking_ordering():
         {"candidate_id": uuid.UUID("00000000-0000-0000-0000-000000000001"), "score": 95.0, "eligibility_status": EligibilityStatusEnum.PASS, "score_confidence": 0.95},
         {"candidate_id": uuid.UUID("00000000-0000-0000-0000-000000000002"), "score": 90.0, "eligibility_status": EligibilityStatusEnum.PASS, "score_confidence": 0.92},
     ]
-    
+
     ranked = RankingEngine.rank_candidates(cands, top_k=2)
     assert ranked[0]["candidate_id"] == uuid.UUID("00000000-0000-0000-0000-000000000001")
     assert ranked[0]["rank_position"] == 1
@@ -207,7 +207,7 @@ async def test_hard_requirement_failure_ineligible_ranking():
     ]
 
     ranked = RankingEngine.rank_candidates(cands, top_k=5)
-    
+
     # Eligible candidate (score 85) MUST outrank ineligible candidate (score 99)
     assert ranked[0]["candidate_id"] == uuid.UUID("00000000-0000-0000-0000-000000000002")
     assert ranked[0]["rank_position"] == 1
@@ -229,7 +229,7 @@ async def test_deterministic_tie_breaking():
     ]
 
     ranked = RankingEngine.rank_candidates(cands, top_k=10)
-    
+
     # Candidate ID ASC tie-breaker guarantees candidate id_a ranks before id_b
     assert ranked[0]["candidate_id"] == id_a
     assert ranked[1]["candidate_id"] == id_b
@@ -307,7 +307,7 @@ async def test_stale_job_intelligence_guard():
 
         r_service = RankingService()
         ranking_v = await r_service.generate_ranking_snapshot(job_id=data["job_id"], organization_id=data["org_id"])
-        
+
         # Guard MUST prevent ranking generation against STALE job intelligence
         assert ranking_v is None
 
@@ -325,7 +325,7 @@ async def test_negative_governance_no_llm_or_application_mutation():
             await set_tenant_context(session, data["org_id"])
             stmt = select(Application).where(Application.id == data["candA"]["app_id"])
             app_obj = (await session.execute(stmt)).scalar_one()
-            
+
             # Application status MUST remain SUBMITTED; ranking MUST NOT mutate status
             assert app_obj.status == ApplicationStatusEnum.SUBMITTED
 

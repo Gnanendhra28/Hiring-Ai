@@ -1,6 +1,6 @@
 import re
 from threading import Lock
-from typing import Dict, Any, List
+from typing import Any
 
 class MetricsRegistry:
     """
@@ -11,25 +11,25 @@ class MetricsRegistry:
 
     def __init__(self):
         self._lock = Lock()
-        
-        # Counters
-        self._counters: Dict[str, float] = {}
-        
-        # Histograms / Durations (stored as sum and count)
-        self._durations: Dict[str, Dict[str, float]] = {}
 
-    def _format_key(self, metric_name: str, labels: Dict[str, str]) -> str:
+        # Counters
+        self._counters: dict[str, float] = {}
+
+        # Histograms / Durations (stored as sum and count)
+        self._durations: dict[str, dict[str, float]] = {}
+
+    def _format_key(self, metric_name: str, labels: dict[str, str]) -> str:
         if not labels:
             return metric_name
         label_str = ",".join(f'{k}="{v}"' for k, v in sorted(labels.items()))
         return f"{metric_name}{{{label_str}}}"
 
-    def increment(self, metric_name: str, value: float = 1.0, labels: Dict[str, str] = None):
+    def increment(self, metric_name: str, value: float = 1.0, labels: dict[str, str] = None):
         key = self._format_key(metric_name, labels or {})
         with self._lock:
             self._counters[key] = self._counters.get(key, 0.0) + value
 
-    def observe_duration(self, metric_name: str, duration_sec: float, labels: Dict[str, str] = None):
+    def observe_duration(self, metric_name: str, duration_sec: float, labels: dict[str, str] = None):
         key = self._format_key(metric_name, labels or {})
         with self._lock:
             if key not in self._durations:
@@ -45,7 +45,7 @@ class MetricsRegistry:
 
     def export_prometheus(self) -> str:
         """Returns Prometheus text format metrics string."""
-        lines: List[str] = []
+        lines: list[str] = []
         with self._lock:
             for key, val in sorted(self._counters.items()):
                 lines.append(f"{key} {val}")
@@ -54,7 +54,7 @@ class MetricsRegistry:
                 lines.append(f"{key}_sum {round(data['sum'], 4)}")
         return "\n".join(lines) + "\n"
 
-    def export_json(self) -> Dict[str, Any]:
+    def export_json(self) -> dict[str, Any]:
         """Returns JSON snapshot of all system metrics."""
         with self._lock:
             return {

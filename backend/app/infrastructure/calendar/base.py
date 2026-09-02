@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 from app.core.logging import logger
 
 class CalendarProvider(ABC):
@@ -14,7 +14,7 @@ class CalendarProvider(ABC):
         end_time: datetime,
         attendees: list[str],
         timezone: str = "UTC",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         pass
 
     @abstractmethod
@@ -31,7 +31,7 @@ class TestCalendarAdapter(CalendarProvider):
         end_time: datetime,
         attendees: list[str],
         timezone: str = "UTC",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         logger.info(f"Created test calendar event: '{summary}' from {start_time.isoformat()} to {end_time.isoformat()} [{timezone}]")
         return {
             "event_id": f"cal-evt-{start_time.strftime('%Y%m%d%H%M%S')}",

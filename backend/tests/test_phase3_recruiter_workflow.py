@@ -6,8 +6,6 @@ audit logging, and recruiter dashboard metrics.
 
 import pytest
 import uuid
-from httpx import AsyncClient, ASGITransport
-from app.main import app
 from app.db.session import async_session_factory
 from app.db.rls import set_tenant_context
 from app.domains.organizations.models import Organization, OrganizationMembership, RoleEnum, MembershipStatusEnum

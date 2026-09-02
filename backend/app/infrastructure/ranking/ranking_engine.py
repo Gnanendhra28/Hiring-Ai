@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Any
 from datetime import datetime
 
 from app.domains.scoring.models import EligibilityStatusEnum
@@ -15,9 +15,9 @@ class RankingEngine:
     @classmethod
     def rank_candidates(
         cls,
-        candidate_scores: List[Dict[str, Any]],
+        candidate_scores: list[dict[str, Any]],
         top_k: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Ranks candidate score objects deterministically.
 
@@ -34,7 +34,7 @@ class RankingEngine:
         if not candidate_scores:
             return []
 
-        def tie_breaker_key(item: Dict[str, Any]):
+        def tie_breaker_key(item: dict[str, Any]):
             eligibility = item.get("eligibility_status")
             if isinstance(eligibility, str):
                 is_eligible = 1 if eligibility == "PASS" else 0
@@ -45,7 +45,7 @@ class RankingEngine:
             confidence = float(item.get("score_confidence", 0.0))
             failed_hard = int(item.get("failed_hard_reqs_count", 0))
             matched_reqs = int(item.get("matched_reqs_count", 0))
-            
+
             created_at = item.get("created_at")
             created_at_timestamp = created_at.timestamp() if isinstance(created_at, datetime) else 0.0
 
@@ -70,7 +70,7 @@ class RankingEngine:
         for idx, item in enumerate(sorted_candidates, start=1):
             rank_position = idx
             eligibility = item.get("eligibility_status")
-            
+
             if isinstance(eligibility, str):
                 is_pass = eligibility == "PASS"
             else:

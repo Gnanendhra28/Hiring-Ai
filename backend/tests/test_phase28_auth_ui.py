@@ -1,13 +1,10 @@
 import pytest
 import uuid
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import select
 from app.main import app
 from app.db.session import async_session_factory
 from app.domains.identity.models import User
-from app.domains.organizations.models import MembershipStatusEnum, Organization, OrganizationMembership, RoleEnum
 from app.core.security import create_access_token
-from app.db.rls import set_tenant_context
 
 
 @pytest.mark.asyncio

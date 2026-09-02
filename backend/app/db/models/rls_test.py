@@ -1,4 +1,3 @@
-from typing import Optional
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from pgvector.sqlalchemy import Vector
@@ -12,4 +11,4 @@ class RLSTestRecord(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __table_args__ = {"extend_existing": True}
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)

@@ -1,7 +1,7 @@
 import enum
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import datetime, UTC
+from typing import Any
 from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -45,16 +45,16 @@ class Application(Base, UUIDMixin, TimestampMixin, TenantMixin):
     )
     source: Mapped[str] = mapped_column(String(50), default="DIRECT", nullable=False)
     submitted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
-    resume_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    resume_file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    answers_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
-    decided_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    resume_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    resume_file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    answers_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    decided_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    decision_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 class OfferStatusEnum(str, enum.Enum):
     NOT_CREATED = "NOT_CREATED"
@@ -88,11 +88,11 @@ class CandidatePlacement(Base, UUIDMixin, TimestampMixin, TenantMixin):
     offer_status: Mapped[OfferStatusEnum] = mapped_column(
         SQLEnum(OfferStatusEnum), default=OfferStatusEnum.NOT_CREATED, nullable=False, index=True
     )
-    offer_created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    offer_accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    placed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    offer_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    offer_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    placed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 

@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
 from pydantic import BaseModel
 
 class RequirementMatchResponse(BaseModel):
@@ -12,11 +11,11 @@ class RequirementMatchResponse(BaseModel):
     requirement_level: str
     hard_constraint: bool
     match_status: str
-    candidate_value: Optional[str] = None
-    normalized_candidate_value: Optional[str] = None
+    candidate_value: str | None = None
+    normalized_candidate_value: str | None = None
     confidence: float
-    reason: Optional[str] = None
-    evidence_text: Optional[str] = None
+    reason: str | None = None
+    evidence_text: str | None = None
     evidence_verification_status: str
 
     class Config:
@@ -38,17 +37,17 @@ class CandidateJobMatchResponse(BaseModel):
     job_intelligence_version_id: uuid.UUID
     candidate_id: uuid.UUID
     candidate_document_id: uuid.UUID
-    application_id: Optional[uuid.UUID] = None
+    application_id: uuid.UUID | None = None
     matching_version: int
     status: str
     total_requirements_count: int
     matched_requirements_count: int
     hard_requirements_failed_count: int
-    ai_provider: Optional[str] = None
-    model_name: Optional[str] = None
-    embedding_model: Optional[str] = None
+    ai_provider: str | None = None
+    model_name: str | None = None
+    embedding_model: str | None = None
     overall_confidence: float
-    safe_error_message: Optional[str] = None
+    safe_error_message: str | None = None
     created_at: datetime
 
     class Config:
@@ -56,8 +55,8 @@ class CandidateJobMatchResponse(BaseModel):
 
 class FeatureMatchDetailResponse(BaseModel):
     match: CandidateJobMatchResponse
-    requirement_matches: List[RequirementMatchResponse]
-    semantic_matches: List[SemanticMatchResponse]
+    requirement_matches: list[RequirementMatchResponse]
+    semantic_matches: list[SemanticMatchResponse]
 
 class FactorScoreItem(BaseModel):
     score: float
@@ -78,19 +77,19 @@ class ScoreBreakdownSchema(BaseModel):
 class ExplainableCandidateAnalysisResponse(BaseModel):
     job_id: str
     candidate_id: str
-    application_id: Optional[str] = None
-    candidate_name: Optional[str] = None
+    application_id: str | None = None
+    candidate_name: str | None = None
     overall_score: float
     eligibility_status: str
     score_confidence: float
-    confidence_tier: Optional[str] = "HIGH"
-    rank_position: Optional[int] = 1
+    confidence_tier: str | None = "HIGH"
+    rank_position: int | None = 1
     score_breakdown: ScoreBreakdownSchema
     job_intelligence: dict
     candidate_intelligence: dict
-    matched_requirements: List[dict] = []
-    missing_requirements: List[dict] = []
-    strengths: List[str] = []
-    gaps: List[str] = []
-    evidence_citations: List[dict] = []
+    matched_requirements: list[dict] = []
+    missing_requirements: list[dict] = []
+    strengths: list[str] = []
+    gaps: list[str] = []
+    evidence_citations: list[dict] = []
 

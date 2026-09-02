@@ -1,12 +1,11 @@
 import os
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import datetime, UTC
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.api.v1.deps import SecurityContext, get_current_user, get_security_context, require_role
+from app.api.v1.deps import SecurityContext, get_current_user, require_role
 from app.api.v1.schemas import (
     ApplicationResponse,
     ApplicationSubmitRequest,
@@ -80,14 +79,14 @@ async def upload_candidate_profile_resume(
                 resume_url=rel_resume_url,
                 resume_filename=file.filename,
                 resume_filesize=file_size,
-                resume_updated_at=datetime.now(timezone.utc).isoformat(),
+                resume_updated_at=datetime.now(UTC).isoformat(),
             )
             session.add(profile)
         else:
             profile.resume_url = rel_resume_url
             profile.resume_filename = file.filename
             profile.resume_filesize = file_size
-            profile.resume_updated_at = datetime.now(timezone.utc).isoformat()
+            profile.resume_updated_at = datetime.now(UTC).isoformat()
 
         await session.commit()
         await session.refresh(profile)
@@ -98,7 +97,7 @@ async def upload_candidate_profile_resume(
 
 @router.get("/profile/resume/file")
 async def get_my_profile_resume_file(
-    filename: Optional[str] = None,
+    filename: str | None = None,
     user: User = Depends(get_current_user),
 ):
     """
@@ -361,7 +360,7 @@ async def submit_application(
         await session.flush()
 
         # Persist application metadata in Firestore
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
         await firestore_repo.save_application({
             "applicationId": str(application.id),
             "jobId": str(job.id),
@@ -405,7 +404,7 @@ async def submit_application(
 
         return created_app
 
-@router.get("/applications", response_model=List[ApplicationResponse])
+@router.get("/applications", response_model=list[ApplicationResponse])
 async def list_my_applications(user: User = Depends(get_current_user)):
     """Lists applications submitted by the current authenticated candidate (Candidate Ownership Isolation)."""
     async with async_session_factory() as session:

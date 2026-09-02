@@ -1,7 +1,6 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Optional
 from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -37,8 +36,8 @@ class Job(Base, UUIDMixin, TimestampMixin, TenantMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    department: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
-    location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    department: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     employment_type: Mapped[EmploymentTypeEnum] = mapped_column(
         SQLEnum(EmploymentTypeEnum), default=EmploymentTypeEnum.FULL_TIME, nullable=False
     )
@@ -48,13 +47,13 @@ class Job(Base, UUIDMixin, TimestampMixin, TenantMixin):
     verification_status: Mapped[JobVerificationStatusEnum] = mapped_column(
         SQLEnum(JobVerificationStatusEnum), default=JobVerificationStatusEnum.DRAFT, nullable=False, index=True
     )
-    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    verified_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    verified_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    salary: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    company_website: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    salary: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company_website: Mapped[str | None] = mapped_column(String(512), nullable=True)

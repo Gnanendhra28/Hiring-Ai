@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domains.ranking.models import RankingVersionStatusEnum
@@ -35,7 +34,7 @@ class CandidateJobRankingResponse(BaseModel):
     ranking_version_id: uuid.UUID
     job_id: uuid.UUID
     candidate_id: uuid.UUID
-    application_id: Optional[uuid.UUID] = None
+    application_id: uuid.UUID | None = None
     candidate_job_score_id: uuid.UUID
     candidate_document_id: uuid.UUID
     job_intelligence_version_id: uuid.UUID
@@ -47,8 +46,8 @@ class CandidateJobRankingResponse(BaseModel):
     created_at: datetime
 
 class RankingListPaginatedResponse(BaseModel):
-    ranking_version: Optional[CandidateRankingVersionResponse] = None
-    items: List[CandidateJobRankingResponse]
+    ranking_version: CandidateRankingVersionResponse | None = None
+    items: list[CandidateJobRankingResponse]
     total: int
     page: int
     page_size: int
@@ -56,4 +55,4 @@ class RankingListPaginatedResponse(BaseModel):
 
 class TopKRankingResponse(BaseModel):
     ranking_version: CandidateRankingVersionResponse
-    top_k_candidates: List[CandidateJobRankingResponse]
+    top_k_candidates: list[CandidateJobRankingResponse]

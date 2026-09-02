@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 from app.core.logging import logger
 
 class EmailProvider(ABC):
     """Abstract Base Class for Email Providers (Mailpit for dev, SMTP/Azure Communications for prod)."""
 
     @abstractmethod
-    async def send_email(self, recipient_email: str, subject: str, body: str) -> Dict[str, Any]:
+    async def send_email(self, recipient_email: str, subject: str, body: str) -> dict[str, Any]:
         pass
 
 class MailpitEmailAdapter(EmailProvider):
     """Local Development & Testing Email Adapter."""
 
-    async def send_email(self, recipient_email: str, subject: str, body: str) -> Dict[str, Any]:
+    async def send_email(self, recipient_email: str, subject: str, body: str) -> dict[str, Any]:
         logger.info(f"[MAILPIT DEV] Sent email to={recipient_email}, subject='{subject}'")
         return {
             "status": "SENT",
@@ -23,7 +23,7 @@ class MailpitEmailAdapter(EmailProvider):
 class SMTPEmailAdapter(EmailProvider):
     """SMTP Email Provider for sending emails to Gmail and external domains."""
 
-    async def send_email(self, recipient_email: str, subject: str, body: str) -> Dict[str, Any]:
+    async def send_email(self, recipient_email: str, subject: str, body: str) -> dict[str, Any]:
         from app.core.config import settings
         import smtplib
         from email.mime.text import MIMEText

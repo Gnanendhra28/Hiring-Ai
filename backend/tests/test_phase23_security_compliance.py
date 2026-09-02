@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 import pytest
 from httpx import AsyncClient, ASGITransport
 
@@ -11,7 +11,6 @@ from app.domains.identity.models import User
 from app.domains.jobs.models import Job, JobStatusEnum
 from app.core.security import create_access_token
 from app.core.webhook_security import validate_webhook_url, compute_hmac_signature, verify_hmac_signature
-from app.core.rate_limiter import rate_limiter
 
 @pytest.mark.asyncio
 async def test_jwt_authentication_edge_cases():
@@ -86,14 +85,14 @@ async def test_ssrf_and_webhook_security_guards():
 
     # 2. HMAC-SHA256 signature verification & 300s window check
     secret = "whsec_security_test_secret_999"
-    ts = str(int(datetime.now(timezone.utc).timestamp()))
+    ts = str(int(datetime.now(UTC).timestamp()))
     payload = '{"event_type":"job.intelligence.completed"}'
 
     sig = compute_hmac_signature(secret, ts, payload)
     assert verify_hmac_signature(secret, ts, payload, sig) is True
 
     # Replayed payload with old timestamp (>300s) -> False
-    old_ts = str(int((datetime.now(timezone.utc) - timedelta(seconds=400)).timestamp()))
+    old_ts = str(int((datetime.now(UTC) - timedelta(seconds=400)).timestamp()))
     old_sig = compute_hmac_signature(secret, old_ts, payload)
     assert verify_hmac_signature(secret, old_ts, payload, old_sig) is False
 

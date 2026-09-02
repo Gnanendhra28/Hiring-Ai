@@ -1,6 +1,6 @@
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pydantic import BaseModel, Field
 
 from app.core.logging import logger
@@ -25,7 +25,7 @@ class DeadLetterRecord(BaseModel):
     organization_id: uuid.UUID
     correlation_id: str
     reason: str
-    failed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    failed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     attempts: int
 
 class PipelineWorker:
@@ -106,7 +106,7 @@ class PipelineWorker:
                 if attempts >= self.max_retries:
                     logger.error(f"[Worker] Max retries exhausted for event {event.event_id}. Routing to dead-letter queue.")
                     metrics.increment("worker_events_failed_total", labels={"event_type": event.event_type})
-                    self._record_dead_letter(event, f"Max retries exhausted: {str(e)}", attempts)
+                    self._record_dead_letter(event, f"Max retries exhausted: {e!s}", attempts)
                     return False
                 await asyncio.sleep(self.retry_delay_sec)
 

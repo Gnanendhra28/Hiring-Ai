@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 import httpx
 from app.core.config import settings
 from app.core.logging import logger
@@ -136,10 +136,10 @@ class OpenAIAIGatewayAdapter(AIGatewayProvider):
 
     async def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.2,
         max_tokens: int = 300,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         model_name = settings.AI_FAST_MODEL
         headers = {
             "Authorization": f"Bearer {settings.AI_API_KEY}",

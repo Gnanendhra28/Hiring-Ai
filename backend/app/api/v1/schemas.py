@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from app.domains.applications.models import ApplicationStatusEnum
 from app.domains.assessments.models import AssessmentAssignmentStatusEnum
@@ -27,7 +27,7 @@ class EmployeeRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8)
     first_name: str = Field(..., min_length=1)
     last_name: str = Field(..., min_length=1)
-    company_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    company_name: str | None = Field(None, min_length=2, max_length=255)
 
 class UserLoginRequest(BaseModel):
     email: EmailStr
@@ -35,11 +35,11 @@ class UserLoginRequest(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
-    portal_type: Optional[str] = None
+    portal_type: str | None = None
 
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
-    reset_code: Optional[str] = None
+    reset_code: str | None = None
     new_password: str = Field(..., min_length=6)
 
 class TokenRefreshRequest(BaseModel):
@@ -52,11 +52,11 @@ class TokenResponse(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     code: str
-    redirect_uri: Optional[str] = None
-    requested_role: Optional[str] = "CANDIDATE"
+    redirect_uri: str | None = None
+    requested_role: str | None = "CANDIDATE"
 
 class GoogleAuthUrlResponse(BaseModel):
-    url: Optional[str] = None
+    url: str | None = None
     configured: bool
 
 
@@ -66,7 +66,7 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     full_name: str
-    phone_number: Optional[str] = None
+    phone_number: str | None = None
     is_platform_admin: bool
     is_active: bool
     is_verified: bool
@@ -99,119 +99,119 @@ class OrganizationMembershipResponse(BaseModel):
 
 class UserProfileResponse(BaseModel):
     user: UserResponse
-    memberships: List[OrganizationMembershipResponse]
+    memberships: list[OrganizationMembershipResponse]
 
 # --- Recruiter & Candidate Profile Schemas ---
 class RecruiterProfileRequest(BaseModel):
-    job_title: Optional[str] = Field(None, max_length=255)
-    department: Optional[str] = Field(None, max_length=255)
-    phone_number: Optional[str] = Field(None, max_length=50)
-    company_name: Optional[str] = Field(None, max_length=255)
-    website_url: Optional[str] = Field(None, max_length=500)
-    registration_id: Optional[str] = Field(None, max_length=255)
-    linkedin_url: Optional[str] = Field(None, max_length=500)
+    job_title: str | None = Field(None, max_length=255)
+    department: str | None = Field(None, max_length=255)
+    phone_number: str | None = Field(None, max_length=50)
+    company_name: str | None = Field(None, max_length=255)
+    website_url: str | None = Field(None, max_length=500)
+    registration_id: str | None = Field(None, max_length=255)
+    linkedin_url: str | None = Field(None, max_length=500)
 
 class RecruiterProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     user_id: uuid.UUID
-    job_title: Optional[str]
-    department: Optional[str]
-    phone_number: Optional[str]
-    company_name: Optional[str]
-    website_url: Optional[str]
-    registration_id: Optional[str]
-    linkedin_url: Optional[str]
+    job_title: str | None
+    department: str | None
+    phone_number: str | None
+    company_name: str | None
+    website_url: str | None
+    registration_id: str | None
+    linkedin_url: str | None
     verification_status: str
-    submitted_at: Optional[str]
+    submitted_at: str | None
     created_at: datetime
 
 class CandidateProfileRequest(BaseModel):
-    full_name: Optional[str] = Field(None, max_length=255)
-    location: Optional[str] = Field(None, max_length=255)
-    headline: Optional[str] = Field(None, max_length=255)
-    summary: Optional[str] = None
-    phone: Optional[str] = Field(None, max_length=50)
-    photo_url: Optional[str] = None
-    degree: Optional[str] = Field(None, max_length=255)
-    college: Optional[str] = Field(None, max_length=255)
-    skills: Optional[List[str]] = None
-    experience: Optional[List[Dict[str, Any]]] = None
-    education: Optional[List[Dict[str, Any]]] = None
-    career_preferences: Optional[Dict[str, Any]] = None
-    languages: Optional[List[Dict[str, Any]]] = None
-    internships: Optional[List[Dict[str, Any]]] = None
-    projects: Optional[List[Dict[str, Any]]] = None
-    accomplishments: Optional[Dict[str, Any]] = None
-    employment: Optional[List[Dict[str, Any]]] = None
-    website_url: Optional[str] = Field(None, max_length=500)
-    linkedin_url: Optional[str] = Field(None, max_length=500)
-    resume_url: Optional[str] = Field(None, max_length=500)
-    resume_filename: Optional[str] = Field(None, max_length=255)
-    resume_filesize: Optional[int] = None
-    resume_updated_at: Optional[str] = None
+    full_name: str | None = Field(None, max_length=255)
+    location: str | None = Field(None, max_length=255)
+    headline: str | None = Field(None, max_length=255)
+    summary: str | None = None
+    phone: str | None = Field(None, max_length=50)
+    photo_url: str | None = None
+    degree: str | None = Field(None, max_length=255)
+    college: str | None = Field(None, max_length=255)
+    skills: list[str] | None = None
+    experience: list[dict[str, Any]] | None = None
+    education: list[dict[str, Any]] | None = None
+    career_preferences: dict[str, Any] | None = None
+    languages: list[dict[str, Any]] | None = None
+    internships: list[dict[str, Any]] | None = None
+    projects: list[dict[str, Any]] | None = None
+    accomplishments: dict[str, Any] | None = None
+    employment: list[dict[str, Any]] | None = None
+    website_url: str | None = Field(None, max_length=500)
+    linkedin_url: str | None = Field(None, max_length=500)
+    resume_url: str | None = Field(None, max_length=500)
+    resume_filename: str | None = Field(None, max_length=255)
+    resume_filesize: int | None = None
+    resume_updated_at: str | None = None
 
 class CandidateProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     user_id: uuid.UUID
-    full_name: Optional[str] = None
-    location: Optional[str] = None
-    headline: Optional[str] = None
-    summary: Optional[str] = None
-    phone: Optional[str] = None
-    photo_url: Optional[str] = None
-    degree: Optional[str] = None
-    college: Optional[str] = None
-    skills: Optional[List[str]] = None
-    experience: Optional[List[Any]] = None
-    education: Optional[List[Any]] = None
-    career_preferences: Optional[Dict[str, Any]] = None
-    languages: Optional[List[Any]] = None
-    internships: Optional[List[Any]] = None
-    projects: Optional[List[Any]] = None
-    accomplishments: Optional[Dict[str, Any]] = None
-    employment: Optional[List[Any]] = None
-    website_url: Optional[str] = None
-    linkedin_url: Optional[str] = None
-    resume_url: Optional[str] = None
-    resume_filename: Optional[str] = None
-    resume_filesize: Optional[int] = None
-    resume_updated_at: Optional[str] = None
+    full_name: str | None = None
+    location: str | None = None
+    headline: str | None = None
+    summary: str | None = None
+    phone: str | None = None
+    photo_url: str | None = None
+    degree: str | None = None
+    college: str | None = None
+    skills: list[str] | None = None
+    experience: list[Any] | None = None
+    education: list[Any] | None = None
+    career_preferences: dict[str, Any] | None = None
+    languages: list[Any] | None = None
+    internships: list[Any] | None = None
+    projects: list[Any] | None = None
+    accomplishments: dict[str, Any] | None = None
+    employment: list[Any] | None = None
+    website_url: str | None = None
+    linkedin_url: str | None = None
+    resume_url: str | None = None
+    resume_filename: str | None = None
+    resume_filesize: int | None = None
+    resume_updated_at: str | None = None
     created_at: datetime
 
 # --- Job Workspace Schemas ---
 class JobCreateRequest(BaseModel):
     title: str = Field(..., min_length=2, max_length=255)
-    slug: Optional[str] = Field(None, max_length=255)
+    slug: str | None = Field(None, max_length=255)
     description: str = Field(..., min_length=10)
-    department: Optional[str] = Field(None, max_length=255)
-    location: Optional[str] = Field(None, max_length=255)
+    department: str | None = Field(None, max_length=255)
+    location: str | None = Field(None, max_length=255)
     employment_type: EmploymentTypeEnum = EmploymentTypeEnum.FULL_TIME
-    status: Optional[JobStatusEnum] = JobStatusEnum.DRAFT
-    verification_status: Optional[JobVerificationStatusEnum] = None
-    salary: Optional[str] = Field(None, max_length=255)
-    company_website: Optional[str] = Field(None, max_length=512)
+    status: JobStatusEnum | None = JobStatusEnum.DRAFT
+    verification_status: JobVerificationStatusEnum | None = None
+    salary: str | None = Field(None, max_length=255)
+    company_website: str | None = Field(None, max_length=512)
 
 class JobUpdateRequest(BaseModel):
-    title: Optional[str] = Field(None, min_length=2, max_length=255)
-    description: Optional[str] = Field(None, min_length=10)
-    department: Optional[str] = Field(None, max_length=255)
-    location: Optional[str] = Field(None, max_length=255)
-    employment_type: Optional[EmploymentTypeEnum] = None
-    status: Optional[JobStatusEnum] = None
-    verification_status: Optional[JobVerificationStatusEnum] = None
-    salary: Optional[str] = Field(None, max_length=255)
-    company_website: Optional[str] = Field(None, max_length=512)
+    title: str | None = Field(None, min_length=2, max_length=255)
+    description: str | None = Field(None, min_length=10)
+    department: str | None = Field(None, max_length=255)
+    location: str | None = Field(None, max_length=255)
+    employment_type: EmploymentTypeEnum | None = None
+    status: JobStatusEnum | None = None
+    verification_status: JobVerificationStatusEnum | None = None
+    salary: str | None = Field(None, max_length=255)
+    company_website: str | None = Field(None, max_length=512)
 
 class JobVerifyRequest(BaseModel):
     action: str = Field(..., description="APPROVE or REJECT")
-    rejection_reason: Optional[str] = Field(None, description="Required when action is REJECT")
+    rejection_reason: str | None = Field(None, description="Required when action is REJECT")
 
 class BatchDeleteJobsRequest(BaseModel):
-    job_ids: List[uuid.UUID]
+    job_ids: list[uuid.UUID]
 
 class JobResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -221,20 +221,20 @@ class JobResponse(BaseModel):
     title: str
     slug: str
     description: str
-    department: Optional[str]
-    location: Optional[str]
+    department: str | None
+    location: str | None
     employment_type: EmploymentTypeEnum
     status: JobStatusEnum
     verification_status: JobVerificationStatusEnum
-    rejection_reason: Optional[str]
-    verified_at: Optional[datetime]
-    created_by_user_id: Optional[uuid.UUID]
-    salary: Optional[str] = None
-    company_website: Optional[str] = None
-    applications_count: Optional[int] = 0
-    ai_shortlisted_count: Optional[int] = 0
-    interviews_count: Optional[int] = 0
-    skills: Optional[List[str]] = None
+    rejection_reason: str | None
+    verified_at: datetime | None
+    created_by_user_id: uuid.UUID | None
+    salary: str | None = None
+    company_website: str | None = None
+    applications_count: int | None = 0
+    ai_shortlisted_count: int | None = 0
+    interviews_count: int | None = 0
+    skills: list[str] | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -245,22 +245,22 @@ class PublicJobResponse(BaseModel):
     title: str
     slug: str
     organization_name: str
-    department: Optional[str]
-    location: Optional[str]
+    department: str | None
+    location: str | None
     employment_type: EmploymentTypeEnum
     description: str
-    salary: Optional[str] = None
-    company_website: Optional[str] = None
+    salary: str | None = None
+    company_website: str | None = None
     created_at: datetime
 
 class JobListResponse(BaseModel):
-    items: List[JobResponse]
+    items: list[JobResponse]
     total: int
     page: int
     page_size: int
 
 class PublicJobListResponse(BaseModel):
-    items: List[PublicJobResponse]
+    items: list[PublicJobResponse]
     total: int
     page: int
     page_size: int
@@ -268,13 +268,13 @@ class PublicJobListResponse(BaseModel):
 # --- Application Schemas ---
 class ApplicationSubmitRequest(BaseModel):
     job_id: uuid.UUID
-    resume_id: Optional[str] = Field(None, max_length=255)
-    resume_file_path: Optional[str] = Field(None, max_length=500)
-    answers_json: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    resume_id: str | None = Field(None, max_length=255)
+    resume_file_path: str | None = Field(None, max_length=500)
+    answers_json: dict[str, Any] | None = Field(default_factory=dict)
 
 class ApplicationDecisionRequest(BaseModel):
     action: str = Field(..., description="SHORTLIST or REJECT")
-    reason: Optional[str] = Field(None, description="Optional decision notes")
+    reason: str | None = Field(None, description="Optional decision notes")
 
 class ApplicationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -286,20 +286,20 @@ class ApplicationResponse(BaseModel):
     status: ApplicationStatusEnum
     source: str
     submitted_at: datetime
-    resume_id: Optional[str] = None
-    resume_file_path: Optional[str] = None
-    answers_json: Optional[Dict[str, Any]] = None
+    resume_id: str | None = None
+    resume_file_path: str | None = None
+    answers_json: dict[str, Any] | None = None
     created_at: datetime
 
-    candidate_name: Optional[str] = None
-    candidate_email: Optional[str] = None
-    headline: Optional[str] = None
-    decision_reason: Optional[str] = None
-    decided_at: Optional[datetime] = None
-    skills: Optional[List[str]] = None
+    candidate_name: str | None = None
+    candidate_email: str | None = None
+    headline: str | None = None
+    decision_reason: str | None = None
+    decided_at: datetime | None = None
+    skills: list[str] | None = None
 
 class ApplicationListResponse(BaseModel):
-    items: List[ApplicationResponse]
+    items: list[ApplicationResponse]
     total: int
     page: int
     page_size: int
@@ -307,7 +307,7 @@ class ApplicationListResponse(BaseModel):
 # --- Assessment Schemas ---
 class AssessmentCreateRequest(BaseModel):
     title: str = Field(..., min_length=2, max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
     duration_minutes: int = Field(60, ge=1, le=480)
     passing_score: int = Field(70, ge=0, le=100)
 
@@ -318,7 +318,7 @@ class AssessmentResponse(BaseModel):
     organization_id: uuid.UUID
     job_id: uuid.UUID
     title: str
-    description: Optional[str]
+    description: str | None
     duration_minutes: int
     passing_score: int
     created_at: datetime
@@ -337,8 +337,8 @@ class AssessmentAssignmentResponse(BaseModel):
     candidate_id: uuid.UUID
     status: AssessmentAssignmentStatusEnum
     assigned_at: datetime
-    due_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    due_at: datetime | None
+    completed_at: datetime | None
 
 # --- Interview Schemas ---
 class InterviewScheduleRequest(BaseModel):
@@ -350,7 +350,7 @@ class InterviewScheduleRequest(BaseModel):
     duration_minutes: int = Field(45, ge=15, le=240)
     timezone: str = "UTC"
     meeting_provider: MeetingProviderEnum = MeetingProviderEnum.TEST
-    notes: Optional[str] = None
+    notes: str | None = None
 
 class InterviewResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -367,8 +367,8 @@ class InterviewResponse(BaseModel):
     timezone: str
     status: InterviewStatusEnum
     meeting_provider: MeetingProviderEnum
-    meeting_url: Optional[str]
-    notes: Optional[str]
+    meeting_url: str | None
+    notes: str | None
     created_at: datetime
 
 # --- Communication Schemas ---
@@ -394,10 +394,10 @@ class CommunicationResponse(BaseModel):
     body: str
     status: CommunicationStatusEnum
     provider: str
-    validation_json: Optional[Dict[str, Any]]
-    approved_by_user_id: Optional[uuid.UUID]
-    approved_at: Optional[datetime]
-    sent_at: Optional[datetime]
+    validation_json: dict[str, Any] | None
+    approved_by_user_id: uuid.UUID | None
+    approved_at: datetime | None
+    sent_at: datetime | None
     created_at: datetime
 
 # --- Dashboard Metrics Schemas ---
@@ -411,4 +411,4 @@ class DashboardMetricsResponse(BaseModel):
     interview_count: int = 0
     selected_count: int = 0
     rejected_count: int = 0
-    recent_jobs: List[JobResponse]
+    recent_jobs: list[JobResponse]

@@ -10,9 +10,9 @@ Combines:
 import math
 import re
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
@@ -25,8 +25,8 @@ class HybridEvidenceCitation(BaseModel):
     requirement: str
     requirement_level: str  # REQUIRED, PREFERRED, NICE_TO_HAVE
     match_type: str         # EXACT_KEYWORD, NORMALIZED_SYNONYM, DENSE_SEMANTIC, MISSING
-    matched_value: Optional[str] = None
-    evidence_snippet: Optional[str] = None
+    matched_value: str | None = None
+    evidence_snippet: str | None = None
     confidence: float = 1.0
 
 
@@ -34,21 +34,21 @@ class HybridMatchResult(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     job_id: str
     candidate_id: str
-    
+
     # Fusion Scores (0.0 to 100.0)
     sparse_lexical_score: float
     dense_semantic_score: float
     hybrid_fused_score: float
-    
+
     # Eligibility and Coverage
     required_skill_coverage: float
     eligibility_status: str  # PASS / FAIL
-    eligibility_reasons: List[str] = []
-    
+    eligibility_reasons: list[str] = []
+
     # Explainable Evidence Citations
-    citations: List[HybridEvidenceCitation] = []
-    missing_requirements: List[str] = []
-    
+    citations: list[HybridEvidenceCitation] = []
+    missing_requirements: list[str] = []
+
     # Performance & Diagnostics
     fusion_algorithm: str = "Reciprocal_Rank_Weighted_Fusion"
     is_hallucination_guarded: bool = True
@@ -66,7 +66,7 @@ class HybridSearchAndMatchingEngine:
     DENSE_WEIGHT = 0.55
 
     @classmethod
-    def compute_bm25_token_score(cls, query_terms: List[str], doc_text: str) -> float:
+    def compute_bm25_token_score(cls, query_terms: list[str], doc_text: str) -> float:
         """
         Calculates normalized lexical BM25 token overlap between query requirements and candidate document.
         """
@@ -104,22 +104,22 @@ class HybridSearchAndMatchingEngine:
     @classmethod
     def verify_evidence_grounding(
         cls,
-        required_items: List[str],
-        preferred_items: List[str],
-        candidate_skills: List[str],
+        required_items: list[str],
+        preferred_items: list[str],
+        candidate_skills: list[str],
         candidate_text: str,
         candidate_experience_years: float = 0.0,
         required_min_years: float = 0.0,
-    ) -> Tuple[float, List[HybridEvidenceCitation], List[str], str, List[str]]:
+    ) -> tuple[float, list[HybridEvidenceCitation], list[str], str, list[str]]:
         """
         Strict Evidence Grounding:
         Inspects resume raw text and extracted skill tokens to cite factual evidence.
         Prevents hallucinated skill credits.
         """
-        citations: List[HybridEvidenceCitation] = []
-        missing: List[str] = []
-        eligibility_reasons: List[str] = []
-        
+        citations: list[HybridEvidenceCitation] = []
+        missing: list[str] = []
+        eligibility_reasons: list[str] = []
+
         cand_text_lower = candidate_text.lower()
         cand_skills_lower = {s.lower().strip(): s for s in candidate_skills}
 
@@ -204,7 +204,7 @@ class HybridSearchAndMatchingEngine:
                         requirement_level="PREFERRED",
                         match_type="EXACT_KEYWORD",
                         matched_value=pref_clean,
-                        evidence_snippet=f"Preferred competency verified in candidate profile.",
+                        evidence_snippet="Preferred competency verified in candidate profile.",
                         confidence=1.0,
                     )
                 )
@@ -212,7 +212,7 @@ class HybridSearchAndMatchingEngine:
         # 3. Calculate Coverage & Hard Eligibility Gate
         total_reqs = len(required_items)
         req_coverage = (matched_req_count / total_reqs * 100.0) if total_reqs > 0 else 100.0
-        
+
         eligibility = "PASS"
         if total_reqs > 0 and (matched_req_count / total_reqs) < 0.50:
             eligibility = "FAIL"
@@ -231,8 +231,8 @@ class HybridSearchAndMatchingEngine:
         organization_id: uuid.UUID,
         job_id: uuid.UUID,
         candidate_id: uuid.UUID,
-        job_data: Dict[str, Any],
-        candidate_data: Dict[str, Any],
+        job_data: dict[str, Any],
+        candidate_data: dict[str, Any],
     ) -> HybridMatchResult:
         """
         Executes complete Hybrid Matching Pipeline:
@@ -247,14 +247,14 @@ class HybridSearchAndMatchingEngine:
         pref_skills = job_data.get("preferred_skills", [])
         cand_skills = candidate_data.get("skills", [])
         cand_text = candidate_data.get("resume_text", "")
-        
+
         cand_exp_years = float(candidate_data.get("total_experience_years", 0.0))
         req_min_years = float(job_data.get("min_experience_years", 0.0))
 
         # --- STEP 1: Sparse Lexical Scoring (BM25 + Evidence Grounding) ---
         query_tokens = req_skills + pref_skills + [job_data.get("title", "")]
         bm25_score = cls.compute_bm25_token_score(query_tokens, cand_text + " " + " ".join(cand_skills))
-        
+
         req_coverage, citations, missing, eligibility, eligibility_reasons = cls.verify_evidence_grounding(
             required_items=req_skills,
             preferred_items=pref_skills,

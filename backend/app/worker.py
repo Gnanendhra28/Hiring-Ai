@@ -1,6 +1,5 @@
 import asyncio
 import signal
-import sys
 from app.core.logging import logger
 from app.infrastructure.workers.pipeline_worker import PipelineWorker
 

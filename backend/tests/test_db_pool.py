@@ -1,4 +1,3 @@
-import pytest
 from app.core.config import settings
 
 def test_database_pool_configuration():

@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from app.infrastructure.skills.normalizer import SkillNormalizer
 
 class GeneralJobExtractor:
@@ -136,7 +136,7 @@ class GeneralJobExtractor:
         return t
 
     @classmethod
-    def split_phrase_into_items(cls, text: str) -> List[str]:
+    def split_phrase_into_items(cls, text: str) -> list[str]:
         cleaned = cls.clean_phrase(text)
         if not cleaned:
             return []
@@ -174,22 +174,22 @@ class GeneralJobExtractor:
         return results
 
     @classmethod
-    def extract(cls, raw_text: str, job_title: Optional[str] = None) -> Dict[str, Any]:
+    def extract(cls, raw_text: str, job_title: str | None = None) -> dict[str, Any]:
         # Split raw text into sentences and lines
         raw_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
-        sentences: List[tuple[str, str]] = []
+        sentences: list[tuple[str, str]] = []
         for l in raw_lines:
             sub_s = re.split(r"(?<=[.!?])\s+", l.strip())
             for s in sub_s:
                 if s.strip():
                     sentences.append((s.strip(), l.strip()))
 
-        required_skills: List[Dict[str, Any]] = []
-        preferred_skills: List[Dict[str, Any]] = []
-        good_to_have: List[Dict[str, Any]] = []
-        responsibilities: List[Dict[str, Any]] = []
-        education_list: List[Dict[str, Any]] = []
-        experience_info: Optional[Dict[str, Any]] = None
+        required_skills: list[dict[str, Any]] = []
+        preferred_skills: list[dict[str, Any]] = []
+        good_to_have: list[dict[str, Any]] = []
+        responsibilities: list[dict[str, Any]] = []
+        education_list: list[dict[str, Any]] = []
+        experience_info: dict[str, Any] | None = None
 
         seen_required: set = set()
         seen_preferred: set = set()

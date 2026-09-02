@@ -6,9 +6,8 @@ prompt-injection containment, and strict Pydantic structured output validation.
 
 import asyncio
 import json
-import os
 import re
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, TypeVar
 import httpx
 from pydantic import BaseModel, ValidationError
 
@@ -35,8 +34,8 @@ class GeminiResilienceLadder:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model_ladder: Optional[List[str]] = None,
+        api_key: str | None = None,
+        model_ladder: list[str] | None = None,
         timeout_seconds: float = 30.0,
     ):
         self.api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or settings.AI_API_KEY
@@ -51,7 +50,7 @@ class GeminiResilienceLadder:
             clean = re.sub(r"^```(?:json)?\s*", "", clean, flags=re.IGNORECASE)
             clean = re.sub(r"\s*```$", "", clean)
             clean = clean.strip()
-        
+
         # If there are surrounding characters, locate the first '{' or '[' and matching end
         start_idx = -1
         first_brace = clean.find("{")
@@ -71,11 +70,11 @@ class GeminiResilienceLadder:
     async def generate_content_with_fallback(
         self,
         prompt: str,
-        system_instruction: Optional[str] = None,
-        schema: Optional[Type[T]] = None,
+        system_instruction: str | None = None,
+        schema: type[T] | None = None,
         temperature: float = 0.2,
         max_output_tokens: int = 2048,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Executes generateContent across the model fallback ladder until success.
         If schema is provided, validates and returns parsed structured data.
@@ -98,7 +97,7 @@ class GeminiResilienceLadder:
                 "x-goog-api-key": self.api_key,
             }
 
-            contents: List[Dict[str, Any]] = []
+            contents: list[dict[str, Any]] = []
             if system_instruction:
                 # Add anti-injection system directive
                 sanitized_system = (
@@ -125,7 +124,7 @@ class GeminiResilienceLadder:
                 try:
                     async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                         resp = await client.post(url, json=payload, headers=headers)
-                        
+
                         if resp.status_code == 200:
                             data = resp.json()
                             candidates = data.get("candidates", [])
@@ -133,7 +132,7 @@ class GeminiResilienceLadder:
                                 raise ValueError("Gemini returned empty candidates list.")
 
                             text_out = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                            
+
                             if schema:
                                 clean_json = self._clean_json_text(text_out)
                                 try:
@@ -158,7 +157,7 @@ class GeminiResilienceLadder:
                                     )
                                     last_error = str(parse_err)
                                     break  # Fail over to next model in ladder
-                            
+
                             return {
                                 "success": True,
                                 "model_used": model,

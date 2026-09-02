@@ -1,4 +1,3 @@
-from typing import Optional, Tuple
 from app.domains.matching.models import MatchStatusEnum
 
 class HardRequirementEngine:
@@ -12,11 +11,11 @@ class HardRequirementEngine:
 
     @staticmethod
     def evaluate_experience(
-        required_operator: Optional[str],
-        required_min_months: Optional[float],
-        required_max_months: Optional[float],
-        candidate_experience_months: Optional[float],
-    ) -> Tuple[MatchStatusEnum, str]:
+        required_operator: str | None,
+        required_min_months: float | None,
+        required_max_months: float | None,
+        candidate_experience_months: float | None,
+    ) -> tuple[MatchStatusEnum, str]:
         """
         Evaluates numeric experience requirements in normalized MONTHS.
         """
@@ -62,8 +61,8 @@ class HardRequirementEngine:
     @staticmethod
     def evaluate_work_mode(
         required_work_mode: str,
-        candidate_work_mode: Optional[str],
-    ) -> Tuple[MatchStatusEnum, str]:
+        candidate_work_mode: str | None,
+    ) -> tuple[MatchStatusEnum, str]:
         """
         Evaluates work mode compatibility (REMOTE, HYBRID, ONSITE).
         """
@@ -78,7 +77,7 @@ class HardRequirementEngine:
 
         if req == cand:
             return MatchStatusEnum.MATCHED, f"Work mode preference '{cand}' matches requirement '{req}'."
-        
+
         # Remote work mode is generally compatible with hybrid
         if req == "REMOTE" or cand == "REMOTE":
             return MatchStatusEnum.PARTIALLY_MATCHED, f"Work mode '{cand}' partially compatible with '{req}'."

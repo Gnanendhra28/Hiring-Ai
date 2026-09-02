@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any
 import httpx
 
 from app.core.config import settings
@@ -18,7 +18,7 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
     structured output validation, timeouts, cost tracking, and fail-fast credentials.
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or settings.AI_API_KEY
         self.model = model or getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash")
 
@@ -36,10 +36,10 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
 
     async def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.2,
         max_tokens: int = 300,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Executes Google Gemini REST API generateContent call for narrative recommendations & explanations.
         Includes bounded retries with exponential backoff for transient errors (429, 500, 502, 503, 504, timeouts).
@@ -86,7 +86,7 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
             try:
                 async with httpx.AsyncClient(timeout=settings.AI_REQUEST_TIMEOUT_SECONDS) as client:
                     resp = await client.post(url, json=payload, headers=headers)
-                    
+
                     if resp.status_code == 200:
                         data = resp.json()
                         candidates = data.get("candidates", [])
@@ -149,7 +149,7 @@ class GeminiAIGatewayAdapter(AIGatewayProvider):
                     continue
                 else:
                     logger.error(f"[Gemini AI Gateway] Max retries exhausted ({max_attempts}) for network error: {net_err}")
-                    raise RuntimeError(f"Gemini API network error after {max_attempts} attempts: {str(net_err)}")
+                    raise RuntimeError(f"Gemini API network error after {max_attempts} attempts: {net_err!s}")
 
         raise RuntimeError("Gemini API call failed: Max attempts reached.")
 

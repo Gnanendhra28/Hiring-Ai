@@ -8,17 +8,17 @@ import pytest
 import uuid
 import hmac
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from sqlalchemy import select, func
 
 from app.db.session import async_session_factory
 from app.db.rls import set_tenant_context
-from app.domains.organizations.models import Organization, OrganizationMembership, RoleEnum
+from app.domains.organizations.models import Organization
 from app.domains.identity.models import User
 from app.domains.jobs.models import Job, JobStatusEnum, JobVerificationStatusEnum
 from app.domains.candidates.models import CandidateProfile
 from app.domains.applications.models import Application, ApplicationStatusEnum
-from app.domains.recommendation.models import CandidateRecommendation, CandidateDecision, RecruiterDecisionEnum, RecommendationTypeEnum
+from app.domains.recommendation.models import CandidateDecision, RecruiterDecisionEnum
 from app.domains.audit.models import AuditLog
 
 
@@ -240,7 +240,7 @@ async def test_ai_vs_human_decision_analytics():
             decision=RecruiterDecisionEnum.ADVANCE,
             decision_reason="Candidate showed exceptional domain depth.",
             decided_by_user_id=rec.id,
-            decided_at=datetime.now(timezone.utc),
+            decided_at=datetime.now(UTC),
         )
         session.add(decision)
         await session.commit()

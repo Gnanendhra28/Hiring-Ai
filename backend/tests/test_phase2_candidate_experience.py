@@ -5,7 +5,6 @@ idempotent turn submissions, and adaptive follow-up injection.
 """
 
 import pytest
-import uuid
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 

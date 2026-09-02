@@ -1,5 +1,4 @@
 import uuid
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.v1.deps import require_role, SecurityContext
@@ -45,7 +44,7 @@ async def create_webhook_subscription(
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
 
-@router.get("/subscriptions", response_model=List[WebhookSubscriptionResponse])
+@router.get("/subscriptions", response_model=list[WebhookSubscriptionResponse])
 async def list_webhook_subscriptions(
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
@@ -173,9 +172,9 @@ async def send_test_webhook(
         delivered=delivered,
     )
 
-@router.get("/events", response_model=List[WebhookEventResponse])
+@router.get("/events", response_model=list[WebhookEventResponse])
 async def get_webhook_delivery_history(
-    subscription_id: Optional[uuid.UUID] = Query(None, description="Optional subscription filter"),
+    subscription_id: uuid.UUID | None = Query(None, description="Optional subscription filter"),
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """

@@ -1,5 +1,4 @@
 import re
-from typing import Tuple
 
 PROTECTED_CHARACTERISTIC_PATTERNS = [
     r"\b(male|female|man|woman|gender|sex)\b",
@@ -18,7 +17,7 @@ class ProtectedFeatureFilter:
     """
 
     @classmethod
-    def evaluate(cls, requirement_text: str) -> Tuple[bool, str]:
+    def evaluate(cls, requirement_text: str) -> tuple[bool, str]:
         if not requirement_text:
             return False, ""
 

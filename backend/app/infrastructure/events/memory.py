@@ -1,7 +1,5 @@
-from typing import Dict, List
 from app.infrastructure.events.base import EventBus, EventHandler
 from app.infrastructure.events.envelope import EventEnvelope
-from app.core.config import settings
 from app.core.logging import logger
 
 class InMemoryEventBus(EventBus):
@@ -11,8 +9,8 @@ class InMemoryEventBus(EventBus):
     """
 
     def __init__(self) -> None:
-        self._subscribers: Dict[str, List[EventHandler]] = {}
-        self.published_events: List[EventEnvelope] = []
+        self._subscribers: dict[str, list[EventHandler]] = {}
+        self.published_events: list[EventEnvelope] = []
 
     def subscribe(self, event_type: str, handler: EventHandler) -> None:
         if event_type not in self._subscribers:
@@ -29,8 +27,8 @@ class InMemoryEventBus(EventBus):
             try:
                 await handler(event)
             except Exception as e:
-                logger.error(f"Error in InMemory event handler for {event.event_type}: {str(e)}")
+                logger.error(f"Error in InMemory event handler for {event.event_type}: {e!s}")
 
-    async def publish_batch(self, events: List[EventEnvelope]) -> None:
+    async def publish_batch(self, events: list[EventEnvelope]) -> None:
         for event in events:
             await self.publish(event)

@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Type, TypeVar
+from typing import TypeVar
 from types import TracebackType
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import async_session_factory
@@ -13,9 +13,9 @@ class AsyncUnitOfWork:
     Manages transaction lifecycle and applies transaction-scoped RLS tenant context.
     """
 
-    def __init__(self, organization_id: Optional[uuid.UUID] = None) -> None:
+    def __init__(self, organization_id: uuid.UUID | None = None) -> None:
         self.organization_id = organization_id
-        self.session: Optional[AsyncSession] = None
+        self.session: AsyncSession | None = None
 
     async def __aenter__(self) -> "AsyncUnitOfWork":
         self.session = async_session_factory()
@@ -28,9 +28,9 @@ class AsyncUnitOfWork:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         if self.session:
             try:

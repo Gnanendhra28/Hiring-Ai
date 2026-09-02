@@ -1,6 +1,5 @@
 import random
 from abc import ABC, abstractmethod
-from typing import List
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -8,13 +7,13 @@ class EmbeddingProvider(ABC):
     """Abstract Base Class for Embedding Providers (OpenAI text-embedding-3, Azure OpenAI, SentenceTransformers)."""
 
     @abstractmethod
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         pass
 
 class TestEmbeddingAdapter(EmbeddingProvider):
     """Controlled Embedding Adapter generating versioned 1536-dim vector embeddings for pgvector."""
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         logger.info(f"Generating test 1536-dim embedding for text segment ({len(text)} chars)")
         # Produce a deterministic 1536-dimensional normalized float vector
         random.seed(hash(text) % 2**32)

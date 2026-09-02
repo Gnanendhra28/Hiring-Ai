@@ -1,5 +1,4 @@
 import uuid
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -27,13 +26,13 @@ class JobRequirementResponse(BaseModel):
     canonical_value: str
     requirement_level: str
     hard_constraint: bool
-    operator: Optional[str] = None
-    minimum_value: Optional[float] = None
-    maximum_value: Optional[float] = None
-    unit: Optional[str] = None
+    operator: str | None = None
+    minimum_value: float | None = None
+    maximum_value: float | None = None
+    unit: str | None = None
     priority: str
     confidence: float
-    evidence_text: Optional[str] = None
+    evidence_text: str | None = None
     evidence_verification_status: str
     is_protected_feature: bool
 
@@ -46,30 +45,30 @@ class JobIntelligenceVersionResponse(BaseModel):
     version_number: int
     is_active: bool
     status: str
-    ai_provider: Optional[str] = None
-    model_name: Optional[str] = None
-    embedding_model: Optional[str] = None
+    ai_provider: str | None = None
+    model_name: str | None = None
+    embedding_model: str | None = None
     overall_confidence: float
-    safe_error_message: Optional[str] = None
+    safe_error_message: str | None = None
 
     class Config:
         from_attributes = True
 
 class ExtractedJobDataSchema(BaseModel):
     role_title: str
-    required_skills: List[str]
-    education: List[str]
-    responsibilities: List[str]
-    preferred_skills: List[str]
-    good_to_have: List[str]
-    experience: Optional[str] = None
+    required_skills: list[str]
+    education: list[str]
+    responsibilities: list[str]
+    preferred_skills: list[str]
+    good_to_have: list[str]
+    experience: str | None = None
 
 class JobIntelligenceDetailResponse(BaseModel):
     version: JobIntelligenceVersionResponse
-    requirements: List[JobRequirementResponse]
-    responsibilities: List[str]
-    intents: List[str]
-    extracted_data: Optional[ExtractedJobDataSchema] = None
+    requirements: list[JobRequirementResponse]
+    responsibilities: list[str]
+    intents: list[str]
+    extracted_data: ExtractedJobDataSchema | None = None
 
 @router.post("/{job_id}/intelligence/process", response_model=JobIntelligenceVersionResponse, status_code=status.HTTP_202_ACCEPTED)
 async def process_job_intelligence(
@@ -261,7 +260,7 @@ async def get_active_job_intelligence(
             extracted_data=extracted_payload,
         )
 
-@router.get("/{job_id}/intelligence/versions", response_model=List[JobIntelligenceVersionResponse])
+@router.get("/{job_id}/intelligence/versions", response_model=list[JobIntelligenceVersionResponse])
 async def list_job_intelligence_versions(
     job_id: uuid.UUID,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -282,7 +281,7 @@ async def list_job_intelligence_versions(
         versions = list((await session.execute(stmt_v)).scalars().all())
         return [JobIntelligenceVersionResponse.model_validate(v) for v in versions]
 
-@router.get("/{job_id}/intelligence/requirements", response_model=List[JobRequirementResponse])
+@router.get("/{job_id}/intelligence/requirements", response_model=list[JobRequirementResponse])
 async def list_job_requirements(
     job_id: uuid.UUID,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),

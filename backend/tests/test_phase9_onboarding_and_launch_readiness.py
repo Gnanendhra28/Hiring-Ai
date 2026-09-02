@@ -6,7 +6,7 @@ privacy-safe telemetry payload validation, and sanitized error responses.
 
 import pytest
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from sqlalchemy import select
 
 from app.db.session import async_session_factory
@@ -124,7 +124,7 @@ async def test_privacy_safe_telemetry_event_validation():
     telemetry_payload = {
         "event_name": "candidate_shortlisted",
         "organization_id": str(uuid.uuid4()),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "feature": "recruiter_ats",
         "status": "SUCCESS",
     }
@@ -144,7 +144,7 @@ async def test_error_response_sanitization_and_request_id():
         "error": "Resource Not Found",
         "message": "The requested job requisition does not exist or has been archived.",
         "request_id": sample_request_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     assert "traceback" not in error_response

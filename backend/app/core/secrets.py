@@ -1,19 +1,18 @@
 import abc
 import os
-from typing import Optional
 from app.core.config import settings
 
 class SecretProvider(abc.ABC):
     """Abstract Secret Provider for local environment or cloud key vault management."""
 
     @abc.abstractmethod
-    def get_secret(self, secret_name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, secret_name: str, default: str | None = None) -> str | None:
         pass
 
 class EnvironmentSecretProvider(SecretProvider):
     """Environment-based secret provider for local development, testing, and container environment variables."""
 
-    def get_secret(self, secret_name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, secret_name: str, default: str | None = None) -> str | None:
         val = os.getenv(secret_name)
         if val:
             return val
@@ -24,11 +23,11 @@ class EnvironmentSecretProvider(SecretProvider):
 class GoogleSecretManagerProvider(SecretProvider):
     """Google Cloud Secret Manager secret provider with fallback to environment variables."""
 
-    def __init__(self, project_id: Optional[str] = None):
+    def __init__(self, project_id: str | None = None):
         self.project_id = project_id or os.getenv("GCP_PROJECT_ID", "hiring-ai-507307")
         self._fallback = EnvironmentSecretProvider()
 
-    def get_secret(self, secret_name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, secret_name: str, default: str | None = None) -> str | None:
         try:
             from google.cloud import secretmanager
             client = secretmanager.SecretManagerServiceClient()

@@ -1,5 +1,4 @@
 import httpx
-from typing import List
 from app.core.config import settings
 from app.core.logging import logger
 from app.infrastructure.embeddings.base import EmbeddingProvider
@@ -21,7 +20,7 @@ class OpenAIEmbeddingAdapter(EmbeddingProvider):
                 f"does not match OpenAI text-embedding-3-small database schema dimension (1536)."
             )
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         logger.info(f"[OpenAI Embedding] Generating vector embedding for text segment ({len(text)} chars)")
         headers = {
             "Authorization": f"Bearer {settings.AI_API_KEY}",

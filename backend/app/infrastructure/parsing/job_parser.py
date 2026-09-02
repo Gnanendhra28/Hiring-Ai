@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Any, Optional
+from typing import Any
 
 class DeterministicJobParser:
     """
@@ -9,7 +9,7 @@ class DeterministicJobParser:
     """
 
     @classmethod
-    def parse_experience_string(cls, text: str) -> Optional[Dict[str, Any]]:
+    def parse_experience_string(cls, text: str) -> dict[str, Any] | None:
         """
         Parses patterns like '3+ years', '5 years', '2-4 years', 'minimum 3 years'.
         Returns dict with minimum_value (in months), operator, and hard_constraint.

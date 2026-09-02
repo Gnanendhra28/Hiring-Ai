@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import datetime, UTC
+from typing import Any
 from pydantic import BaseModel, Field
 
 class EventEnvelope(BaseModel):
@@ -12,10 +12,10 @@ class EventEnvelope(BaseModel):
     event_version: str = Field(default="1.0.0")
     aggregate_id: uuid.UUID = Field(..., description="ID of entity producing event")
     organization_id: uuid.UUID = Field(..., description="Tenant ID of organization context")
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     correlation_id: str = Field(..., description="Distributed tracing correlation ID")
     session_id: str | None = Field(default=None, description="Optional Service Bus session key for aggregate ordering")
-    payload: Dict[str, Any] = Field(default_factory=dict)
+    payload: dict[str, Any] = Field(default_factory=dict)
 
     def to_json(self) -> str:
         return self.model_dump_json()

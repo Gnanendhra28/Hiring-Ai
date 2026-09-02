@@ -1,4 +1,3 @@
-from typing import Dict, List, Set
 
 class SkillNormalizer:
     """
@@ -7,7 +6,7 @@ class SkillNormalizer:
     """
 
     # Exact Canonical Skill Mappings
-    CANONICAL_ALIASES: Dict[str, str] = {
+    CANONICAL_ALIASES: dict[str, str] = {
         # AI / ML & GenAI Taxonomy
         "rag": "RAG",
         "retrieval augmented generation": "RAG",
@@ -70,7 +69,7 @@ class SkillNormalizer:
         "dbt": "dbt",
         "databricks": "Databricks",
         "bigquery": "BigQuery",
-        
+
         # Languages
         "python": "Python",
         "python3": "Python",
@@ -158,7 +157,7 @@ class SkillNormalizer:
     }
 
     # Semantic Ontology Hierarchy (Maps parents to sub-competencies)
-    DOMAIN_TAXONOMY: Dict[str, Set[str]] = {
+    DOMAIN_TAXONOMY: dict[str, set[str]] = {
         "Generative AI": {"LLMs", "RAG", "Prompt Engineering", "Fine-tuning", "LoRA", "Transformers", "LangChain", "LlamaIndex", "Hugging Face"},
         "Machine Learning": {"Deep Learning", "PyTorch", "TensorFlow", "Scikit-learn", "XGBoost", "LightGBM", "Keras", "Model Training", "Model Evaluation"},
         "Computer Vision": {"OpenCV", "CUDA", "TensorRT", "Deep Learning", "PyTorch", "Image Processing"},

@@ -5,10 +5,7 @@ and produces LLM-as-a-judge scorecards with evidence grounding and prompt-inject
 """
 
 import asyncio
-import json
-import os
-import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 from dotenv import load_dotenv
 
@@ -24,8 +21,8 @@ class InterviewQuestion(BaseModel):
     question: str
     target_skill: str
     difficulty: str = "MEDIUM"  # EASY, MEDIUM, HARD
-    expected_key_points: List[str] = Field(default_factory=list)
-    rubric_guidelines: Optional[str] = None
+    expected_key_points: list[str] = Field(default_factory=list)
+    rubric_guidelines: str | None = None
     follow_up_allowed: bool = True
 
 
@@ -34,8 +31,8 @@ class CandidateAnswerTurn(BaseModel):
     question_id: str
     question_text: str
     candidate_answer: str
-    code_submission: Optional[str] = None
-    time_taken_seconds: Optional[int] = None
+    code_submission: str | None = None
+    time_taken_seconds: int | None = None
 
 
 class TurnEvaluation(BaseModel):
@@ -45,13 +42,13 @@ class TurnEvaluation(BaseModel):
     depth: float = Field(default=75.0, ge=0.0, le=100.0)
     clarity: float = Field(default=80.0, ge=0.0, le=100.0)
     problem_solving: float = Field(default=75.0, ge=0.0, le=100.0)
-    evidence: List[str] = Field(default_factory=list)
-    strengths: List[str] = Field(default_factory=list)
-    weaknesses: List[str] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
+    strengths: list[str] = Field(default_factory=list)
+    weaknesses: list[str] = Field(default_factory=list)
     answer_quality: str = "ADEQUATE"  # STRONG, ADEQUATE, WEAK, INSUFFICIENT
     follow_up_needed: bool = False
-    follow_up_reason: Optional[str] = None
-    follow_up_question: Optional[str] = None
+    follow_up_reason: str | None = None
+    follow_up_question: str | None = None
     feedback: str = ""
 
 
@@ -61,8 +58,8 @@ class QuestionEvaluation(BaseModel):
     question_text: str
     candidate_answer: str
     score: float = Field(..., ge=0.0, le=100.0)
-    strengths: List[str] = Field(default_factory=list)
-    weaknesses: List[str] = Field(default_factory=list)
+    strengths: list[str] = Field(default_factory=list)
+    weaknesses: list[str] = Field(default_factory=list)
     feedback: str
 
 
@@ -78,11 +75,11 @@ class InterviewScorecard(BaseModel):
     system_design_score: float
     communication_score: float
     summary: str
-    question_evaluations: List[QuestionEvaluation] = Field(default_factory=list)
-    top_strengths: List[str] = Field(default_factory=list)
-    areas_for_improvement: List[str] = Field(default_factory=list)
-    skill_gaps: List[str] = Field(default_factory=list)
-    recommendation_reason: Optional[str] = None
+    question_evaluations: list[QuestionEvaluation] = Field(default_factory=list)
+    top_strengths: list[str] = Field(default_factory=list)
+    areas_for_improvement: list[str] = Field(default_factory=list)
+    skill_gaps: list[str] = Field(default_factory=list)
+    recommendation_reason: str | None = None
     prompt_version: str = "v1.2"
     rubric_version: str = "v1.2"
     schema_version: str = "v1.2"
@@ -97,9 +94,9 @@ class AIInterviewAgent:
     _gemini_ladder = GeminiResilienceLadder()
 
     @classmethod
-    def _extract_skill_names(cls, raw_list: List[Any]) -> List[str]:
+    def _extract_skill_names(cls, raw_list: list[Any]) -> list[str]:
         """Safely extracts string skill names from mixed string/dict lists."""
-        extracted: List[str] = []
+        extracted: list[str] = []
         for item in raw_list:
             if isinstance(item, str) and item.strip():
                 extracted.append(item.strip())
@@ -114,10 +111,10 @@ class AIInterviewAgent:
         cls,
         job_title: str,
         job_description: str,
-        required_skills: List[Any],
-        candidate_skills: List[Any],
+        required_skills: list[Any],
+        candidate_skills: list[Any],
         interview_type: str = "TECHNICAL",
-    ) -> List[InterviewQuestion]:
+    ) -> list[InterviewQuestion]:
         """
         Generates 5 structured interview questions tailored specifically to JD requirements
         and candidate technical profile using Google Gemini with resilient fallback.
@@ -192,10 +189,10 @@ Return ONLY the raw JSON array.
         cls,
         job_title: str,
         job_description: str,
-        required_skills: List[Any],
-        candidate_skills: List[Any],
+        required_skills: list[Any],
+        candidate_skills: list[Any],
         interview_type: str = "TECHNICAL",
-    ) -> List[InterviewQuestion]:
+    ) -> list[InterviewQuestion]:
         """Synchronous wrapper for syllabus generation."""
         try:
             loop = asyncio.get_event_loop()
@@ -217,10 +214,10 @@ Return ONLY the raw JSON array.
         cls,
         job_title: str,
         job_description: str,
-        clean_req: List[str],
-        clean_cand: List[str],
+        clean_req: list[str],
+        clean_cand: list[str],
         interview_type: str,
-    ) -> List[InterviewQuestion]:
+    ) -> list[InterviewQuestion]:
         """Deterministic domain-grounded syllabus generator."""
         job_lower = f"{job_title} {job_description}".lower()
         is_power_systems = any(w in job_lower for w in ["power system", "electrical", "relay", "substation", "load flow", "autocad electrical", "etap", "pscad"])
@@ -357,7 +354,7 @@ Return ONLY the raw JSON array.
         question_id: str,
         question_text: str,
         candidate_answer: str,
-        code_submission: Optional[str] = None,
+        code_submission: str | None = None,
     ) -> TurnEvaluation:
         """
         Evaluates an individual candidate answer turn using Gemini, determining if an adaptive
@@ -461,7 +458,7 @@ Return a JSON object conforming to:
         interview_id: str,
         candidate_name: str,
         job_title: str,
-        turns: List[CandidateAnswerTurn],
+        turns: list[CandidateAnswerTurn],
     ) -> InterviewScorecard:
         """
         Produces final multi-dimensional LLM-as-a-judge evaluation scorecard with Gemini.
@@ -565,7 +562,7 @@ All scores must be bounded floats between 0.0 and 100.0.
         interview_id: str,
         candidate_name: str,
         job_title: str,
-        turns: List[CandidateAnswerTurn],
+        turns: list[CandidateAnswerTurn],
     ) -> InterviewScorecard:
         """Synchronous wrapper for interview evaluation."""
         try:
@@ -584,10 +581,10 @@ All scores must be bounded floats between 0.0 and 100.0.
         interview_id: str,
         candidate_name: str,
         job_title: str,
-        turns: List[CandidateAnswerTurn],
+        turns: list[CandidateAnswerTurn],
     ) -> InterviewScorecard:
         """Deterministic rubric scorecard generator."""
-        q_evals: List[QuestionEvaluation] = []
+        q_evals: list[QuestionEvaluation] = []
         total_score = 0.0
 
         for turn in turns:

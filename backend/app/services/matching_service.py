@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 from sqlalchemy import delete, select
 
 from app.core.config import settings
@@ -47,8 +46,8 @@ class MatchingService:
         job_id: uuid.UUID,
         candidate_id: uuid.UUID,
         organization_id: uuid.UUID,
-        user_id: Optional[uuid.UUID] = None,
-        application_id: Optional[uuid.UUID] = None,
+        user_id: uuid.UUID | None = None,
+        application_id: uuid.UUID | None = None,
     ) -> bool:
         logger.info(f"Starting candidate feature matching for job_id={job_id}, candidate_id={candidate_id} under org_id={organization_id}")
 
@@ -290,8 +289,8 @@ class MatchingService:
                 return True
 
             except Exception as e:
-                logger.error(f"Error processing candidate matching features: {str(e)}")
-                raise e
+                logger.error(f"Error processing candidate matching features: {e!s}")
+                raise
 
 
 

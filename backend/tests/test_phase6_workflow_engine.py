@@ -1,6 +1,6 @@
 import pytest
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 from app.db.session import async_session_factory
@@ -91,7 +91,7 @@ async def test_interview_scheduling_and_video_meeting_generation():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         data = await _setup_verified_job_and_candidate(client)
 
-        start_time = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
+        start_time = (datetime.now(UTC) + timedelta(days=2)).isoformat()
 
         # Recruiter schedules Interview
         sched_resp = await client.post("/api/v1/interviews", json={

@@ -1,7 +1,7 @@
 import enum
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import datetime, UTC
+from typing import Any
 from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -28,7 +28,7 @@ class Assessment(Base, UUIDMixin, TimestampMixin, TenantMixin):
         UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     duration_minutes: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
     passing_score: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
 
@@ -53,10 +53,10 @@ class AssessmentAssignment(Base, UUIDMixin, TimestampMixin, TenantMixin):
         SQLEnum(AssessmentAssignmentStatusEnum), default=AssessmentAssignmentStatusEnum.DRAFT, nullable=False, index=True
     )
     assigned_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
-    due_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 class AssessmentResult(Base, UUIDMixin, TimestampMixin, TenantMixin):
     """
@@ -70,7 +70,7 @@ class AssessmentResult(Base, UUIDMixin, TimestampMixin, TenantMixin):
     )
     score: Mapped[int] = mapped_column(Integer, nullable=False)
     passed: Mapped[bool] = mapped_column(default=False, nullable=False)
-    result_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    result_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     completed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

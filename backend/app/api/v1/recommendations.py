@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime, timezone
-from typing import List
+from datetime import datetime, UTC
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
@@ -13,7 +12,6 @@ from app.domains.applications.models import Application
 from app.domains.applications.schemas import CandidatePlacementResponse, PlacementActionRequest
 from app.domains.jobs.models import Job
 from app.domains.recommendation.models import (
-    CandidateDecision,
     CandidateDecisionAudit,
     CandidateRecommendation,
     CandidateRecommendationEvidence,
@@ -33,7 +31,7 @@ from app.services.recommendation_service import RecommendationService
 
 router = APIRouter(prefix="/jobs", tags=["Candidate Recommendation & Decision Workflow Engine"])
 
-@router.post("/{job_id}/recommendations/generate", response_model=List[CandidateRecommendationResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/{job_id}/recommendations/generate", response_model=list[CandidateRecommendationResponse], status_code=status.HTTP_201_CREATED)
 async def generate_job_recommendations(
     job_id: uuid.UUID,
     payload: GenerateRecommendationRequest,
@@ -94,7 +92,7 @@ async def generate_job_recommendations(
 
     return results
 
-@router.get("/{job_id}/recommendations", response_model=List[CandidateRecommendationResponse])
+@router.get("/{job_id}/recommendations", response_model=list[CandidateRecommendationResponse])
 async def get_job_recommendations(
     job_id: uuid.UUID,
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
@@ -162,7 +160,7 @@ async def get_candidate_recommendation_detail(
                 logging.getLogger(__name__).warning("On-demand recommendation generation skipped: %s", e)
 
         if not rec_obj:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             from app.domains.recommendation.models import RecommendationTypeEnum
             return RecommendationDetailResponse(
                 recommendation=CandidateRecommendationResponse(
@@ -251,7 +249,7 @@ async def record_recruiter_decision(
 
     return CandidateDecisionResponse.model_validate(dec_obj)
 
-@router.get("/{job_id}/applications/{application_id}/decision-history", response_model=List[CandidateDecisionAuditResponse])
+@router.get("/{job_id}/applications/{application_id}/decision-history", response_model=list[CandidateDecisionAuditResponse])
 async def get_decision_history(
     job_id: uuid.UUID,
     application_id: uuid.UUID,

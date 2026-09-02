@@ -67,7 +67,7 @@ async def _setup_matching_context(client: AsyncClient):
     async with async_session_factory() as session:
         await session.begin()
         await set_tenant_context(session, uuid.UUID(org_id))
-        
+
         cand_user = User(
             email=f"cand_p9a_{uuid.uuid4().hex[:8]}@example.com",
             password_hash="hashed_pw_test",

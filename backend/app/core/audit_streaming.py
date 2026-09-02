@@ -1,8 +1,8 @@
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime, UTC
+from typing import Any
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger("ai_hiring_platform.audit_streamer")
@@ -18,18 +18,18 @@ class SecurityEventSchema(BaseModel):
     event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     event_type: str
     event_version: str = "1.0"
-    occurred_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    organization_id: Optional[str] = None
+    occurred_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+    organization_id: str | None = None
     actor_type: str = "SYSTEM"
-    actor_id: Optional[str] = None
-    resource_type: Optional[str] = None
-    resource_id: Optional[str] = None
+    actor_id: str | None = None
+    resource_type: str | None = None
+    resource_id: str | None = None
     outcome: str = "SUCCESS"  # SUCCESS, FAILURE, DENIED
     severity: str = "INFO"    # INFO, WARNING, HIGH, CRITICAL
-    correlation_id: Optional[str] = None
-    request_id: Optional[str] = None
+    correlation_id: str | None = None
+    request_id: str | None = None
     source: str = "api"
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 def sanitize_payload(data: Any) -> Any:
     """Recursively strip sensitive credentials, tokens, and PII from metadata payloads."""
@@ -46,14 +46,14 @@ def sanitize_payload(data: Any) -> Any:
     return data
 
 class SIEMAdapter:
-    def publish(self, event: Dict[str, Any]) -> bool:
+    def publish(self, event: dict[str, Any]) -> bool:
         raise NotImplementedError
-    
-    def health_check(self) -> Dict[str, Any]:
+
+    def health_check(self) -> dict[str, Any]:
         raise NotImplementedError
 
 class CloudWatchSIEMAdapter(SIEMAdapter):
-    def publish(self, event: Dict[str, Any]) -> bool:
+    def publish(self, event: dict[str, Any]) -> bool:
         try:
             # Emit structured JSON audit log to CloudWatch stream via root logger
             sanitized_event = sanitize_payload(event)
@@ -64,7 +64,7 @@ class CloudWatchSIEMAdapter(SIEMAdapter):
             logger.error(f"Audit streaming error: {e}")
             return False
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         return {
             "status": "HEALTHY",
             "provider": "CLOUDWATCH_ONLY",
@@ -75,22 +75,22 @@ class AuditStreamerService:
     def __init__(self):
         self.adapter: SIEMAdapter = CloudWatchSIEMAdapter()
         # In-memory circular buffer for operations dashboard monitoring (max 100 events)
-        self._event_buffer: List[Dict[str, Any]] = []
+        self._event_buffer: list[dict[str, Any]] = []
 
     def emit_event(
         self,
         event_type: str,
-        organization_id: Optional[str] = None,
+        organization_id: str | None = None,
         actor_type: str = "SYSTEM",
-        actor_id: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        actor_id: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         outcome: str = "SUCCESS",
         severity: str = "INFO",
-        correlation_id: Optional[str] = None,
-        request_id: Optional[str] = None,
+        correlation_id: str | None = None,
+        request_id: str | None = None,
         source: str = "api",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> bool:
         try:
             sanitized_meta = sanitize_payload(metadata or {})
@@ -109,7 +109,7 @@ class AuditStreamerService:
                 metadata=sanitized_meta
             )
             event_dict = event_obj.model_dump()
-            
+
             # Store in buffer
             self._event_buffer.append(event_dict)
             if len(self._event_buffer) > 200:
@@ -122,7 +122,7 @@ class AuditStreamerService:
             logger.error(f"Failed to emit audit event: {ex}")
             return False
 
-    def get_organization_events(self, organization_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_organization_events(self, organization_id: str, limit: int = 50) -> list[dict[str, Any]]:
         str_org_id = str(organization_id)
         filtered = [e for e in self._event_buffer if e.get("organization_id") == str_org_id]
         return filtered[-limit:]
