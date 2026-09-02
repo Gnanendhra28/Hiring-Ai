@@ -10,6 +10,31 @@ jobs:
   backend-test:
     name: Backend Quality Gate (Python 3.13)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hiring_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,10 +57,25 @@ jobs:
           cd backend
           ruff check .
 
+      - name: Run Alembic Database Migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/hiring_db
+          APP_ENV: testing
+        run: |
+          cd backend
+          alembic upgrade head
+
       - name: Run Pytest Suite
         env:
           APP_ENV: testing
           PYTHONPATH: .
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/hiring_db
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test_secret_key_minimum_32_bytes_long_1234567890
+          JWT_ALGORITHM: HS256
+          ENCRYPTION_KEY: test_encryption_key_32_bytes_long!!
+          GEMINI_API_KEY: placeholder_test_key
+          USE_GCP_SECRET_MANAGER: false
         run: |
           cd backend
           pytest -v
