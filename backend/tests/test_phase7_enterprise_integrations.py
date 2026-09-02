@@ -44,7 +44,6 @@ async def test_job_import_sanitization_and_deduplication():
         await session.flush()
 
         # 2. Simulate sanitized external payload (removing script tags / malicious inputs)
-        raw_title = "Staff SRE <script>alert('pwn')</script>"
         sanitized_title = "Staff SRE"
         external_id = f"ext-gh-{uuid.uuid4().hex[:8]}"
 

@@ -138,7 +138,7 @@ async def upload_resume(
         "status": "active",
         "version": version,
     }
-    saved_doc = await firestore_repo.save_resume(resume_doc)
+    await firestore_repo.save_resume(resume_doc)
 
     # 3. Synchronize to PostgreSQL CandidateProfile
     async with async_session_factory() as session:

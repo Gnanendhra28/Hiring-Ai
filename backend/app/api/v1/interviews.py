@@ -101,10 +101,6 @@ async def get_job_interviews(
 
         # Provide baseline interview if database has no active rows yet
         if not results:
-            stmt_j = select(Job).where(Job.id == job_id)
-            job_obj = (await session.execute(stmt_j)).scalar_one_or_none()
-            job_title = job_obj.title if job_obj else "Engineering Role"
-
             stmt_apps = select(Application).where(Application.job_id == job_id)
             first_app = (await session.execute(stmt_apps)).scalars().first()
             first_cand_id = str(first_app.candidate_id) if first_app else str(uuid.uuid4())

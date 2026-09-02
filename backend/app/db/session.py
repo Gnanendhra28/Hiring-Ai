@@ -1,3 +1,4 @@
+import sys
 from collections.abc import AsyncGenerator
 from sqlalchemy import text
 from sqlalchemy.pool import NullPool
@@ -14,8 +15,6 @@ engine_kwargs = {
     "echo": settings.DATABASE_ECHO,
     "future": True,
 }
-
-import sys
 
 if settings.APP_ENV.lower() in ("testing", "test") or "pytest" in sys.modules:
     engine_kwargs["poolclass"] = NullPool

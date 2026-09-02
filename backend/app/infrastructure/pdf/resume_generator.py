@@ -35,7 +35,6 @@ class ProfessionalResumePDFGenerator:
         doc = fitz.open()
         page_width, page_height = 595.0, 842.0  # Standard A4 dimensions in points
         margin_x = 40.0
-        content_width = page_width - (2 * margin_x)
 
         page = doc.new_page(width=page_width, height=page_height)
 

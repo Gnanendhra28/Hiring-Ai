@@ -18,6 +18,7 @@ from app.api.v1.scoring import router as scoring_router
 from app.api.v1.ranking import router as ranking_router
 from app.api.v1.recommendations import router as recommendation_router
 from app.api.v1.recruiters import router as recruiters_router
+from app.api.v1.resumes import router as resumes_router
 
 
 
@@ -290,12 +291,6 @@ app.include_router(scoring_router, prefix="/api/v1")
 app.include_router(ranking_router, prefix="/api/v1")
 app.include_router(recommendation_router, prefix="/api/v1")
 app.include_router(recruiters_router, prefix="/api/v1")
-
-
-
-
-from app.api.v1.resumes import router as resumes_router
-
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(candidates_router, prefix="/api/v1")
 app.include_router(resumes_router, prefix="/api/v1/resumes", tags=["Candidate Resumes"])

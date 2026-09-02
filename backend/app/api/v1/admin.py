@@ -3,7 +3,9 @@ from datetime import datetime, UTC
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, func, select
 
+from pydantic import BaseModel, EmailStr
 from app.api.v1.deps import get_current_user
+from app.core.security import hash_password
 from app.api.v1.schemas import BatchDeleteJobsRequest, JobListResponse, JobResponse, JobVerifyRequest
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
@@ -302,9 +304,6 @@ async def delete_employer_profile(
 
         await session.commit()
         return {"status": "success", "message": f"Successfully deleted employer profile for user '{user_id}'."}
-
-from pydantic import BaseModel, EmailStr
-from app.core.security import hash_password
 
 class AddAdminRequest(BaseModel):
     full_name: str

@@ -54,7 +54,29 @@ include = ["app*"]
 
 [tool.ruff]
 target-version = "py313"
-line-length = 100
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "UP", "RUF"]
+ignore = [
+    "E501",   # Line length handled by code formatting
+    "B008",   # Do not perform function call in argument defaults (FastAPI Depends)
+    "B017",   # Blind pytest.raises(Exception)
+    "BLE001", # Blind exception catching (standard in top-level crash guards)
+    "TRY003", # Exception message formatting
+    "TRY201", # Re-raising exceptions
+    "RUF059", # Unpacked variable unused
+    "RUF001", # Ambiguous characters in test data
+    "RUF006", # Async task references
+    "RUF012", # Mutable class attributes
+    "UP042",  # Class inherits from both str and enum.Enum (required for SQLAlchemy enum mapping)
+    "UP046",  # Generic class uses Generic subclass (compatible with standard TypeVar)
+    "W291",   # Trailing whitespace
+    "W293",   # Blank line whitespace
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F401", "F841"]
 
 [tool.mypy]
 python_version = "3.13"

@@ -33,7 +33,6 @@ class JobIntelligenceValidator:
             raw_val = req.get("raw_value", "").strip()
             canonical_val = req.get("canonical_value") or SkillNormalizer.normalize(raw_val)
             evidence = req.get("evidence_text", "").strip()
-            level = req.get("requirement_level", "REQUIRED").upper()
 
             # 1. Evidence Grounding Check
             evidence_found = False
@@ -48,7 +47,6 @@ class JobIntelligenceValidator:
 
             # Check if skill alias is in raw_text
             if not evidence_found:
-                raw_skill_cleaned = raw_val.lower()
                 for alias, canon in SkillNormalizer.CANONICAL_ALIASES.items():
                     if canon.lower() == canonical_val.lower() and alias in raw_text_lower:
                         evidence_found = True

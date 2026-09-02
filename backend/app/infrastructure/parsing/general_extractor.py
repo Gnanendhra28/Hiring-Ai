@@ -176,13 +176,13 @@ class GeneralJobExtractor:
     @classmethod
     def extract(cls, raw_text: str, job_title: str | None = None) -> dict[str, Any]:
         # Split raw text into sentences and lines
-        raw_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
+        raw_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
         sentences: list[tuple[str, str]] = []
-        for l in raw_lines:
-            sub_s = re.split(r"(?<=[.!?])\s+", l.strip())
+        for line in raw_lines:
+            sub_s = re.split(r"(?<=[.!?])\s+", line.strip())
             for s in sub_s:
                 if s.strip():
-                    sentences.append((s.strip(), l.strip()))
+                    sentences.append((s.strip(), line.strip()))
 
         required_skills: list[dict[str, Any]] = []
         preferred_skills: list[dict[str, Any]] = []

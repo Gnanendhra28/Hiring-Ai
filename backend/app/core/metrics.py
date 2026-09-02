@@ -24,12 +24,12 @@ class MetricsRegistry:
         label_str = ",".join(f'{k}="{v}"' for k, v in sorted(labels.items()))
         return f"{metric_name}{{{label_str}}}"
 
-    def increment(self, metric_name: str, value: float = 1.0, labels: dict[str, str] = None):
+    def increment(self, metric_name: str, value: float = 1.0, labels: dict[str, str] | None = None):
         key = self._format_key(metric_name, labels or {})
         with self._lock:
             self._counters[key] = self._counters.get(key, 0.0) + value
 
-    def observe_duration(self, metric_name: str, duration_sec: float, labels: dict[str, str] = None):
+    def observe_duration(self, metric_name: str, duration_sec: float, labels: dict[str, str] | None = None):
         key = self._format_key(metric_name, labels or {})
         with self._lock:
             if key not in self._durations:

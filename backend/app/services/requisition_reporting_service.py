@@ -63,7 +63,7 @@ class RequisitionReportingService:
                 .where(
                     JobIntelligenceVersion.job_id == job_id,
                     JobIntelligenceVersion.organization_id == organization_id,
-                    JobIntelligenceVersion.is_active == True,
+                    JobIntelligenceVersion.is_active.is_(True),
                 )
                 .order_by(JobIntelligenceVersion.version_number.desc())
                 .limit(1)

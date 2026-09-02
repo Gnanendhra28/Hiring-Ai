@@ -803,7 +803,7 @@ async def list_jobs(
             # Job skills
             stmt_intel = select(JobIntelligenceVersion).where(
                 JobIntelligenceVersion.job_id == j.id,
-                JobIntelligenceVersion.is_active == True
+                JobIntelligenceVersion.is_active.is_(True)
             )
             intel = (await session.execute(stmt_intel)).scalars().first()
             if intel and intel.parsed_requirements:

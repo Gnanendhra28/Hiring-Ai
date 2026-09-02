@@ -5,7 +5,7 @@ from app.infrastructure.workers.pipeline_worker import PipelineWorker
 
 async def main():
     logger.info("[WorkerDaemon] Starting Hiring AI asynchronous pipeline worker daemon...")
-    worker = PipelineWorker()
+    _ = PipelineWorker()
     stop_event = asyncio.Event()
 
     def signal_handler():

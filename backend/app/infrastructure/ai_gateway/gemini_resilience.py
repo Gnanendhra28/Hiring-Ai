@@ -52,7 +52,6 @@ class GeminiResilienceLadder:
             clean = clean.strip()
 
         # If there are surrounding characters, locate the first '{' or '[' and matching end
-        start_idx = -1
         first_brace = clean.find("{")
         first_bracket = clean.find("[")
 
@@ -96,8 +95,6 @@ class GeminiResilienceLadder:
                 "Content-Type": "application/json",
                 "x-goog-api-key": self.api_key,
             }
-
-            contents: list[dict[str, Any]] = []
             if system_instruction:
                 # Add anti-injection system directive
                 sanitized_system = (

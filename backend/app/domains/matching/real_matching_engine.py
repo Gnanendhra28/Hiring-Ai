@@ -66,7 +66,6 @@ class RealJobCandidateMatcher:
         job_gth_skills = job_intelligence.get("good_to_have", [])
         job_resps = job_intelligence.get("responsibilities", [])
         job_exp = job_intelligence.get("experience")
-        job_edu = job_intelligence.get("education", [])
 
         # Candidate Features
         cand_skills_map = {s.name.lower(): s for s in candidate_intelligence.skills}
@@ -74,7 +73,6 @@ class RealJobCandidateMatcher:
         cand_resps = [r.description for r in candidate_intelligence.responsibilities]
         cand_projects = candidate_intelligence.projects
         cand_experience = candidate_intelligence.experience
-        cand_education = candidate_intelligence.education
 
         matched_requirements: list[RequirementMatchItem] = []
         missing_requirements: list[RequirementMatchItem] = []
