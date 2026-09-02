@@ -7,10 +7,12 @@ from typing import Any, Dict
 from app.core.config import settings
 
 SENSITIVE_PATTERNS = [
-    re.compile(r'(password|token|secret|api_key|authorization|cookie|gemini_api_key)["\']?\s*[:=]\s*["\']?([^"\'\s&]+)', re.IGNORECASE),
+    re.compile(r'(password|token|secret|api_key|authorization|cookie|gemini_api_key|database_url|db_password)["\']?\s*[:=]\s*["\']?([^"\'\s&]+)', re.IGNORECASE),
     re.compile(r'(bearer\s+)[a-zA-Z0-9\-\._~\+\/]+=*', re.IGNORECASE),
     re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', re.IGNORECASE),  # Emails
     re.compile(r'\b\d{3}-\d{2}-\d{4}\b'),  # SSNs
+    re.compile(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'),  # Phone numbers
+    re.compile(r'postgres(ql)?(\+asyncpg)?:\/\/[^:]+:([^@]+)@', re.IGNORECASE),  # DB passwords in URIs
     re.compile(r'(resume_text|extracted_text|raw_text)["\']?\s*[:=]\s*["\']?([^"\'\s&]+)', re.IGNORECASE),
 ]
 
@@ -52,7 +54,7 @@ class JSONFormatter(logging.Formatter):
                 log_object[field] = getattr(record, field)
 
         if record.exc_info:
-            log_object["exception"] = self.formatException(record.exc_info)
+            log_object["exception"] = self.sanitize(self.formatException(record.exc_info))
 
         return json.dumps(log_object)
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
+import { AccountSwitcher } from "@/components/auth/AccountSwitcher";
 import { apiFetch } from "@/lib/api";
 import {
   Bell,
@@ -377,6 +378,9 @@ export function CandidateNavbar() {
                 </div>
               )}
             </div>
+
+            {/* Multi-Account Switcher */}
+            <AccountSwitcher />
 
             {/* Requirement 5: Candidate Profile Avatar with Dropdown Menu */}
             <div className="relative">

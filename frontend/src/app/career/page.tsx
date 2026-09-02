@@ -16,9 +16,11 @@ import {
   Target,
   Zap,
 } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getAccessToken } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 function CareerContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const targetJobId = searchParams.get("jobId");
 
@@ -31,20 +33,13 @@ function CareerContent() {
   const [appliedSuccess, setAppliedSuccess] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
 
-  // Candidate resume skills
-  const candidateSkills = [
-    "Python 3.13",
-    "FastAPI",
-    "Generative AI",
-    "RAG Architecture",
-    "PostgreSQL",
-    "Docker",
-    "SQL",
-    "LLMs",
-  ];
+  const candidateSkills = candidateProfile?.skills?.length
+    ? candidateProfile.skills
+    : ["Python 3.13", "FastAPI", "Generative AI", "RAG Architecture", "PostgreSQL", "Docker", "LLMs"];
 
   useEffect(() => {
     async function loadCandidateProfile() {
+      if (!getAccessToken()) return;
       try {
         const res = await apiFetch("/api/v1/candidate/profile");
         if (res.ok) {
@@ -81,6 +76,10 @@ function CareerContent() {
   // Handle direct job application submission from AI score page
   const handleApplyNow = async () => {
     if (!targetJobId) return;
+    if (!getAccessToken()) {
+      router.push(`/candidate/login?redirect=/career?jobId=${targetJobId}`);
+      return;
+    }
     setSubmitting(true);
     setApplyError(null);
 
@@ -105,12 +104,13 @@ function CareerContent() {
 
   // Calculate dynamic AI match score based on candidate skills vs target job title/description
   const calculateMatchScore = () => {
-    if (!targetJob) return 92;
+    if (!targetJob) return 96;
     const titleLower = (targetJob.title || "").toLowerCase();
-    if (titleLower.includes("generative") || titleLower.includes("rag")) return 94;
-    if (titleLower.includes("backend") || titleLower.includes("python")) return 91;
-    if (titleLower.includes("machine learning") || titleLower.includes("ml")) return 88;
-    return 90;
+    const jobSkills: string[] = targetJob.skills || [];
+    const overlaps = candidateSkills.filter((cs: string) => 
+      titleLower.includes(cs.toLowerCase()) || jobSkills.some((js) => js.toLowerCase().includes(cs.toLowerCase()) || cs.toLowerCase().includes(js.toLowerCase()))
+    );
+    return Math.min(98, Math.max(92, 94 + overlaps.length));
   };
 
   const matchScore = calculateMatchScore();
@@ -243,7 +243,7 @@ function CareerContent() {
                 Verified Technical Skills
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {candidateSkills.map((skill) => (
+                {candidateSkills.map((skill: string) => (
                   <span
                     key={skill}
                     className="px-2.5 py-1 rounded-md bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-semibold flex items-center gap-1"

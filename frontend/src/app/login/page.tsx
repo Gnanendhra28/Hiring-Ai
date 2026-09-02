@@ -4,13 +4,13 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
-import { getGoogleAuthUrl, getUserProfile, requestForgotPassword, resetPassword } from "@/lib/api";
+import { getUserProfile } from "@/lib/api";
 
 type AuthStep = "LOGIN" | "FORGOT_EMAIL" | "RESET_PASSWORD" | "SUCCESS";
 
 export default function UnifiedLoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated, user, activeRole } = useAuth();
+  const { login, loginWithGoogle, sendPasswordReset, isAuthenticated, user, activeRole } = useAuth();
 
   const [step, setStep] = useState<AuthStep>("LOGIN");
 
@@ -90,18 +90,11 @@ export default function UnifiedLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await requestForgotPassword(targetEmail);
-      if (res.success) {
-        setResetEmail(targetEmail);
-        setResetCode("");
-        setDevOtpHint(res.dev_otp_hint || null);
-        setSuccessMsg(res.message);
-        setStep("RESET_PASSWORD");
-      } else {
-        setError(res.message);
-      }
+      await sendPasswordReset(targetEmail);
+      setSuccessMsg(`Password reset instructions have been sent to ${targetEmail}. Please check your inbox.`);
+      setStep("SUCCESS");
     } catch (err: any) {
-      setError("Failed to request password reset. Please try again.");
+      setError(err.message || "Failed to request password reset. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -112,28 +105,20 @@ export default function UnifiedLoginPage() {
     setError(null);
     setSuccessMsg(null);
 
-    if (!newPassword || newPassword.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match. Please ensure both passwords are identical.");
+    const targetEmail = resetEmail || email;
+    if (!targetEmail) {
+      setError("Please enter your registered email address.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const res = await resetPassword(resetEmail, newPassword, resetCode);
-      if (res.success) {
-        setSuccessMsg(res.message);
-        setStep("SUCCESS");
-      } else {
-        setError(res.message);
-      }
+      await sendPasswordReset(targetEmail);
+      setSuccessMsg(`Password reset email sent to ${targetEmail}. Please check your inbox.`);
+      setStep("SUCCESS");
     } catch (err: any) {
-      setError("Failed to reset password. Please try again.");
+      setError(err.message || "Failed to reset password. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -155,14 +140,24 @@ export default function UnifiedLoginPage() {
   const handleGoogleLogin = async () => {
     setGoogleNotice(null);
     try {
-      const { url, configured } = await getGoogleAuthUrl();
-      if (configured && url) {
-        window.location.href = url;
+      await loginWithGoogle();
+      const profile = await getUserProfile();
+      const isPlatformAdmin = Boolean(profile?.user?.is_platform_admin);
+      const isRecruiter = Boolean(
+        profile?.memberships?.some(
+          (m) => m.role === "RECRUITER" || m.role === "ORGANIZATION_ADMIN"
+        )
+      );
+
+      if (isPlatformAdmin) {
+        router.push("/admin/dashboard");
+      } else if (isRecruiter) {
+        router.push("/recruiter/dashboard");
       } else {
-        setGoogleNotice("Google OAuth2 single sign-on is coming soon.");
+        router.push("/candidate/dashboard");
       }
-    } catch (err) {
-      setGoogleNotice("Google OAuth2 single sign-on is coming soon.");
+    } catch (err: any) {
+      setGoogleNotice(err.message || "Google Sign-In failed.");
     }
   };
 
@@ -256,6 +251,24 @@ export default function UnifiedLoginPage() {
               <div className="mb-8">
                 <h2 className="text-2xl font-black text-white tracking-tight">Welcome back</h2>
                 <p className="text-xs text-slate-400 mt-1">Sign in to your AuraHire AI account.</p>
+              </div>
+
+              {/* Quick Admin Autofill for Platform Admin */}
+              <div className="mb-6 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block">Platform Admin Login</span>
+                  <span className="text-xs text-slate-300 font-mono">mattag@iitbhilai.ac.in</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("mattag@iitbhilai.ac.in");
+                    setPassword("#Admin");
+                  }}
+                  className="px-2.5 py-1 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg shadow transition-all"
+                >
+                  Autofill Admin
+                </button>
               </div>
 
               <form onSubmit={handleLoginSubmit} className="space-y-5">

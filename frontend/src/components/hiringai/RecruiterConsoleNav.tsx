@@ -35,6 +35,7 @@ import {
   fetchPendingJobsAdmin,
 } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthContext";
+import { AccountSwitcher } from "@/components/auth/AccountSwitcher";
 
 const recruiterLinks = [
   { label: "Overview", href: "/recruiter/dashboard", icon: LayoutDashboard },
@@ -525,6 +526,9 @@ export function RecruiterConsoleNav() {
             )}
           </div>
 
+          {/* Multi-Account Switcher */}
+          <AccountSwitcher />
+
           {/* Profile Avatar & Dropdown */}
           <div ref={profileRef} className="relative">
             <button
@@ -729,7 +733,7 @@ export function RecruiterConsoleNav() {
                       type="button"
                       onClick={() => {
                         setIsProfileOpen(false);
-                        logout("/login");
+                        logout("/");
                       }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-400 hover:text-rose-300 hover:bg-[#25141e] rounded-md transition font-semibold"
                     >

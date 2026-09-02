@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { registerEmployee, loginUser } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthContext";
 
 export default function EmployeeSignupPage() {
   const router = useRouter();
-  const { refetchProfile } = useAuth();
+  const { signup, refetchProfile } = useAuth();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -37,8 +37,15 @@ export default function EmployeeSignupPage() {
     setIsSubmitting(true);
 
     try {
-      await registerEmployee(email, password, firstName, lastName, companyName || undefined);
-      await loginUser(email, password);
+      await signup(email, password, `${firstName.trim()} ${lastName.trim()}`);
+      await apiFetch("/api/v1/auth/onboard-role", {
+        method: "POST",
+        body: JSON.stringify({
+          role: "RECRUITER",
+          company_name: companyName || `${firstName.trim()}'s Organization`,
+          job_title: "Hiring Manager",
+        }),
+      });
       await refetchProfile();
       router.push("/recruiter/dashboard");
     } catch (err: any) {

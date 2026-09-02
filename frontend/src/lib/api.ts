@@ -10,65 +10,193 @@
  * - Safe SSR execution & localStorage token persistence
  */
 
+import { firebaseAuth } from "./firebase";
+
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const ORG_ID_KEY = "organization_id";
+const SAVED_ACCOUNTS_KEY = "aura_saved_accounts";
+
+export interface SavedAccount {
+  id: string;
+  email: string;
+  fullName: string;
+  role: "PLATFORM_ADMIN" | "ORGANIZATION_ADMIN" | "RECRUITER" | "CANDIDATE";
+  portal: string;
+  token: string;
+  refreshToken?: string;
+  orgId?: string;
+  orgName?: string;
+  lastActive: number;
+}
+
+export function getPortalScope(path?: string): string {
+  if (typeof window === "undefined") return "default";
+  const currentPath = path || (typeof window.location !== "undefined" ? window.location.pathname : "/");
+  if (currentPath.startsWith("/candidate")) return "candidate";
+  if (currentPath.startsWith("/recruiter") || currentPath.startsWith("/employee")) return "recruiter";
+  if (currentPath.startsWith("/admin")) return "admin";
+  return "default";
+}
 
 function hasSessionStorage(): boolean {
   return typeof window !== "undefined" && typeof sessionStorage !== "undefined";
 }
 
-export function getAccessToken(): string | null {
+export function getAccessToken(scope?: string): string | null {
   if (typeof window === "undefined") return null;
-  const sessionToken = hasSessionStorage() ? sessionStorage.getItem(ACCESS_TOKEN_KEY) : null;
-  return sessionToken || localStorage.getItem(ACCESS_TOKEN_KEY);
+  const portal = scope || getPortalScope();
+  
+  if (hasSessionStorage()) {
+    const sessionPortalToken = sessionStorage.getItem(`${portal}_${ACCESS_TOKEN_KEY}`);
+    if (sessionPortalToken) return sessionPortalToken;
+    const sessionToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    if (sessionToken) return sessionToken;
+  }
+  
+  const localPortalToken = localStorage.getItem(`${portal}_${ACCESS_TOKEN_KEY}`);
+  if (localPortalToken) return localPortalToken;
+  
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function getRefreshToken(): string | null {
+export function getRefreshToken(scope?: string): string | null {
   if (typeof window === "undefined") return null;
-  const sessionToken = hasSessionStorage() ? sessionStorage.getItem(REFRESH_TOKEN_KEY) : null;
-  return sessionToken || localStorage.getItem(REFRESH_TOKEN_KEY);
+  const portal = scope || getPortalScope();
+  if (hasSessionStorage()) {
+    const sessionPortalToken = sessionStorage.getItem(`${portal}_${REFRESH_TOKEN_KEY}`);
+    if (sessionPortalToken) return sessionPortalToken;
+    const sessionToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
+    if (sessionToken) return sessionToken;
+  }
+  const localPortalToken = localStorage.getItem(`${portal}_${REFRESH_TOKEN_KEY}`);
+  if (localPortalToken) return localPortalToken;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
-export function setTokens(accessToken: string, refreshToken: string): void {
+export function setTokens(accessToken: string, refreshToken: string, scope?: string): void {
   if (typeof window === "undefined") return;
+  const portal = scope || getPortalScope();
   if (hasSessionStorage()) {
     sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    sessionStorage.setItem(`${portal}_${ACCESS_TOKEN_KEY}`, accessToken);
+    sessionStorage.setItem(`${portal}_${REFRESH_TOKEN_KEY}`, refreshToken);
   }
+  localStorage.setItem(`${portal}_${ACCESS_TOKEN_KEY}`, accessToken);
+  localStorage.setItem(`${portal}_${REFRESH_TOKEN_KEY}`, refreshToken);
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
-export function clearTokens(): void {
+export function clearTokens(scope?: string): void {
   if (typeof window === "undefined") return;
+  const portal = scope || getPortalScope();
   if (hasSessionStorage()) {
-    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
-    sessionStorage.removeItem(ORG_ID_KEY);
+    sessionStorage.clear();
   }
+  localStorage.removeItem(`${portal}_${ACCESS_TOKEN_KEY}`);
+  localStorage.removeItem(`${portal}_${REFRESH_TOKEN_KEY}`);
+  localStorage.removeItem(`${portal}_${ORG_ID_KEY}`);
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(ORG_ID_KEY);
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("firebase_id_token");
+}
+
+export function clearAllTokensAndSessions(): void {
+  if (typeof window === "undefined") return;
+  if (hasSessionStorage()) {
+    sessionStorage.clear();
+  }
+  localStorage.removeItem("candidate_access_token");
+  localStorage.removeItem("candidate_refresh_token");
+  localStorage.removeItem("candidate_organization_id");
+  localStorage.removeItem("recruiter_access_token");
+  localStorage.removeItem("recruiter_refresh_token");
+  localStorage.removeItem("recruiter_organization_id");
+  localStorage.removeItem("admin_access_token");
+  localStorage.removeItem("admin_refresh_token");
+  localStorage.removeItem("admin_organization_id");
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(ORG_ID_KEY);
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("firebase_id_token");
+}
+
+export function getSavedAccounts(): SavedAccount[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SAVED_ACCOUNTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveAccount(account: SavedAccount): void {
+  if (typeof window === "undefined") return;
+  try {
+    const accounts = getSavedAccounts().filter((a) => a.email.toLowerCase() !== account.email.toLowerCase());
+    accounts.unshift({ ...account, lastActive: Date.now() });
+    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(accounts.slice(0, 10)));
+  } catch {}
+}
+
+export function removeSavedAccount(email: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const accounts = getSavedAccounts().filter((a) => a.email.toLowerCase() !== email.toLowerCase());
+    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(accounts));
+  } catch {}
+}
+
+export function switchSavedAccount(email: string): SavedAccount | null {
+  if (typeof window === "undefined") return null;
+  const target = getSavedAccounts().find((a) => a.email.toLowerCase() === email.toLowerCase());
+  if (!target || !target.token) return null;
+  
+  let portalScope = "default";
+  if (target.portal.startsWith("/candidate")) portalScope = "candidate";
+  else if (target.portal.startsWith("/recruiter") || target.portal.startsWith("/employee")) portalScope = "recruiter";
+  else if (target.portal.startsWith("/admin")) portalScope = "admin";
+  
+  setTokens(target.token, target.refreshToken || target.token, portalScope);
+  if (target.orgId) {
+    setOrgId(target.orgId);
+  }
+  saveAccount(target);
+  return target;
 }
 
 export function getOrgId(): string | null {
   if (typeof window === "undefined") return null;
-  const sessionOrgId = hasSessionStorage() ? sessionStorage.getItem(ORG_ID_KEY) : null;
-  return sessionOrgId || localStorage.getItem(ORG_ID_KEY);
+  const portal = getPortalScope();
+  if (hasSessionStorage()) {
+    const sessionPortalOrg = sessionStorage.getItem(`${portal}_${ORG_ID_KEY}`);
+    if (sessionPortalOrg) return sessionPortalOrg;
+    const sessionOrg = sessionStorage.getItem(ORG_ID_KEY);
+    if (sessionOrg) return sessionOrg;
+  }
+  return localStorage.getItem(`${portal}_${ORG_ID_KEY}`) || localStorage.getItem(ORG_ID_KEY);
 }
 
 export function setOrgId(orgId: string): void {
   if (typeof window === "undefined") return;
+  const portal = getPortalScope();
   if (hasSessionStorage()) {
     sessionStorage.setItem(ORG_ID_KEY, orgId);
+    sessionStorage.setItem(`${portal}_${ORG_ID_KEY}`, orgId);
   }
   localStorage.setItem(ORG_ID_KEY, orgId);
+  localStorage.setItem(`${portal}_${ORG_ID_KEY}`, orgId);
 }
 
-export function logoutAndRedirect(redirectUrl = "/login"): void {
+export function logoutAndRedirect(redirectUrl = "/"): void {
   clearTokens();
-  if (typeof window !== "undefined" && window.location.pathname !== redirectUrl) {
+  if (typeof window !== "undefined") {
     window.location.href = redirectUrl;
   }
 }
@@ -97,192 +225,17 @@ export interface UserProfileData {
 }
 
 export function getApiBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
+  // In the browser, ALWAYS use relative URLs so requests go through Next.js same-origin proxy
   if (typeof window !== "undefined") {
     return "";
   }
-  return "http://localhost:8000";
-}
-
-export async function loginUser(email: string, password: string): Promise<{ access_token: string; refresh_token: string }> {
-  const baseUrl = getApiBaseUrl();
-  try {
-    const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: null }));
-      if (res.status === 401) {
-        throw new Error("Invalid email address or password. Please try again.");
-      }
-      if (res.status === 403) {
-        throw new Error("Your account has been deactivated or lacks access.");
-      }
-      throw new Error(err.detail || "Authentication failed. Please check your credentials.");
-    }
-    const data = await res.json();
-    setTokens(data.access_token, data.refresh_token);
-    setOrgId("");
-
-    try {
-      const meRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      if (meRes.ok) {
-        const meData = await meRes.json();
-        if (meData.memberships && meData.memberships.length > 0 && meData.memberships[0].organization_id) {
-          setOrgId(meData.memberships[0].organization_id);
-        }
-      }
-    } catch {}
-
-    return data;
-  } catch (error: any) {
-    if (error.name === "TypeError" || error.message.includes("fetch")) {
-      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
-    }
-    throw error;
-  }
-}
-
-export async function getGoogleAuthUrl(redirectUri?: string): Promise<{ url: string | null; configured: boolean }> {
-  const baseUrl = getApiBaseUrl();
-  try {
-    const query = redirectUri ? `?redirect_uri=${encodeURIComponent(redirectUri)}` : "";
-    const res = await fetch(`${baseUrl}/api/v1/auth/google/url${query}`);
-    if (!res.ok) return { url: null, configured: false };
-    return res.json();
-  } catch {
-    return { url: null, configured: false };
-  }
-}
-
-export async function googleAuthCallback(code: string, redirectUri?: string, requestedRole?: string): Promise<{ access_token: string; refresh_token: string }> {
-  const baseUrl = getApiBaseUrl();
-  const res = await fetch(`${baseUrl}/api/v1/auth/google/callback`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, redirect_uri: redirectUri, requested_role: requestedRole }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: null }));
-    throw new Error(err.detail || "Google authentication failed.");
-  }
-  const data = await res.json();
-  setTokens(data.access_token, data.refresh_token);
-  return data;
-}
-
-export async function registerUser(email: string, password: string, full_name: string): Promise<AuthUser> {
-  const baseUrl = getApiBaseUrl();
-  try {
-    const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, full_name }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: null }));
-      if (res.status === 400 || res.status === 409) {
-        throw new Error("This email is already registered. Try signing in instead.");
-      }
-      if (res.status === 422) {
-        throw new Error("Please verify all fields. Password must be at least 8 characters.");
-      }
-      throw new Error(err.detail || "We couldn't create your account right now. Please try again.");
-    }
-    return res.json();
-  } catch (error: any) {
-    if (error.name === "TypeError" || error.message.includes("fetch")) {
-      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
-    }
-    throw error;
-  }
-}
-
-export async function registerCandidate(
-  email: string,
-  password: string,
-  firstName: string,
-  lastName: string,
-  phoneNumber: string
-): Promise<AuthUser> {
-  const baseUrl = getApiBaseUrl();
-  try {
-    const res = await fetch(`${baseUrl}/api/v1/auth/register/candidate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName,
-        phone_number: phoneNumber,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: null }));
-      if (res.status === 400 || res.status === 409) {
-        throw new Error(err.detail || "This email is already registered. Try signing in instead.");
-      }
-      if (res.status === 422) {
-        throw new Error("Please verify all fields. Phone number and 8-character password are required.");
-      }
-      throw new Error(err.detail || "We couldn't create your candidate account right now. Please try again.");
-    }
-    return res.json();
-  } catch (error: any) {
-    if (error.name === "TypeError" || error.message.includes("fetch")) {
-      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
-    }
-    throw error;
-  }
-}
-
-export async function registerEmployee(
-  email: string,
-  password: string,
-  firstName: string,
-  lastName: string,
-  companyName?: string
-): Promise<AuthUser> {
-  const baseUrl = getApiBaseUrl();
-  try {
-    const res = await fetch(`${baseUrl}/api/v1/auth/register/employee`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName,
-        company_name: companyName,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: null }));
-      if (res.status === 400 || res.status === 409) {
-        throw new Error("This email is already registered. Try signing in instead.");
-      }
-      if (res.status === 422) {
-        throw new Error("Please verify all fields. Password must be at least 8 characters.");
-      }
-      throw new Error(err.detail || "We couldn't create your employee account right now. Please try again.");
-    }
-    return res.json();
-  } catch (error: any) {
-    if (error.name === "TypeError" || error.message.includes("fetch")) {
-      throw new Error("Unable to connect to AuraHire. Check your connection and try again.");
-    }
-    throw error;
-  }
+  // On the server (SSR), call the backend directly
+  return process.env.NEXT_PUBLIC_API_URL || "https://ai-interview-api-30597175496.asia-south1.run.app";
 }
 
 export async function fetchUserProfile(): Promise<UserProfileData | null> {
+  const token = getAccessToken();
+  if (!token) return null;
   const res = await apiFetch("/api/v1/auth/me");
   if (!res.ok) return null;
   const data = await res.json();
@@ -340,12 +293,76 @@ export async function updateCandidateProfile(data: Partial<CandidateProfileData>
   return res.json();
 }
 
+export interface CandidateResumeItem {
+  resume_id: string;
+  candidate_id: string;
+  file_name: string;
+  content_type: string;
+  storage_path: string;
+  file_size: number;
+  uploaded_at: string;
+  status: string;
+  version: number;
+  download_url?: string;
+}
+
+export interface ResumeAccessInfo {
+  resume_id: string;
+  application_id: string;
+  file_name: string;
+  content_type: string;
+  file_size: number;
+  access_url: string;
+  expires_in_seconds: number;
+  access_type: "SIGNED_URL" | "DIRECT_STREAM";
+}
+
+export async function uploadCandidateResume(file: File): Promise<CandidateResumeItem> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const token = getAccessToken("candidate") || getAccessToken();
+  const baseUrl = getApiBaseUrl();
+
+  const res = await fetch(`${baseUrl}/api/v1/resumes/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: null }));
+    throw new Error(err.detail || "Failed to upload candidate resume.");
+  }
+
+  return res.json();
+}
+
+export async function fetchCandidateResumes(): Promise<CandidateResumeItem[]> {
+  const res = await apiFetch("/api/v1/resumes");
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}
+
+export async function fetchResumeMetadata(resumeId: string): Promise<CandidateResumeItem | null> {
+  const res = await apiFetch(`/api/v1/resumes/${resumeId}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function deleteCandidateResume(resumeId: string): Promise<boolean> {
+  const res = await apiFetch(`/api/v1/resumes/${resumeId}`, { method: "DELETE" });
+  return res.ok;
+}
+
 export async function uploadCandidateProfileResume(file: File): Promise<CandidateProfileData> {
   const formData = new FormData();
   formData.append("file", file);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const baseUrl = getApiBaseUrl();
 
   const res = await fetch(`${baseUrl}/api/v1/candidate/profile/resume`, {
     method: "POST",
@@ -369,38 +386,22 @@ export async function performTokenRefresh(): Promise<string | null> {
   }
 
   refreshPromise = (async () => {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-      logoutAndRedirect();
-      return null;
-    }
-
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const refreshUrl = `${baseUrl}/api/v1/auth/refresh`;
-
-      // Raw fetch call to prevent recursive refresh loops
-      const response = await fetch(refreshUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      if (response.status === 200) {
-        const data = await response.json();
-        if (data.access_token && data.refresh_token) {
-          setTokens(data.access_token, data.refresh_token);
-          return data.access_token;
-        }
+      const user = firebaseAuth.currentUser;
+      if (!user) {
+        clearTokens();
+        return null;
       }
 
-      // If refresh fails (HTTP 401/403/400/500), clear auth state & redirect
-      logoutAndRedirect();
+      const newToken = await user.getIdToken(true);
+      if (newToken) {
+        setTokens(newToken, newToken);
+        return newToken;
+      }
+      clearTokens();
       return null;
     } catch {
-      logoutAndRedirect();
+      clearTokens();
       return null;
     } finally {
       refreshPromise = null;
@@ -419,7 +420,7 @@ export async function apiFetch(
   options: ApiFetchOptions = {},
   isRetry = false
 ): Promise<Response> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const baseUrl = getApiBaseUrl();
   const url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint}`;
 
   const headers = new Headers(options.headers || {});
@@ -437,7 +438,15 @@ export async function apiFetch(
     const isCandidateOrGlobalEndpoint =
       endpoint.includes("/auth/") ||
       endpoint.includes("/candidate") ||
-      (endpoint.includes("/jobs") && !endpoint.includes("/recruiter/") && !endpoint.includes("/applications"));
+      (endpoint.includes("/jobs") &&
+        !endpoint.includes("/recruiter/") &&
+        !endpoint.includes("/applications") &&
+        !endpoint.includes("/intelligence") &&
+        !endpoint.includes("/matching") &&
+        !endpoint.includes("/ranking") &&
+        !endpoint.includes("/scoring") &&
+        !endpoint.includes("/recommendations") &&
+        !endpoint.includes("/candidates/"));
     if (orgId && !headers.has("X-Organization-ID") && !isCandidateOrGlobalEndpoint) {
       headers.set("X-Organization-ID", orgId);
     }
@@ -494,13 +503,73 @@ export async function apiFetch(
     }
   }
 
-  // HTTP 403 Forbidden does NOT trigger refresh
+  // Handle HTTP 403 Forbidden caused by a stale or mismatched X-Organization-ID header
+  if (response.status === 403 && !isRetry && headers.has("X-Organization-ID")) {
+    const cloned = response.clone();
+    const errBody = await cloned.json().catch(() => ({}));
+    if (
+      errBody &&
+      typeof errBody.detail === "string" &&
+      errBody.detail.includes("You do not hold active membership in organization")
+    ) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("org_id");
+      }
+      const retryHeaders = new Headers(headers);
+      retryHeaders.delete("X-Organization-ID");
+      return apiFetch(
+        endpoint,
+        {
+          ...options,
+          headers: retryHeaders,
+        },
+        true
+      );
+    }
+  }
+
   return response;
 }
 
 // ============================================================================
 // Strongly-Typed API Client Methods for Recruiter Candidate Matching & Intelligence
 // ============================================================================
+
+export interface ExtractedJobData {
+  role_title: string;
+  required_skills: string[];
+  education: string[];
+  responsibilities: string[];
+  preferred_skills: string[];
+  good_to_have: string[];
+  experience?: string | null;
+}
+
+export interface JobRequirementItem {
+  id: string;
+  requirement_type: string;
+  raw_value: string;
+  canonical_value: string;
+  requirement_level: string;
+  hard_constraint: boolean;
+  priority: string;
+  confidence: number;
+  evidence_text?: string;
+  evidence_verification_status: string;
+  is_protected_feature: boolean;
+}
+
+export interface JobIntelligenceDetailData {
+  version: JobIntelligenceData;
+  requirements: JobRequirementItem[];
+  responsibilities: string[];
+  intents: string[];
+  extracted_data?: ExtractedJobData;
+  id?: string;
+  status?: string;
+  version_number?: number;
+  overall_confidence?: number;
+}
 
 export interface JobIntelligenceData {
   id: string;
@@ -681,20 +750,127 @@ export interface ApplicationDetail {
   created_at?: string;
 }
 
+export interface CandidateIntelligenceSkillItem {
+  name: string;
+  category?: string;
+  level?: string;
+  source?: "candidate_profile" | "resume" | "both" | string;
+  page?: number;
+  evidence?: string;
+}
+
+export interface CandidateIntelligenceExpItem {
+  role?: string;
+  company?: string;
+  duration?: string;
+  start_date?: string;
+  end_date?: string;
+  description?: string;
+  skills_used?: string[];
+  responsibilities?: string[];
+  source?: string;
+}
+
+export interface CandidateIntelligenceProjectItem {
+  name?: string;
+  title?: string;
+  description?: string;
+  technologies?: string[];
+  role?: string;
+  url?: string;
+  source?: string;
+}
+
+export interface CandidateIntelligenceEducationItem {
+  degree?: string;
+  institution?: string;
+  field_of_study?: string;
+  graduation_year?: string;
+  gpa?: string;
+  source?: string;
+}
+
+export interface CandidateIntelligenceCertItem {
+  name?: string;
+  issuer?: string;
+  issue_date?: string;
+  credential_id?: string;
+  source?: string;
+}
+
+export interface CandidateIntelligenceData {
+  user_id?: string;
+  full_name?: string;
+  headline?: string;
+  summary?: string;
+  target_roles: string[];
+  skills: CandidateIntelligenceSkillItem[];
+  experience: CandidateIntelligenceExpItem[];
+  projects: CandidateIntelligenceProjectItem[];
+  education: CandidateIntelligenceEducationItem[];
+  certifications: CandidateIntelligenceCertItem[];
+  responsibilities: string[];
+  accomplishments: Record<string, any>;
+  provenance_summary: Record<string, any>;
+}
+
 // API Call Helpers
 
-export async function fetchJobIntelligence(jobId: string): Promise<JobIntelligenceData | null> {
-  const res = await apiFetch(`/api/v1/jobs/${jobId}/intelligence`);
+export async function fetchCandidateIntelligence(candidateId: string): Promise<CandidateIntelligenceData | null> {
+  let orgId = getOrgId();
+  if (!orgId) {
+    try {
+      const profile = await fetchUserProfile();
+      if (profile && profile.memberships && profile.memberships.length > 0 && profile.memberships[0].organization_id) {
+        orgId = profile.memberships[0].organization_id;
+        setOrgId(orgId);
+      }
+    } catch {}
+  }
+  const headers: Record<string, string> = {};
+  if (orgId) {
+    headers["X-Organization-ID"] = orgId;
+  }
+  const res = await apiFetch(`/api/v1/candidate/${candidateId}/intelligence`, { headers });
   if (res.ok) {
     return await res.json();
   }
   return null;
 }
 
-export async function fetchActiveRankings(jobId: string): Promise<CandidateRankingVersion | null> {
-  const res = await apiFetch(`/api/v1/jobs/${jobId}/rankings/active`);
+export async function fetchJobIntelligence(jobId: string): Promise<JobIntelligenceDetailData | null> {
+  let orgId = getOrgId();
+  if (!orgId) {
+    try {
+      const profile = await fetchUserProfile();
+      if (profile && profile.memberships && profile.memberships.length > 0 && profile.memberships[0].organization_id) {
+        orgId = profile.memberships[0].organization_id;
+        setOrgId(orgId);
+      }
+    } catch {}
+  }
+  const headers: Record<string, string> = {};
+  if (orgId) {
+    headers["X-Organization-ID"] = orgId;
+  }
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/intelligence`, { headers });
   if (res.ok) {
     return await res.json();
+  }
+  return null;
+}
+
+export async function fetchActiveRankings(jobId: string): Promise<any | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/ranking`);
+  if (res.ok) {
+    const data = await res.json();
+    if (data && data.items) {
+      return {
+        ...(data.ranking_version || {}),
+        rankings: data.items,
+      };
+    }
+    return data;
   }
   return null;
 }
@@ -709,6 +885,14 @@ export async function fetchScoreBreakdown(jobId: string, candidateId: string): P
 
 export async function fetchFeatureMatchDetail(jobId: string, candidateId: string): Promise<FeatureMatchDetail | null> {
   const res = await apiFetch(`/api/v1/jobs/${jobId}/matching/features/${candidateId}`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function fetchCandidateAnalysis(jobId: string, candidateId: string): Promise<any | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/candidates/${candidateId}/analysis`);
   if (res.ok) {
     return await res.json();
   }
@@ -734,13 +918,15 @@ export async function fetchDecisionHistory(jobId: string, appId: string): Promis
 export async function submitRecruiterDecision(
   jobId: string,
   appId: string,
-  decision: "ADVANCE" | "REJECT" | "HOLD",
+  decision: "ADVANCE" | "REJECT" | "HOLD" | string,
   reason: string
 ): Promise<Response> {
   return await apiFetch(`/api/v1/jobs/${jobId}/applications/${appId}/decision`, {
     method: "POST",
     body: JSON.stringify({
-      decision,
+      action: decision,
+      reason: reason,
+      decision: decision,
       decision_reason: reason,
     }),
   });
@@ -1267,6 +1453,25 @@ export async function fetchRecruiterJobs(): Promise<JobItemData[]> {
     return data.items || [];
   }
   return [];
+}
+
+export async function fetchJobDetails(jobId: string): Promise<JobItemData | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}`);
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
+}
+
+export async function generateCandidateRankings(jobId: string, topK: number = 50): Promise<CandidateRankingVersion | null> {
+  const res = await apiFetch(`/api/v1/jobs/${jobId}/ranking/generate`, {
+    method: "POST",
+    body: JSON.stringify({ top_k: topK }),
+  });
+  if (res.ok) {
+    return await res.json();
+  }
+  return null;
 }
 
 export async function updateJobStatus(jobId: string, status: string): Promise<boolean> {

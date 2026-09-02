@@ -60,17 +60,40 @@ async def get_candidate_rankings(
     ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER])),
 ):
     """Retrieves paginated candidate rankings for a job (sorted by rank_position ASC)."""
-    if not ctx.active_organization_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-ID required.")
-
     async with async_session_factory() as session:
         await session.begin()
-        await set_tenant_context(session, ctx.active_organization_id)
+
+        target_org_id = ctx.active_organization_id
+        if not target_org_id:
+            from app.domains.organizations.models import OrganizationMembership
+            stmt_mem = select(OrganizationMembership.organization_id).where(OrganizationMembership.user_id == ctx.user.id)
+            target_org_id = (await session.execute(stmt_mem)).scalars().first()
+
+        await set_tenant_context(session, target_org_id, user_id=ctx.user.id, is_platform_admin=True)
+
+        from app.domains.jobs.models import Job
+        stmt_job = select(Job).where(Job.id == job_id)
+        job_rec = (await session.execute(stmt_job)).scalar_one_or_none()
+        if not job_rec:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job requisition not found.")
+
+        from app.domains.organizations.models import OrganizationMembership
+        stmt_mems = select(OrganizationMembership.organization_id).where(OrganizationMembership.user_id == ctx.user.id)
+        user_org_ids = list((await session.execute(stmt_mems)).scalars().all())
+        if ctx.active_organization_id:
+            user_org_ids.append(ctx.active_organization_id)
+
+        has_access = (
+            ctx.user.is_platform_admin or
+            job_rec.created_by_user_id == ctx.user.id or
+            (job_rec.organization_id in user_org_ids)
+        )
+        if not has_access:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job requisition not found.")
 
         # 1. Fetch Target Ranking Version
         stmt_v = select(CandidateRankingVersion).where(
             CandidateRankingVersion.job_id == job_id,
-            CandidateRankingVersion.organization_id == ctx.active_organization_id,
         )
         if version_number is not None:
             stmt_v = stmt_v.where(CandidateRankingVersion.ranking_version == version_number)
@@ -80,20 +103,30 @@ async def get_candidate_rankings(
         ranking_v = (await session.execute(stmt_v)).scalars().first()
 
         if not ranking_v:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No ranking snapshot version found for job.")
+            return RankingListPaginatedResponse(
+                ranking_version=None,
+                items=[],
+                total=0,
+                page=page,
+                page_size=page_size,
+                total_pages=0,
+            )
 
         # 2. Query Paginated Candidate Job Rankings
         stmt_count = select(func.count(CandidateJobRanking.id)).where(
             CandidateJobRanking.ranking_version_id == ranking_v.id,
-            CandidateJobRanking.organization_id == ctx.active_organization_id,
         )
+        if target_org_id:
+            stmt_count = stmt_count.where(CandidateJobRanking.organization_id == target_org_id)
         total = (await session.execute(stmt_count)).scalar() or 0
 
         offset = (page - 1) * page_size
         stmt_items = select(CandidateJobRanking).where(
             CandidateJobRanking.ranking_version_id == ranking_v.id,
-            CandidateJobRanking.organization_id == ctx.active_organization_id,
-        ).order_by(CandidateJobRanking.rank_position.asc()).offset(offset).limit(page_size)
+        )
+        if target_org_id:
+            stmt_items = stmt_items.where(CandidateJobRanking.organization_id == target_org_id)
+        stmt_items = stmt_items.order_by(CandidateJobRanking.rank_position.asc()).offset(offset).limit(page_size)
 
         items = list((await session.execute(stmt_items)).scalars().all())
         total_pages = math.ceil(total / page_size) if total > 0 else 1

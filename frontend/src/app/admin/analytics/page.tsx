@@ -44,15 +44,15 @@ export default function AdminAnalyticsPage() {
     loadData();
   }, []);
 
-  // Compute live metrics or fallbacks grounded in live dashboard state
-  const approvedEmployers = analytics?.approved_employers_count ?? 1;
+  // Compute live metrics directly from live database analytics state
+  const approvedEmployers = analytics?.approved_employers_count ?? 0;
   const pendingEmployers = analytics?.pending_employers_count ?? 0;
-  const approvedJobs = analytics?.approved_jobs_count ?? 3;
-  const pendingJobs = analytics?.pending_jobs_count ?? 20;
-  const totalApps = analytics?.total_applications_count ?? 1344;
-  const shortlistedApps = analytics?.shortlisted_applications_count ?? 142;
-  const employerApprovalRate = analytics?.employer_approval_rate ?? 100.0;
-  const jobApprovalRate = analytics?.job_approval_rate ?? 13.0;
+  const approvedJobs = analytics?.approved_jobs_count ?? 0;
+  const pendingJobs = analytics?.pending_jobs_count ?? 0;
+  const totalApps = analytics?.total_applications_count ?? 0;
+  const shortlistedApps = analytics?.shortlisted_applications_count ?? 0;
+  const employerApprovalRate = analytics?.employer_approval_rate ?? (approvedEmployers > 0 ? 100.0 : 0.0);
+  const jobApprovalRate = analytics?.job_approval_rate ?? (approvedJobs + pendingJobs > 0 ? Math.round((approvedJobs / (approvedJobs + pendingJobs)) * 100) : 0.0);
 
   return (
     <div className="min-h-screen bg-[#0b1220] text-slate-100 p-6 md:p-10 font-sans">

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from sqlalchemy import select
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import SecurityContext, get_current_user, get_security_context, require_role
 from app.api.v1.schemas import (
     ApplicationResponse,
     ApplicationSubmitRequest,
@@ -19,7 +19,9 @@ from app.db.session import async_session_factory
 from app.domains.applications.models import Application, ApplicationStatusEnum
 from app.domains.audit.models import AuditLog
 from app.domains.candidates.models import CandidateProfile
+from app.domains.candidates.candidate_intelligence import CandidateIntelligenceResponse
 from app.domains.identity.models import User
+from app.domains.organizations.models import RoleEnum
 from app.domains.jobs.models import Job, JobStatusEnum, JobVerificationStatusEnum
 from app.infrastructure.events.envelope import EventEnvelope
 from app.infrastructure.events.memory import InMemoryEventBus
@@ -105,20 +107,34 @@ async def get_my_profile_resume_file(
     async with async_session_factory() as session:
         stmt = select(CandidateProfile).where(CandidateProfile.user_id == user.id)
         profile = (await session.execute(stmt)).scalar_one_or_none()
-        if not profile or not profile.resume_filename:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No resume uploaded in candidate profile.")
 
-        target_file = filename or profile.resume_filename
+        from app.infrastructure.pdf.resume_generator import ProfessionalResumePDFGenerator
         storage_root = getattr(settings, "UPLOAD_DIR", "storage") or "storage"
-        upload_dir = os.path.join(storage_root, "resumes", str(user.id))
-        file_path = os.path.join(upload_dir, target_file)
 
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume PDF file not found on disk.")
+        file_path = ProfessionalResumePDFGenerator.ensure_candidate_resume_on_disk(
+            candidate_id=str(user.id),
+            full_name=user.full_name or "Candidate",
+            email=user.email,
+            headline=profile.headline if profile else None,
+            phone=profile.phone if profile else None,
+            location=profile.location if profile else None,
+            summary=profile.summary if profile else None,
+            skills=profile.skills if profile else None,
+            experience=profile.experience if profile else None,
+            projects=profile.projects if profile else None,
+            education=profile.education if profile else None,
+            degree=profile.degree if profile else None,
+            college=profile.college if profile else None,
+            linkedin_url=profile.linkedin_url if profile else None,
+            website_url=profile.website_url if profile else None,
+            existing_filename=filename or (profile.resume_filename if profile else None),
+            storage_root=storage_root,
+        )
 
         with open(file_path, "rb") as f:
             pdf_bytes = f.read()
 
+        target_file = os.path.basename(file_path)
         return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"inline; filename={target_file}"})
 
 @router.get("/profile", response_model=CandidateProfileResponse)
@@ -304,24 +320,57 @@ async def submit_application(
 
         await set_tenant_context(session, organization_id=target_org_id, user_id=user.id)
 
-        # 4. Create Application record with snapshot of candidate's current resume
+        # 4. Resolve candidate resume version reference
+        from app.infrastructure.firestore.resume_repo import FirestoreResumeRepository
+        firestore_repo = FirestoreResumeRepository()
+
+        chosen_resume_id = payload.resume_id
         resume_snapshot = payload.resume_file_path
-        if not resume_snapshot:
-            stmt_prof = select(CandidateProfile.resume_url).where(CandidateProfile.user_id == user.id)
-            prof_resume = (await session.execute(stmt_prof)).scalar_one_or_none()
-            if prof_resume:
-                resume_snapshot = prof_resume
+
+        if chosen_resume_id:
+            resume_meta = await firestore_repo.get_resume(chosen_resume_id)
+            if not resume_meta or str(resume_meta.get("candidateId")) != str(user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid resume selection: The specified resume does not belong to your candidate account.",
+                )
+            if not resume_snapshot:
+                resume_snapshot = resume_meta.get("storagePath") or f"/api/v1/resumes/{chosen_resume_id}/file"
+        else:
+            # Check candidate's latest active resume version in Firestore
+            cand_resumes = await firestore_repo.list_resumes_by_candidate(str(user.id))
+            if cand_resumes:
+                chosen_resume_id = cand_resumes[0].get("resumeId")
+                resume_snapshot = cand_resumes[0].get("storagePath") or f"/api/v1/resumes/{chosen_resume_id}/file"
+            elif not resume_snapshot:
+                stmt_prof = select(CandidateProfile.resume_url).where(CandidateProfile.user_id == user.id)
+                prof_resume = (await session.execute(stmt_prof)).scalar_one_or_none()
+                if prof_resume:
+                    resume_snapshot = prof_resume
 
         application = Application(
             candidate_id=user.id,
             job_id=job.id,
             organization_id=target_org_id,
             status=ApplicationStatusEnum.SUBMITTED,
+            resume_id=chosen_resume_id,
             resume_file_path=resume_snapshot,
             answers_json=payload.answers_json,
         )
         session.add(application)
         await session.flush()
+
+        # Persist application metadata in Firestore
+        now_iso = datetime.now(timezone.utc).isoformat()
+        await firestore_repo.save_application({
+            "applicationId": str(application.id),
+            "jobId": str(job.id),
+            "candidateId": str(user.id),
+            "resumeId": chosen_resume_id,
+            "status": "applied",
+            "appliedAt": now_iso,
+            "updatedAt": now_iso,
+        })
 
         audit = AuditLog(
             organization_id=target_org_id,
@@ -393,3 +442,85 @@ async def close_candidate_application(
         await session.begin()
         await set_tenant_context(session, user_id=user.id)
         return (await session.execute(stmt)).scalar_one()
+
+@router.get("/intelligence", response_model=CandidateIntelligenceResponse)
+async def get_my_candidate_intelligence(user: User = Depends(get_current_user)):
+    """
+    Candidate endpoint: Generates and returns ground-truth Candidate Intelligence
+    derived from current authenticated user's CandidateProfile and uploaded Resume PDF.
+    """
+    from app.domains.candidates.candidate_intelligence import CandidateIntelligenceExtractor
+    async with async_session_factory() as session:
+        stmt = select(CandidateProfile).where(CandidateProfile.user_id == user.id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not profile:
+            profile = CandidateProfile(user_id=user.id)
+            session.add(profile)
+            await session.commit()
+            await session.refresh(profile)
+
+        # Read resume bytes if present on disk
+        pdf_bytes = None
+        if profile.resume_filename:
+            storage_root = getattr(settings, "UPLOAD_DIR", "storage") or "storage"
+            file_path = os.path.join(storage_root, "resumes", str(user.id), profile.resume_filename)
+            if os.path.exists(file_path):
+                with open(file_path, "rb") as f:
+                    pdf_bytes = f.read()
+
+        return CandidateIntelligenceExtractor.extract(
+            profile=profile,
+            user_full_name=user.full_name,
+            pdf_bytes=pdf_bytes
+        )
+
+@router.get("/{candidate_id}/intelligence", response_model=CandidateIntelligenceResponse)
+async def get_candidate_intelligence_by_id(
+    candidate_id: uuid.UUID,
+    ctx: SecurityContext = Depends(require_role([RoleEnum.ORGANIZATION_ADMIN, RoleEnum.RECRUITER]))
+):
+    """
+    Recruiter endpoint: Generates and returns ground-truth Candidate Intelligence for any candidate
+    who has applied to jobs within the recruiter's active organization.
+    """
+    from app.domains.candidates.candidate_intelligence import CandidateIntelligenceExtractor
+    async with async_session_factory() as session:
+        await session.begin()
+        target_org_id = ctx.active_organization_id
+        await set_tenant_context(session, organization_id=target_org_id, user_id=ctx.user.id, is_platform_admin=True)
+
+        # Check that candidate has applied to at least one job in the recruiter's organization
+        stmt_app = select(Application).outerjoin(Job, Application.job_id == Job.id).where(
+            Application.candidate_id == candidate_id,
+            (Job.organization_id == target_org_id) | (Application.organization_id == target_org_id)
+        )
+        app_exists = (await session.execute(stmt_app)).scalars().first()
+        if not app_exists and not ctx.user.is_platform_admin and ctx.user.id != candidate_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied. Candidate has not applied to your organization.")
+
+        stmt_user = select(User).where(User.id == candidate_id)
+        cand_user = (await session.execute(stmt_user)).scalar_one_or_none()
+        if not cand_user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate user not found.")
+
+        stmt = select(CandidateProfile).where(CandidateProfile.user_id == candidate_id)
+        profile = (await session.execute(stmt)).scalar_one_or_none()
+
+        if not profile:
+            profile = CandidateProfile(user_id=candidate_id)
+
+        # Read resume bytes if present on disk
+        pdf_bytes = None
+        if profile.resume_filename:
+            storage_root = getattr(settings, "UPLOAD_DIR", "storage") or "storage"
+            file_path = os.path.join(storage_root, "resumes", str(candidate_id), profile.resume_filename)
+            if os.path.exists(file_path):
+                with open(file_path, "rb") as f:
+                    pdf_bytes = f.read()
+
+        return CandidateIntelligenceExtractor.extract(
+            profile=profile,
+            user_full_name=cand_user.full_name,
+            pdf_bytes=pdf_bytes
+        )

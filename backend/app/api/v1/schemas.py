@@ -231,6 +231,10 @@ class JobResponse(BaseModel):
     created_by_user_id: Optional[uuid.UUID]
     salary: Optional[str] = None
     company_website: Optional[str] = None
+    applications_count: Optional[int] = 0
+    ai_shortlisted_count: Optional[int] = 0
+    interviews_count: Optional[int] = 0
+    skills: Optional[List[str]] = None
     created_at: datetime
     updated_at: datetime
 
@@ -264,6 +268,7 @@ class PublicJobListResponse(BaseModel):
 # --- Application Schemas ---
 class ApplicationSubmitRequest(BaseModel):
     job_id: uuid.UUID
+    resume_id: Optional[str] = Field(None, max_length=255)
     resume_file_path: Optional[str] = Field(None, max_length=500)
     answers_json: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
@@ -281,13 +286,16 @@ class ApplicationResponse(BaseModel):
     status: ApplicationStatusEnum
     source: str
     submitted_at: datetime
-    resume_file_path: Optional[str]
-    answers_json: Optional[Dict[str, Any]]
+    resume_id: Optional[str] = None
+    resume_file_path: Optional[str] = None
+    answers_json: Optional[Dict[str, Any]] = None
     created_at: datetime
 
     candidate_name: Optional[str] = None
     candidate_email: Optional[str] = None
     headline: Optional[str] = None
+    decision_reason: Optional[str] = None
+    decided_at: Optional[datetime] = None
     skills: Optional[List[str]] = None
 
 class ApplicationListResponse(BaseModel):
@@ -399,4 +407,8 @@ class DashboardMetricsResponse(BaseModel):
     draft_jobs_count: int
     closed_jobs_count: int
     total_applications_count: int
+    shortlisted_count: int = 0
+    interview_count: int = 0
+    selected_count: int = 0
+    rejected_count: int = 0
     recent_jobs: List[JobResponse]

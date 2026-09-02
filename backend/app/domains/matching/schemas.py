@@ -58,3 +58,39 @@ class FeatureMatchDetailResponse(BaseModel):
     match: CandidateJobMatchResponse
     requirement_matches: List[RequirementMatchResponse]
     semantic_matches: List[SemanticMatchResponse]
+
+class FactorScoreItem(BaseModel):
+    score: float
+    weight: float
+    weighted_total: float
+
+class ScoreBreakdownSchema(BaseModel):
+    required_skill_score: float
+    responsibility_score: float
+    experience_score: float
+    role_alignment_score: float
+    preferred_skill_score: float
+    project_score: float
+    education_score: float
+    good_to_have_bonus: float
+    weighted_total: float
+
+class ExplainableCandidateAnalysisResponse(BaseModel):
+    job_id: str
+    candidate_id: str
+    application_id: Optional[str] = None
+    candidate_name: Optional[str] = None
+    overall_score: float
+    eligibility_status: str
+    score_confidence: float
+    confidence_tier: Optional[str] = "HIGH"
+    rank_position: Optional[int] = 1
+    score_breakdown: ScoreBreakdownSchema
+    job_intelligence: dict
+    candidate_intelligence: dict
+    matched_requirements: List[dict] = []
+    missing_requirements: List[dict] = []
+    strengths: List[str] = []
+    gaps: List[str] = []
+    evidence_citations: List[dict] = []
+

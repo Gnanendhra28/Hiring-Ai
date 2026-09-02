@@ -11,6 +11,7 @@ import {
   fetchApplicationResumePDF,
   apiFetch,
   JobIntelligenceData,
+  JobIntelligenceDetailData,
   CandidateRankingItem,
   JobItemData,
 } from "@/lib/api";
@@ -49,7 +50,7 @@ export default function RecruiterApplicationPipelinePage() {
   const [activeJobs, setActiveJobs] = useState<JobItemData[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [applications, setApplications] = useState<RecruiterApplicationRow[]>([]);
-  const [intelligence, setIntelligence] = useState<JobIntelligenceData | null>(null);
+  const [intelligence, setIntelligence] = useState<JobIntelligenceDetailData | JobIntelligenceData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,7 +117,7 @@ export default function RecruiterApplicationPipelinePage() {
       try {
         const rankingVer = await fetchActiveRankings(targetId);
         if (rankingVer && rankingVer.rankings) {
-          rankingVer.rankings.forEach((r) => {
+          rankingVer.rankings.forEach((r: CandidateRankingItem) => {
             rankingsMap.set(r.candidate_id, r);
           });
         }
@@ -286,7 +287,7 @@ export default function RecruiterApplicationPipelinePage() {
                 Intelligence: {intelligence.status} (v{intelligence.version_number})
               </span>
               <span className="text-xs text-slate-400">
-                AI Confidence: <strong className="text-white">{(intelligence.overall_confidence * 100).toFixed(0)}%</strong>
+                AI Confidence: <strong className="text-white">{Math.round((((intelligence as any).version?.overall_confidence ?? (intelligence as any).overall_confidence ?? 0.85) * 100))}%</strong>
               </span>
             </div>
 

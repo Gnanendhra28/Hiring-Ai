@@ -42,6 +42,48 @@ setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION} [{settings.APP_ENV}]")
+    try:
+        from app.db.base import Base
+        import app.domains.identity.models  # noqa: F401
+        import app.domains.organizations.models  # noqa: F401
+        import app.domains.jobs.models  # noqa: F401
+        import app.domains.candidates.models  # noqa: F401
+        import app.domains.applications.models  # noqa: F401
+        import app.domains.interviews.models  # noqa: F401
+        import app.domains.audit.models  # noqa: F401
+        import app.domains.recommendation.models  # noqa: F401
+        import app.domains.document_intelligence.models  # noqa: F401
+        import app.domains.recruiters.models  # noqa: F401
+
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            from sqlalchemy import text
+            schema_ddl = [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(50);",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT FALSE;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_platform_admin BOOLEAN NOT NULL DEFAULT FALSE;",
+                "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS verification_status VARCHAR(50) NOT NULL DEFAULT 'UNVERIFIED';",
+                "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;",
+                "ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS phone_number VARCHAR(50);",
+                "ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS resume_url VARCHAR(1024);",
+                "ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS raw_resume_text TEXT;",
+                "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS phone_number VARCHAR(50);",
+                "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS company_name VARCHAR(255);",
+                "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS website_url VARCHAR(500);",
+                "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS registration_id VARCHAR(255);",
+                "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(500);",
+                "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS verification_status VARCHAR(50) NOT NULL DEFAULT 'UNVERIFIED';",
+                "ALTER TABLE recruiter_profiles ADD COLUMN IF NOT EXISTS submitted_at VARCHAR(100);",
+            ]
+            for ddl in schema_ddl:
+                try:
+                    await conn.execute(text(ddl))
+                except Exception as ex_ddl:
+                    logger.warning(f"Schema DDL notice ({ddl}): {ex_ddl}")
+        logger.info("Database schema tables and columns verified/created successfully.")
+    except Exception as e:
+        logger.error(f"Error initializing database tables during startup: {e}")
     yield
     logger.info(f"Graceful shutdown: closing database connection pools for {settings.APP_NAME}")
     try:
@@ -57,6 +99,33 @@ app = FastAPI(
     openapi_url="/openapi.json",
     lifespan=lifespan,
 )
+
+@app.exception_handler(Exception)
+async def global_unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
+    correlation_id = getattr(request.state, "correlation_id", str(uuid.uuid4()))
+    logger.error(
+        f"Unhandled application exception on {request.method} {request.url.path}: {type(exc).__name__}",
+        extra={
+            "request_id": request_id,
+            "correlation_id": correlation_id,
+            "method": request.method,
+            "path": request.url.path,
+        },
+        exc_info=True
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "code": "INTERNAL_ERROR",
+            "message": "An unexpected error occurred. Please try again.",
+            "request_id": request_id,
+        },
+        headers={
+            "X-Request-ID": request_id,
+            "X-Correlation-ID": correlation_id,
+        }
+    )
 
 # CORS Middleware
 app.add_middleware(
@@ -97,7 +166,6 @@ async def rate_limiting_middleware(request: Request, call_next) -> Response:
 # Request Context, Correlation ID & Metrics Middleware
 @app.middleware("http")
 async def request_context_middleware(request: Request, call_next) -> Response:
-
     start_t = time.time()
     correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
@@ -105,7 +173,31 @@ async def request_context_middleware(request: Request, call_next) -> Response:
     request.state.correlation_id = correlation_id
     request.state.request_id = request_id
 
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.error(
+            f"Unhandled exception on {request.method} {request.url.path}: {type(exc).__name__}",
+            extra={
+                "request_id": request_id,
+                "correlation_id": correlation_id,
+                "method": request.method,
+                "path": request.url.path,
+            },
+            exc_info=True,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred. Please try again.",
+                "request_id": request_id,
+            },
+            headers={
+                "X-Request-ID": request_id,
+                "X-Correlation-ID": correlation_id,
+            }
+        )
 
     duration = time.time() - start_t
     norm_path = metrics.normalize_path(request.url.path)
@@ -201,8 +293,11 @@ app.include_router(recruiters_router, prefix="/api/v1")
 
 
 
+from app.api.v1.resumes import router as resumes_router
+
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(candidates_router, prefix="/api/v1")
+app.include_router(resumes_router, prefix="/api/v1/resumes", tags=["Candidate Resumes"])
 app.include_router(assessments_router, prefix="/api/v1")
 app.include_router(interviews_router, prefix="/api/v1")
 app.include_router(communications_router, prefix="/api/v1")

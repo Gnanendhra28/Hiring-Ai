@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from sqlalchemy import delete, select
 
@@ -74,9 +75,19 @@ class DocumentProcessorService:
 
                 doc.processing_status = DocumentProcessingStatusEnum.VALIDATED
 
-                # --- Step 2: Native PDF Extraction ---
+                # --- Step 2: Native PDF Extraction (with 10-second processing timeout) ---
                 doc.processing_status = DocumentProcessingStatusEnum.EXTRACTING_TEXT
-                pdf_res = PDFExtractor.extract_text(file_bytes)
+                try:
+                    pdf_res = await asyncio.wait_for(
+                        asyncio.to_thread(PDFExtractor.extract_text, file_bytes),
+                        timeout=10.0
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(f"Document {document_id} parsing timed out (>10s).")
+                    doc.processing_status = DocumentProcessingStatusEnum.FAILED
+                    doc.safe_error_message = "Document processing exceeded the 10-second processing timeout limit."
+                    await session.commit()
+                    return False
 
                 extracted_text = pdf_res["full_text"]
                 text_quality = pdf_res["text_quality_score"]

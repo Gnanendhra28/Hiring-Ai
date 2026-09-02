@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { googleAuthCallback, getUserProfile, loginUser } from "@/lib/api";
+import { getUserProfile } from "@/lib/api";
 
 function GoogleCallbackContent() {
   const searchParams = useSearchParams();
@@ -10,19 +10,15 @@ function GoogleCallbackContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    if (!code) {
-      setError("No authorization code provided in Google OAuth callback.");
-      return;
-    }
-
     let isMounted = true;
 
     async function processCallback() {
       try {
-        await googleAuthCallback(code as string);
         const profile = await getUserProfile();
-        if (!profile || !isMounted) return;
+        if (!profile || !isMounted) {
+          router.replace("/login");
+          return;
+        }
 
         const isPlatformAdmin = profile.user.is_platform_admin;
         const isRecruiter = profile.memberships.some(
@@ -37,20 +33,8 @@ function GoogleCallbackContent() {
           router.replace("/candidate/dashboard");
         }
       } catch (err: any) {
-        // Fallback for Admin login mattag@iitbhilai.ac.in if Google code exchange fails in dev/test
-        try {
-          const loggedIn = await loginUser("mattag@iitbhilai.ac.in", "#Admin");
-          if (loggedIn) {
-            const profile = await getUserProfile();
-            if (profile && isMounted && profile.user.is_platform_admin) {
-              router.replace("/admin/dashboard");
-              return;
-            }
-          }
-        } catch (_) {}
-
         if (isMounted) {
-          setError(err.message || "Google authentication failed.");
+          setError(err.message || "Authentication verification failed.");
         }
       }
     }
@@ -59,7 +43,7 @@ function GoogleCallbackContent() {
     return () => {
       isMounted = false;
     };
-  }, [searchParams, router]);
+  }, [router]);
 
   if (error) {
     return (

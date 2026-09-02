@@ -90,6 +90,85 @@ body {
   background: #334155;
 }
 
+/* --- Advanced Graphic & Animation Keyframes --- */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.35; transform: scale(1); filter: blur(30px); }
+  50% { opacity: 0.75; transform: scale(1.15); filter: blur(40px); }
+}
+
+@keyframes orbitSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes laserSweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes dashFlow {
+  to { stroke-dashoffset: -40; }
+}
+
+.animate-float-slow {
+  animation: floatSlow 7s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 5s ease-in-out infinite;
+}
+
+.animate-orbit-spin {
+  animation: orbitSpin 32s linear infinite;
+}
+
+.animate-laser-sweep {
+  animation: laserSweep 3s ease-in-out infinite;
+}
+
+.animate-radar-sweep {
+  animation: radarSweep 4s linear infinite;
+}
+
+.animate-dash-flow {
+  animation: dashFlow 2s linear infinite;
+}
+
+/* Perspective & 3D Cards */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+/* Glowing Border Accent */
+.glow-card {
+  position: relative;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glow-card:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 35px -5px rgba(14, 165, 233, 0.25), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+  transform: translateY(-4px);
+}
+
+
 /* HiringAI product shell — light, calm, and deliberately separate from the marketing surface. */
 .hiring-shell { min-height:100vh; background:#f8fafc; color:#0f172a; }
 .hiring-header { position:fixed; top:0; left:0; right:0; height:68px; z-index:30; background:rgba(255,255,255,.93); border-bottom:1px solid #e2e8f0; backdrop-filter:blur(14px); }

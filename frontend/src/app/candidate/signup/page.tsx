@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { registerCandidate, loginUser } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthContext";
 
 export default function CandidateSignupPage() {
   const router = useRouter();
-  const { refetchProfile } = useAuth();
+  const { signup, refetchProfile } = useAuth();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -50,8 +50,14 @@ export default function CandidateSignupPage() {
     setIsSubmitting(true);
 
     try {
-      await registerCandidate(email, password, firstName, lastName, phoneNumber);
-      await loginUser(email, password);
+      await signup(email, password, `${firstName.trim()} ${lastName.trim()}`);
+      await apiFetch("/api/v1/auth/onboard-role", {
+        method: "POST",
+        body: JSON.stringify({
+          role: "CANDIDATE",
+          phone_number: phoneNumber,
+        }),
+      });
       await refetchProfile();
       router.push("/candidate/dashboard");
     } catch (err: any) {

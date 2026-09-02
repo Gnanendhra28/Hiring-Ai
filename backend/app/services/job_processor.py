@@ -22,7 +22,11 @@ from app.domains.job_intelligence.models import (
 from app.domains.jobs.models import Job
 from app.infrastructure.confidence.calculator import ConfidenceCalculator
 from app.infrastructure.factories import AIGatewayFactory, EmbeddingProviderFactory
+from app.infrastructure.parsing.general_extractor import GeneralJobExtractor
 from app.infrastructure.parsing.job_parser import DeterministicJobParser
+from app.infrastructure.parsing.section_parser import JobSectionParser
+from app.infrastructure.parsing.semantic_extractor import SemanticJobExtractor
+from app.infrastructure.validation.job_intelligence_validator import JobIntelligenceValidator
 from app.infrastructure.pdf.evidence_verifier import EvidenceVerifier
 from app.infrastructure.safety.protected_feature_filter import ProtectedFeatureFilter
 from app.infrastructure.skills.normalizer import SkillNormalizer
@@ -87,20 +91,22 @@ class JobProcessorService:
             await session.flush()
 
             try:
-                job_text = f"Job Title: {job.title}\nDepartment: {job.department or ''}\nLocation: {job.location or ''}\nEmployment Type: {job.employment_type.value if hasattr(job.employment_type, 'value') else job.employment_type}\nDescription:\n{job.description}"
+                job_desc_raw = job.description or ""
+                sections = JobSectionParser.parse_sections(job_desc_raw)
+                job_text = f"Job Title: {job.title}\nDepartment: {job.department or ''}\nLocation: {job.location or ''}\nEmployment Type: {job.employment_type.value if hasattr(job.employment_type, 'value') else job.employment_type}\nDescription:\n{job_desc_raw}"
 
                 # Step 1: AI Gateway Extraction
                 version.status = JobIntelligenceVersionStatusEnum.EXTRACTING
                 ai_envelope = await self.ai_gateway.extract_job_intelligence(job_text, force_strong_model=False)
 
-                # Step 2: Evidence Verification & Confidence Calibration
+                # Step 2: Evidence Verification, Validation & Conflict Detection
                 version.status = JobIntelligenceVersionStatusEnum.EVIDENCE_VALIDATION
                 extraction = ai_envelope.extraction
 
                 total_evidence_count = 0
                 verified_evidence_count = 0
 
-                processed_requirements = []
+                raw_requirements = []
                 for req in extraction.requirements:
                     v_status, v_mult = EvidenceVerifier.verify_evidence(req.evidence_text, job_text)
                     total_evidence_count += 1
@@ -131,7 +137,7 @@ class JobProcessorService:
                             unit_val = det_exp["unit"]
                             hard_c = det_exp["hard_constraint"]
 
-                    processed_requirements.append({
+                    raw_requirements.append({
                         "type": req.requirement_type.upper(),
                         "raw_value": req.raw_value,
                         "canonical_value": canonical_val,
@@ -147,6 +153,131 @@ class JobProcessorService:
                         "evidence_verification_status": v_status,
                         "is_protected_feature": is_protected,
                     })
+
+                # Validate evidence grounding against raw job text
+                validation_report = JobIntelligenceValidator.validate_and_filter_requirements(
+                    raw_text=job_desc_raw,
+                    requirements=raw_requirements,
+                    sections=sections,
+                )
+                processed_requirements = validation_report["validated_requirements"]
+
+                # Section-Aware Grounded Extraction via GeneralJobExtractor
+                gen_extracted = GeneralJobExtractor.extract(job_desc_raw, job.title)
+                existing_canonical_vals = {r["canonical_value"].lower() for r in processed_requirements if r.get("canonical_value")}
+
+                for s in gen_extracted.get("required_skills", []):
+                    c_name = s["name"]
+                    if c_name.lower() not in existing_canonical_vals:
+                        v_status, v_mult = EvidenceVerifier.verify_evidence(s.get("evidence", c_name), job_text)
+                        processed_requirements.append({
+                            "type": "SKILL",
+                            "raw_value": c_name,
+                            "canonical_value": c_name,
+                            "requirement_level": "REQUIRED",
+                            "hard_constraint": True,
+                            "operator": None,
+                            "minimum_value": None,
+                            "maximum_value": None,
+                            "unit": None,
+                            "priority": "HIGH",
+                            "confidence": 0.95,
+                            "evidence_text": s.get("evidence", c_name),
+                            "evidence_verification_status": v_status,
+                            "is_protected_feature": False,
+                        })
+                        existing_canonical_vals.add(c_name.lower())
+
+                for s in gen_extracted.get("preferred_skills", []):
+                    c_name = s["name"]
+                    if c_name.lower() not in existing_canonical_vals:
+                        v_status, v_mult = EvidenceVerifier.verify_evidence(s.get("evidence", c_name), job_text)
+                        processed_requirements.append({
+                            "type": "SKILL",
+                            "raw_value": c_name,
+                            "canonical_value": c_name,
+                            "requirement_level": "PREFERRED",
+                            "hard_constraint": False,
+                            "operator": None,
+                            "minimum_value": None,
+                            "maximum_value": None,
+                            "unit": None,
+                            "priority": "MEDIUM",
+                            "confidence": 0.90,
+                            "evidence_text": s.get("evidence", c_name),
+                            "evidence_verification_status": v_status,
+                            "is_protected_feature": False,
+                        })
+                        existing_canonical_vals.add(c_name.lower())
+
+                for s in gen_extracted.get("good_to_have", []):
+                    c_name = s["name"]
+                    if c_name.lower() not in existing_canonical_vals:
+                        v_status, v_mult = EvidenceVerifier.verify_evidence(s.get("evidence", c_name), job_text)
+                        processed_requirements.append({
+                            "type": "SKILL",
+                            "raw_value": c_name,
+                            "canonical_value": c_name,
+                            "requirement_level": "NICE_TO_HAVE",
+                            "hard_constraint": False,
+                            "operator": None,
+                            "minimum_value": None,
+                            "maximum_value": None,
+                            "unit": None,
+                            "priority": "LOW",
+                            "confidence": 0.85,
+                            "evidence_text": s.get("evidence", c_name),
+                            "evidence_verification_status": v_status,
+                            "is_protected_feature": False,
+                        })
+                        existing_canonical_vals.add(c_name.lower())
+
+                responsibilities_list = [r.responsibility_text for r in extraction.responsibilities if EvidenceVerifier.verify_evidence(r.responsibility_text, job_text)[0] != EvidenceVerificationStatusEnum.UNVERIFIED]
+                existing_resps = {r.lower().strip() for r in responsibilities_list}
+                for r_item in gen_extracted.get("responsibilities", []):
+                    r_desc = r_item["description"].strip()
+                    if r_desc.lower() not in existing_resps:
+                        responsibilities_list.append(r_desc)
+                        existing_resps.add(r_desc.lower())
+
+                # Semantic Extractor Augmentation for unheaded descriptions
+                semantic_res = SemanticJobExtractor.extract_semantic_intelligence(job_desc_raw, job.title)
+
+                if not processed_requirements and semantic_res["requirements"]:
+                    logger.info(f"Using SemanticJobExtractor requirements for job {job_id} ({len(semantic_res['requirements'])} requirements).")
+                    for s_req in semantic_res["requirements"]:
+                        processed_requirements.append({
+                            "type": "SKILL",
+                            "raw_value": s_req["raw_value"],
+                            "canonical_value": s_req["canonical_value"],
+                            "requirement_level": s_req["requirement_level"],
+                            "hard_constraint": s_req["hard_constraint"],
+                            "operator": None,
+                            "minimum_value": None,
+                            "maximum_value": None,
+                            "unit": None,
+                            "priority": s_req["priority"],
+                            "confidence": 0.95,
+                            "evidence_text": s_req["evidence_text"],
+                            "evidence_verification_status": EvidenceVerificationStatusEnum.VERIFIED,
+                            "is_protected_feature": False,
+                        })
+
+                if not responsibilities_list and semantic_res["responsibilities"]:
+                    logger.info(f"Using SemanticJobExtractor responsibilities for job {job_id} ({len(semantic_res['responsibilities'])} responsibilities).")
+                    responsibilities_list = semantic_res["responsibilities"]
+
+                # Detect conflicts against legacy/existing skills
+                existing_skills = getattr(job, "skills", []) or []
+                if not isinstance(existing_skills, list):
+                    existing_skills = []
+                conflict_report = JobIntelligenceValidator.detect_conflicts(
+                    existing_skills=existing_skills,
+                    extracted_requirements=processed_requirements,
+                    raw_text=job_desc_raw,
+                )
+                if conflict_report["has_conflicts"]:
+                    logger.info(f"Conflict detection found {conflict_report['conflict_count']} legacy skill conflicts for job {job_id}.")
 
                 verified_ratio = (verified_evidence_count / total_evidence_count) if total_evidence_count > 0 else 0.5
 
@@ -195,14 +326,14 @@ class JobProcessorService:
                     session.add(req_rec)
 
                 # Persist Responsibilities
-                for resp in extraction.responsibilities:
+                for resp_text in responsibilities_list:
                     resp_rec = JobResponsibility(
                         organization_id=organization_id,
                         job_id=job_id,
                         intelligence_version_id=version.id,
-                        responsibility_text=resp.responsibility_text,
-                        associated_skills=resp.associated_skills,
-                        confidence=resp.confidence,
+                        responsibility_text=resp_text,
+                        associated_skills=[],
+                        confidence=0.95,
                     )
                     session.add(resp_rec)
 

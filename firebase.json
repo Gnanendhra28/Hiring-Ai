@@ -1,0 +1,14 @@
+{
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "authorizedRedirectUris": [
+          "http://localhost",
+          "http://localhost:3000",
+          "https://ai-interview-frontend-30597175496.asia-south1.run.app"
+        ]
+      }
+    }
+  }
+}

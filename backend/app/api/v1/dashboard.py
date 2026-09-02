@@ -53,6 +53,31 @@ async def get_dashboard_metrics(ctx: SecurityContext = Depends(get_security_cont
         )
         total_applications_count = (await session.execute(stmt_apps)).scalar() or 0
 
+        # Stage breakdown queries
+        stmt_shortlisted = select(func.count(Application.id)).where(
+            Application.organization_id == ctx.active_organization_id,
+            Application.status == "SHORTLISTED",
+        )
+        shortlisted_count = (await session.execute(stmt_shortlisted)).scalar() or 0
+
+        stmt_interview = select(func.count(Application.id)).where(
+            Application.organization_id == ctx.active_organization_id,
+            Application.status == "INTERVIEW",
+        )
+        interview_count = (await session.execute(stmt_interview)).scalar() or 0
+
+        stmt_selected = select(func.count(Application.id)).where(
+            Application.organization_id == ctx.active_organization_id,
+            Application.status == "SELECTED",
+        )
+        selected_count = (await session.execute(stmt_selected)).scalar() or 0
+
+        stmt_rejected = select(func.count(Application.id)).where(
+            Application.organization_id == ctx.active_organization_id,
+            Application.status == "REJECTED",
+        )
+        rejected_count = (await session.execute(stmt_rejected)).scalar() or 0
+
         # 5. Recent 5 Jobs
         stmt_recent = (
             select(Job)
@@ -68,5 +93,9 @@ async def get_dashboard_metrics(ctx: SecurityContext = Depends(get_security_cont
             draft_jobs_count=draft_jobs_count,
             closed_jobs_count=closed_jobs_count,
             total_applications_count=total_applications_count,
+            shortlisted_count=shortlisted_count,
+            interview_count=interview_count,
+            selected_count=selected_count,
+            rejected_count=rejected_count,
             recent_jobs=[JobResponse.model_validate(j) for j in recent_jobs],
         )

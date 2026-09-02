@@ -28,11 +28,18 @@ from app.main import app
 from app.services.job_processor import JobProcessorService
 from app.services.matching_service import MatchingService
 
+from app.core.security import create_access_token
+
 async def _setup_matching_context(client: AsyncClient):
     rec_email = f"rec_p9a_{uuid.uuid4().hex[:8]}@example.com"
-    await client.post("/api/v1/auth/register", json={"email": rec_email, "password": "Password123!", "full_name": "Recruiter Phase9A"})
-    rec_login = await client.post("/api/v1/auth/login", json={"email": rec_email, "password": "Password123!"})
-    rec_headers = {"Authorization": f"Bearer {rec_login.json()['access_token']}"}
+    rec_user = User(email=rec_email, full_name="Recruiter Phase9A", password_hash="dummy_pw", is_active=True)
+    async with async_session_factory() as session:
+        await session.begin()
+        session.add(rec_user)
+        await session.commit()
+
+    token = create_access_token(rec_user.id)
+    rec_headers = {"Authorization": f"Bearer {token}"}
 
     org_resp = await client.post("/api/v1/organizations", json={"name": "Phase9A Org", "slug": f"p9a-org-{uuid.uuid4().hex[:6]}"}, headers=rec_headers)
     org_id = org_resp.json()["id"]

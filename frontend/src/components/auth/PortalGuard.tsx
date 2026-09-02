@@ -12,7 +12,7 @@ interface PortalGuardProps {
 }
 
 export function PortalGuard({ allowedPortals, children }: PortalGuardProps) {
-  const { user, activeRole, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, activeRole, isLoading, isAuthenticated, savedAccounts, switchAccount, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -84,36 +84,65 @@ export function PortalGuard({ allowedPortals, children }: PortalGuardProps) {
     else if (activeRole === "RECRUITER" || activeRole === "ORGANIZATION_ADMIN") homeUrl = "/recruiter/dashboard";
     else if (activeRole === "CANDIDATE") homeUrl = "/candidate/dashboard";
 
+    const matchingSavedAccounts = (savedAccounts || []).filter((a) => {
+      if (primaryAllowedPortal === "admin") return a.role === "PLATFORM_ADMIN";
+      if (primaryAllowedPortal === "recruiter") return a.role === "RECRUITER" || a.role === "ORGANIZATION_ADMIN";
+      if (primaryAllowedPortal === "candidate") return a.role === "CANDIDATE";
+      return false;
+    });
+
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-6">
-        <div className="glass-panel p-8 rounded-3xl max-w-lg w-full border border-rose-500/30 bg-rose-950/20 text-center">
-          <div className="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/50 flex items-center justify-center mx-auto mb-4 text-rose-400 font-bold text-xl">
+        <div className="glass-panel p-8 rounded-3xl max-w-lg w-full border border-rose-500/30 bg-rose-950/20 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/50 flex items-center justify-center mx-auto text-rose-400 font-bold text-xl">
             403
           </div>
-          <span className="text-xs font-mono text-rose-400 uppercase tracking-widest block mb-2">
+          <span className="text-xs font-mono text-rose-400 uppercase tracking-widest block">
             Portal Isolation Guard
           </span>
-          <h2 className="text-2xl font-black text-white tracking-tight mb-3">
+          <h2 className="text-2xl font-black text-white tracking-tight">
             Unauthorized Portal Access
           </h2>
-          <p className="text-slate-300 text-sm leading-relaxed mb-6">
-            Your account <span className="font-mono text-sky-400">{user?.email}</span> has assigned role{" "}
-            <span className="font-mono font-bold text-amber-400">{activeRole || "UNKNOWN"}</span>. You do not have permission to access the{" "}
-            <span className="font-mono text-rose-400 capitalize">{primaryAllowedPortal}</span> portal.
+          <p className="text-slate-300 text-sm leading-relaxed">
+            Your current active account <span className="font-mono text-sky-400">{user?.email}</span> has assigned role{" "}
+            <span className="font-mono font-bold text-amber-400">{activeRole || "UNKNOWN"}</span>.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {matchingSavedAccounts.length > 0 && (
+            <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-left space-y-2">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
+                Available Accounts with Access:
+              </span>
+              {matchingSavedAccounts.map((acc) => (
+                <button
+                  key={acc.email}
+                  onClick={() => switchAccount(acc.email)}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 hover:bg-sky-500 hover:text-slate-950 transition-all group"
+                >
+                  <div className="overflow-hidden mr-2">
+                    <p className="text-xs font-bold text-white group-hover:text-slate-950 truncate">{acc.fullName || acc.email}</p>
+                    <p className="text-[10px] text-slate-400 group-hover:text-slate-800 font-mono truncate">{acc.email}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded bg-sky-500/20 text-sky-300 group-hover:bg-slate-950 group-hover:text-white shrink-0">
+                    Switch & Continue →
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <button
               onClick={() => router.push(homeUrl)}
-              className="py-3 px-5 text-sm font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl transition-colors"
+              className="py-3 px-5 text-xs font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl transition-colors"
             >
-              Go to Your Portal ({homeUrl.split("/")[1]})
+              Return to Your Portal ({homeUrl.split("/")[1]})
             </button>
             <button
               onClick={() => logout(`/login?portal=${primaryAllowedPortal}`)}
-              className="py-3 px-5 text-sm font-semibold glass-panel-hover text-slate-300 border border-slate-700 rounded-xl"
+              className="py-3 px-5 text-xs font-semibold glass-panel hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-xl"
             >
-              Switch Account
+              Sign In with Another Account
             </button>
           </div>
         </div>

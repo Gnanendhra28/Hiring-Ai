@@ -7,7 +7,11 @@ import {
   getCandidateProfile,
   updateCandidateProfile,
   uploadCandidateProfileResume,
+  uploadCandidateResume,
+  fetchCandidateResumes,
+  deleteCandidateResume,
   CandidateProfileData,
+  CandidateResumeItem,
 } from "@/lib/api";
 
 type SectionType =
@@ -23,6 +27,7 @@ type SectionType =
 export default function CandidateProfilePage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<CandidateProfileData | null>(null);
+  const [resumesList, setResumesList] = useState<CandidateResumeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"view" | "insights">("view");
@@ -46,12 +51,24 @@ export default function CandidateProfilePage() {
     photo_url: "",
   });
 
+  const loadResumes = async () => {
+    try {
+      const list = await fetchCandidateResumes();
+      setResumesList(list);
+    } catch {
+      // ignore
+    }
+  };
+
   // Load Profile from Backend
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const data = await getCandidateProfile();
+        const [data, resumes] = await Promise.all([
+          getCandidateProfile(),
+          fetchCandidateResumes().catch(() => []),
+        ]);
         if (data) {
           setProfile(data);
           setHeaderForm({
@@ -64,6 +81,7 @@ export default function CandidateProfilePage() {
             photo_url: data.photo_url || "",
           });
         }
+        setResumesList(resumes);
       } catch (err: any) {
         setError(err.message || "Failed to load candidate profile.");
       } finally {
@@ -797,22 +815,79 @@ export default function CandidateProfilePage() {
                 )}
               </div>
 
-              {/* SECTION 8: Resume */}
+              {/* SECTION 8: Resume Multi-Version Management */}
               <div id="resume" className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <span>📄</span>
-                    <span>Resume</span>
-                  </h3>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                      <span>📄</span>
+                      <span>Resume & Documents</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Manage multiple resume versions for tailored job applications</p>
+                  </div>
                   <button
                     onClick={() => setActiveModal("resume")}
-                    className="text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline"
+                    className="px-3.5 py-1.5 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 shadow-lg shadow-sky-500/20 transition-all flex items-center space-x-1.5"
                   >
-                    Upload / Replace
+                    <span>+</span>
+                    <span>Upload Resume</span>
                   </button>
                 </div>
 
-                {profile?.resume_filename || profile?.resume_url ? (
+                {resumesList && resumesList.length > 0 ? (
+                  <div className="space-y-3">
+                    {resumesList.map((resItem) => (
+                      <div
+                        key={resItem.resume_id}
+                        className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-lg font-bold">
+                            📄
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="text-xs font-bold text-white">{resItem.file_name}</h4>
+                              <span className="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/30 text-[10px] font-bold text-sky-400">
+                                v{resItem.version}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-3 text-[10px] text-slate-400 font-mono mt-1">
+                              <span>Uploaded: {new Date(resItem.uploaded_at).toLocaleDateString()}</span>
+                              <span>•</span>
+                              <span>{(resItem.file_size / 1024).toFixed(1)} KB</span>
+                              <span>•</span>
+                              <span className="text-emerald-400 font-medium">GCS / Firestore Active</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 text-xs">
+                          <a
+                            href={`/api/v1/resumes/${resItem.resume_id}/file`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-400 transition-all"
+                          >
+                            Download / View
+                          </a>
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Are you sure you want to delete ${resItem.file_name}?`)) {
+                                await deleteCandidateResume(resItem.resume_id);
+                                await loadResumes();
+                                showToast("Resume version deleted.");
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 font-bold hover:bg-rose-500/20 border border-rose-500/30 transition-all"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : profile?.resume_filename || profile?.resume_url ? (
                   <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-lg font-bold">
@@ -841,26 +916,15 @@ export default function CandidateProfilePage() {
                         onClick={() => setActiveModal("resume")}
                         className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 transition-all"
                       >
-                        Replace
-                      </button>
-                      <button
-                        onClick={() => {
-                          saveProfileData(
-                            { resume_url: undefined, resume_filename: undefined, resume_updated_at: undefined },
-                            "Resume deleted."
-                          );
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 font-bold hover:bg-rose-500/20 border border-rose-500/30 transition-all"
-                      >
-                        Delete
+                        Upload New Version
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-slate-500 text-xs italic py-2">
-                    No resume uploaded yet.{" "}
-                    <button onClick={() => setActiveModal("resume")} className="text-sky-400 underline font-normal">
-                      Upload resume (PDF)
+                  <div className="text-slate-500 text-xs italic py-4 text-center border border-dashed border-slate-800 rounded-2xl">
+                    No resumes uploaded yet.{" "}
+                    <button onClick={() => setActiveModal("resume")} className="text-sky-400 underline font-normal ml-1">
+                      Upload your first resume (PDF / DOCX)
                     </button>
                   </div>
                 )}
@@ -1457,31 +1521,65 @@ export default function CandidateProfilePage() {
         </div>
       )}
 
-      {/* Modal 9: Upload Resume */}
+      {/* Modal 9: Upload Resume (Multi-Version) */}
       {activeModal === "resume" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Upload Candidate Resume</h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 font-mono mb-1">Select Resume File (PDF only)</label>
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                <span>📄</span>
+                <span>Upload New Resume Version</span>
+              </h3>
+              <button
+                onClick={() => {
+                  setActiveModal(null);
+                  setSelectedResumeFile(null);
+                }}
+                className="text-slate-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="border-2 border-dashed border-slate-700 hover:border-sky-500/60 transition-all rounded-2xl p-6 text-center space-y-3 bg-slate-900/40">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xl">
+                  ☁️
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Select or drop your resume here</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Accepted formats: PDF (.pdf) and Word (.docx) • Max size: 10 MB</p>
+                </div>
                 <input
                   type="file"
-                  accept=".pdf,application/pdf"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      if (file.size > 10 * 1024 * 1024) {
+                        setError("File size exceeds maximum allowed limit (10 MB).");
+                        return;
+                      }
                       setSelectedResumeFile(file);
-                      setEditingItem({
-                        filename: file.name,
-                        filesize: file.size,
-                      });
+                      setError(null);
                     }
                   }}
                   className="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-500 file:text-white hover:file:bg-sky-400 cursor-pointer"
                 />
               </div>
+
+              {selectedResumeFile && (
+                <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2">
+                    <span>📄</span>
+                    <span className="font-bold text-white truncate max-w-[200px]">{selectedResumeFile.name}</span>
+                    <span className="text-slate-400 text-[10px]">({(selectedResumeFile.size / 1024).toFixed(1)} KB)</span>
+                  </div>
+                  <span className="text-sky-400 text-[10px] font-bold">Ready to Upload</span>
+                </div>
+              )}
             </div>
+
             <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
               <button
                 onClick={() => {
@@ -1498,22 +1596,24 @@ export default function CandidateProfilePage() {
                     setSaving(true);
                     setError(null);
                     try {
-                      const updatedProf = await uploadCandidateProfileResume(selectedResumeFile);
-                      setProfile(updatedProf);
-                      showToast("Resume uploaded and saved to profile successfully.");
+                      const uploadedResume = await uploadCandidateResume(selectedResumeFile);
+                      await loadResumes();
+                      const updatedProf = await getCandidateProfile();
+                      if (updatedProf) setProfile(updatedProf);
+                      showToast(`Resume "${uploadedResume.file_name}" (v${uploadedResume.version}) uploaded successfully.`);
                       setActiveModal(null);
                       setSelectedResumeFile(null);
                     } catch (err: any) {
-                      setError(err.message || "Failed to upload resume PDF.");
+                      setError(err.message || "Failed to upload resume.");
                     } finally {
                       setSaving(false);
                     }
                   }
                 }}
                 disabled={saving || !selectedResumeFile}
-                className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 disabled:opacity-50 shadow-lg shadow-sky-500/20"
               >
-                {saving ? "Uploading PDF..." : "Save Resume"}
+                {saving ? "Uploading to Cloud Storage..." : "Upload & Save Version"}
               </button>
             </div>
           </div>

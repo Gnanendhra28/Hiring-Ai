@@ -78,7 +78,7 @@ class MatchingService:
             cand_user_id = cand_p.user_id if cand_p else candidate_id
 
             stmt_doc = select(CandidateDocument).where(
-                CandidateDocument.candidate_id == cand_user_id,
+                (CandidateDocument.candidate_id == cand_user_id) | (CandidateDocument.candidate_id == candidate_id),
                 CandidateDocument.organization_id == organization_id,
             ).order_by(CandidateDocument.created_at.desc())
 
@@ -96,12 +96,15 @@ class MatchingService:
             job_reqs = list((await session.execute(stmt_reqs)).scalars().all())
 
             # 4. Fetch Candidate Extracted Skills & Experiences & Resume Text
-            stmt_cand_skills = select(CandidateSkill).where(CandidateSkill.candidate_id == cand_user_id)
+            stmt_cand_skills = select(CandidateSkill).where(
+                (CandidateSkill.candidate_id == cand_user_id) | (CandidateSkill.candidate_id == candidate_id)
+            )
             cand_skills_raw = list((await session.execute(stmt_cand_skills)).scalars().all())
             cand_skills = [{"skill_name": s.raw_skill_name} for s in cand_skills_raw]
 
-
-            stmt_cand_exp = select(CandidateExperience).where(CandidateExperience.candidate_id == cand_user_id)
+            stmt_cand_exp = select(CandidateExperience).where(
+                (CandidateExperience.candidate_id == cand_user_id) | (CandidateExperience.candidate_id == candidate_id)
+            )
             cand_exps = list((await session.execute(stmt_cand_exp)).scalars().all())
             total_cand_exp_months = sum([e.duration_months or 0 for e in cand_exps]) or None
 

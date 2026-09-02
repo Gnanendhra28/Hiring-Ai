@@ -1,91 +1,54 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { registerCandidate, registerEmployee, loginUser, getGoogleAuthUrl, googleAuthCallback } from "../lib/api";
+import { fetchUserProfile, getCandidateProfile, updateCandidateProfile, setTokens } from "../lib/api";
 
-describe("Phase 31 Unified Auth & Google OAuth API Client", () => {
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => {
+      store[key] = value.toString();
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+})();
+
+Object.defineProperty(global, "localStorage", {
+  value: localStorageMock,
+});
+
+Object.defineProperty(global, "window", {
+  value: {
+    location: {
+      href: "",
+      pathname: "/",
+    },
+    localStorage: localStorageMock,
+  },
+  writable: true,
+});
+
+describe("Firebase Identity & Profile API Client", () => {
   beforeEach(() => {
+    localStorageMock.clear();
     vi.restoreAllMocks();
   });
 
-  it("registerCandidate makes POST request to /api/v1/auth/register/candidate with phone_number", async () => {
-    const mockUser = {
-      id: "usr-123",
-      email: "candidate@example.com",
-      full_name: "Jane Candidate",
-      phone_number: "+91 98765 43210",
-      is_platform_admin: false,
-      is_active: true,
-      is_verified: false,
-      created_at: new Date().toISOString(),
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockUser,
-    });
-
-    const res = await registerCandidate("candidate@example.com", "Password123!", "Jane", "Candidate", "+91 98765 43210");
-    expect(res.email).toBe("candidate@example.com");
-    expect(res.full_name).toBe("Jane Candidate");
-    expect(res.phone_number).toBe("+91 98765 43210");
-  });
-
-  it("registerEmployee makes POST request to /api/v1/auth/register/employee with company_name", async () => {
-    const mockUser = {
-      id: "emp-123",
-      email: "recruiter@company.com",
-      full_name: "Alex Recruiter",
-      is_platform_admin: false,
-      is_active: true,
-      is_verified: false,
-      created_at: new Date().toISOString(),
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockUser,
-    });
-
-    const res = await registerEmployee("recruiter@company.com", "Password123!", "Alex", "Recruiter", "Acme Corp");
-    expect(res.email).toBe("recruiter@company.com");
-    expect(res.full_name).toBe("Alex Recruiter");
-  });
-
-  it("getGoogleAuthUrl calls GET /api/v1/auth/google/url", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ url: "https://accounts.google.com/o/oauth2/v2/auth?...", configured: true }),
-    });
-
-    const res = await getGoogleAuthUrl("http://localhost:3000/auth/callback/google");
-    expect(res.configured).toBe(true);
-    expect(res.url).toContain("accounts.google.com");
-  });
-
-  it("googleAuthCallback makes POST request to /api/v1/auth/google/callback", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ access_token: "acc-123", refresh_token: "ref-123", token_type: "bearer" }),
-    });
-
-    const res = await googleAuthCallback("google_auth_code_123");
-    expect(res.access_token).toBe("acc-123");
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/v1/auth/google/callback"),
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ code: "google_auth_code_123", redirect_uri: undefined, requested_role: undefined }),
-      })
-    );
-  });
-
-  it("getCandidateProfile and updateCandidateProfile call /api/v1/candidate/profile", async () => {
+  it("fetchUserProfile makes GET request to /api/v1/auth/me", async () => {
+    setTokens("mock_token", "mock_token");
     const mockProfile = {
-      id: "prof-123",
-      user_id: "usr-123",
-      headline: "AI Systems Engineer",
-      skills: ["Python", "FastAPI", "React"],
-      education: [{ degree: "B.Tech", institution: "IIT Bhilai", start_year: "2022", end_year: "2026" }],
-      career_preferences: { job_type: "Full-time Jobs", locations: "Bengaluru, Remote" },
+      user: {
+        id: "usr-123",
+        email: "candidate@example.com",
+        full_name: "Jane Candidate",
+        is_platform_admin: false,
+        is_active: true,
+      },
+      memberships: [],
     };
 
     global.fetch = vi.fn().mockResolvedValue({
@@ -93,11 +56,39 @@ describe("Phase 31 Unified Auth & Google OAuth API Client", () => {
       json: async () => mockProfile,
     });
 
-    const { getCandidateProfile, updateCandidateProfile } = await import("../lib/api");
-    const p = await getCandidateProfile();
-    expect(p?.headline).toBe("AI Systems Engineer");
+    const res = await fetchUserProfile();
+    expect(res).not.toBeNull();
+    expect(res?.user.email).toBe("candidate@example.com");
+    expect(res?.user.full_name).toBe("Jane Candidate");
+  });
 
-    const updatedP = await updateCandidateProfile({ headline: "Lead Engineer" });
-    expect(updatedP?.headline).toBe("AI Systems Engineer");
+  it("getCandidateProfile fetches candidate profile metadata", async () => {
+    const mockCandidate = {
+      id: "cp-123",
+      user_id: "usr-123",
+      headline: "Senior AI Engineer",
+      skills: ["Python", "PyTorch", "Next.js"],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockCandidate,
+    });
+
+    const res = await getCandidateProfile();
+    expect(res?.headline).toBe("Senior AI Engineer");
+    expect(res?.skills).toContain("Python");
+  });
+
+  it("updateCandidateProfile sends PUT request to /api/v1/candidate/profile", async () => {
+    const updatePayload = { headline: "Staff AI Engineer" };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "cp-123", headline: "Staff AI Engineer" }),
+    });
+
+    const res = await updateCandidateProfile(updatePayload);
+    expect(res.headline).toBe("Staff AI Engineer");
   });
 });

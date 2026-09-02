@@ -47,6 +47,7 @@ class Application(Base, UUIDMixin, TimestampMixin, TenantMixin):
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
+    resume_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     resume_file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     answers_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     decided_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(

@@ -35,6 +35,9 @@ dependencies = [
     "opentelemetry-sdk>=1.23.0",
     "opentelemetry-instrumentation-fastapi>=0.44b0",
     "opentelemetry-exporter-otlp>=1.23.0",
+    "google-cloud-secret-manager>=2.30.0",
+    "google-cloud-firestore>=2.29.0",
+    "firebase-admin>=7.5.0",
 ]
 
 [project.optional-dependencies]

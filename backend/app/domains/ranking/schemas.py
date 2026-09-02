@@ -47,7 +47,7 @@ class CandidateJobRankingResponse(BaseModel):
     created_at: datetime
 
 class RankingListPaginatedResponse(BaseModel):
-    ranking_version: CandidateRankingVersionResponse
+    ranking_version: Optional[CandidateRankingVersionResponse] = None
     items: List[CandidateJobRankingResponse]
     total: int
     page: int

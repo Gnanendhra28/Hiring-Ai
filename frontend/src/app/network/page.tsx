@@ -6,33 +6,35 @@ import { Check, MapPin, Search, UserPlus } from "lucide-react";
 export default function NetworkPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [connections, setConnections] = useState<string[]>([]);
+  const [connectionsList, setConnectionsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const connectionsList = [
-    {
-      id: "net-1",
-      name: "Dr. Ananya Sharma",
-      role: "Lead AI Researcher @ Aster Labs",
-      location: "Bengaluru, India",
-      mutual: 14,
-      skills: ["Generative AI", "LLM Fine-tuning", "PyTorch"],
-    },
-    {
-      id: "net-2",
-      name: "Santhosh Kumar",
-      role: "Principal Talent Acquisition @ Enterprise Tech",
-      location: "Remote · India",
-      mutual: 22,
-      skills: ["Executive Hiring", "AI Talent", "Tech Recruitment"],
-    },
-    {
-      id: "net-3",
-      name: "Rahul Verma",
-      role: "Staff Machine Learning Engineer @ Nexus AI",
-      location: "Pune, India",
-      mutual: 9,
-      skills: ["RAG Architecture", "FastAPI", "Vector DBs"],
-    },
-  ];
+  React.useEffect(() => {
+    async function loadNetwork() {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/v1/jobs?public_only=true");
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || [];
+          const list = items.map((j: any, idx: number) => ({
+            id: `net-${j.id}`,
+            name: `${j.organization_name || "Enterprise Partner"} Hiring Team`,
+            role: `Technical Lead • ${j.title}`,
+            location: j.location || "Bengaluru · India",
+            mutual: 8 + (idx * 3) % 15,
+            skills: j.skills?.length ? j.skills : ["AI Engineering", "Cloud", "Distributed Systems"],
+          }));
+          setConnectionsList(list);
+        }
+      } catch (err) {
+        console.error("Failed loading network:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadNetwork();
+  }, []);
 
   const handleConnect = (id: string) => {
     if (!connections.includes(id)) {
@@ -102,7 +104,7 @@ export default function NetworkPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {person.skills.map((s) => (
+                  {person.skills.map((s: string) => (
                     <span
                       key={s}
                       className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium"

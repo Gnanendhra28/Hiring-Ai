@@ -1,0 +1,44 @@
+steps:
+  # Build frontend container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ai-interview-frontend:$BUILD_ID'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ai-interview-frontend:latest'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://ai-interview-api-30597175496.asia-south1.run.app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=hiring-ai-4ae76'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=hiring-ai-4ae76.firebaseapp.com'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=hiring-ai-4ae76.firebasestorage.app'
+      - '-f'
+      - 'frontend/Dockerfile'
+      - 'frontend'
+
+  # Push container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ai-interview-frontend'
+
+  # Deploy to Cloud Run as ai-interview-frontend in asia-south1
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ai-interview-frontend'
+      - '--image=asia-south1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ai-interview-frontend:latest'
+      - '--region=asia-south1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--labels=dev-tutorial=cloud-run-ai-challenge'
+      - '--set-env-vars=NODE_ENV=production,HOSTNAME=0.0.0.0,NEXT_PUBLIC_API_URL=https://ai-interview-api-30597175496.asia-south1.run.app,NEXT_PUBLIC_FIREBASE_PROJECT_ID=hiring-ai-4ae76,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=hiring-ai-4ae76.firebaseapp.com,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=hiring-ai-4ae76.firebasestorage.app'
+
+images:
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ai-interview-frontend:latest'

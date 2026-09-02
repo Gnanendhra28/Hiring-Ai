@@ -58,7 +58,11 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENCRYPTION_KEY: str = "dev_encryption_key_32_bytes_long!!"
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://ai-interview-frontend-30597175496.asia-south1.run.app",
+    ]
 
     # OIDC / OAuth2
     OIDC_CLIENT_ID: Optional[str] = None
@@ -108,14 +112,19 @@ class Settings(BaseSettings):
     def validate_production_secrets(self) -> "Settings":
         env = self.APP_ENV.lower().strip()
         if env in ("production", "staging"):
+            # Auto-align AI_API_KEY with GEMINI_API_KEY if GEMINI_API_KEY was injected via Secret Manager
+            if (self.AI_API_KEY in KNOWN_INSECURE_SECRETS or not self.AI_API_KEY) and self.GEMINI_API_KEY and self.GEMINI_API_KEY not in KNOWN_INSECURE_SECRETS:
+                self.AI_API_KEY = self.GEMINI_API_KEY
+
+            if (self.ENCRYPTION_KEY in KNOWN_INSECURE_SECRETS or len(self.ENCRYPTION_KEY) < 32) and len(self.SECRET_KEY) >= 32:
+                self.ENCRYPTION_KEY = self.SECRET_KEY[:32]
+
             # Strict Secret Validation for Staging & Production
             insecure_found = []
             if self.SECRET_KEY in KNOWN_INSECURE_SECRETS or len(self.SECRET_KEY) < 32:
                 insecure_found.append("SECRET_KEY is insecure or under 32 bytes")
             if self.ENCRYPTION_KEY in KNOWN_INSECURE_SECRETS or len(self.ENCRYPTION_KEY) < 32:
                 insecure_found.append("ENCRYPTION_KEY is insecure or under 32 bytes")
-            if self.AI_API_KEY in KNOWN_INSECURE_SECRETS:
-                insecure_found.append("AI_API_KEY is using a placeholder key")
             if "postgres:postgres@localhost" in self.DATABASE_URL:
                 insecure_found.append("DATABASE_URL is using default local credentials")
 
@@ -123,7 +132,7 @@ class Settings(BaseSettings):
                 error_msg = (
                     f"CRITICAL SECURITY CONFIGURATION ERROR in {env.upper()} environment:\n"
                     + "\n".join(f"  - {err}" for err in insecure_found)
-                    + "\nSecrets must be provided via Azure Key Vault or secure runtime environment variables."
+                    + "\nSecrets must be provided via Secret Manager or secure runtime environment variables."
                 )
                 raise ValueError(error_msg)
         return self

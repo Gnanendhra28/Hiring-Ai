@@ -2,8 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { useParams, useRouter } from "next/navigation";
+import {
+  apiFetch,
+  getAccessToken,
+  fetchCandidateResumes,
+  uploadCandidateResume,
+  CandidateResumeItem,
+} from "@/lib/api";
 import {
   ArrowLeft,
   Bookmark,
@@ -14,9 +20,14 @@ import {
   MapPin,
   Sparkles,
   Star,
+  Upload,
+  FileText,
+  Loader2,
+  X,
 } from "lucide-react";
 
 export default function PublicJobDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const slug = params?.slug as string;
 
@@ -26,6 +37,12 @@ export default function PublicJobDetailPage() {
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Resume Selection Flow
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [candidateResumes, setCandidateResumes] = useState<CandidateResumeItem[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+  const [uploadingInline, setUploadingInline] = useState(false);
 
   useEffect(() => {
     async function fetchJob() {
@@ -45,17 +62,58 @@ export default function PublicJobDetailPage() {
     fetchJob();
   }, [slug]);
 
+  const loadCandidateResumes = async () => {
+    try {
+      const list = await fetchCandidateResumes();
+      setCandidateResumes(list);
+      if (list.length > 0 && !selectedResumeId) {
+        setSelectedResumeId(list[0].resume_id);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const openApplyModal = async () => {
+    if (isClosed) return;
+    setError(null);
+    setShowApplyModal(true);
+    await loadCandidateResumes();
+  };
+
+  const handleInlineResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File size exceeds 10 MB limit.");
+      return;
+    }
+
+    setUploadingInline(true);
+    setError(null);
+    try {
+      const uploaded = await uploadCandidateResume(file);
+      await loadCandidateResumes();
+      setSelectedResumeId(uploaded.resume_id);
+    } catch (err: any) {
+      setError(err.message || "Failed to upload resume.");
+    } finally {
+      setUploadingInline(false);
+    }
+  };
+
   // Determine if application closing date has passed
   const parseClosingDate = () => {
     if (!job?.description) return { dateStr: null, isClosed: false };
-    const match = job.description.match(/Application Closing Date\*\*: ([^\n]+)/);
-    if (!match || !match[1]) return { dateStr: null, isClosed: false };
+    const desc = job.description;
+    const match = desc.match(/Closing Date:\s*([A-Za-z0-9\s,\/\-]+)/i);
+    if (!match) return { dateStr: null, isClosed: false };
 
     const raw = match[1].trim();
     let closingDt: Date | null = null;
-
-    if (raw.includes("-")) {
-      closingDt = new Date(raw);
+    const parsed = new Date(raw);
+    if (!isNaN(parsed.getTime())) {
+      closingDt = parsed;
     } else if (raw.includes("/")) {
       const parts = raw.split("/");
       if (parts.length === 3) {
@@ -82,18 +140,25 @@ export default function PublicJobDetailPage() {
 
     try {
       if (job?.id) {
+        const payload: any = { job_id: job.id };
+        if (selectedResumeId) {
+          payload.resume_id = selectedResumeId;
+        }
+
         const res = await apiFetch("/api/v1/candidate/applications", {
           method: "POST",
-          body: JSON.stringify({ job_id: job.id }),
+          body: JSON.stringify(payload),
         });
         if (res.ok) {
           setApplied(true);
+          setShowApplyModal(false);
         } else {
           const errData = await res.json().catch(() => ({ detail: null }));
           throw new Error(errData.detail || "Failed to submit application.");
         }
       } else {
         setApplied(true);
+        setShowApplyModal(false);
       }
     } catch (err: any) {
       setError(err.message || "Failed to submit application.");
@@ -314,7 +379,7 @@ export default function PublicJobDetailPage() {
                 </div>
               ) : (
                 <button
-                  onClick={handleApply}
+                  onClick={openApplyModal}
                   disabled={submitting}
                   className="px-7 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-xs font-bold shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50"
                 >
@@ -381,6 +446,116 @@ export default function PublicJobDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* APPLY MODAL: RESUME VERSION SELECTOR & INLINE UPLOAD */}
+        {showApplyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-white">Apply for {title}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{companyName} • {location}</p>
+                </div>
+                <button
+                  onClick={() => setShowApplyModal(false)}
+                  className="text-slate-400 hover:text-white text-sm p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 mb-2">
+                    Select Resume Version to Submit
+                  </label>
+                  {candidateResumes && candidateResumes.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {candidateResumes.map((res) => (
+                        <label
+                          key={res.resume_id}
+                          className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                            selectedResumeId === res.resume_id
+                              ? "bg-sky-500/10 border-sky-500 text-white"
+                              : "bg-slate-950/50 border-slate-800 text-slate-300 hover:border-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="radio"
+                              name="resume_choice"
+                              value={res.resume_id}
+                              checked={selectedResumeId === res.resume_id}
+                              onChange={() => setSelectedResumeId(res.resume_id)}
+                              className="accent-sky-500"
+                            />
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-white">{res.file_name}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 text-[10px] font-bold">
+                                  v{res.version}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                {(res.file_size / 1024).toFixed(1)} KB • Uploaded {new Date(res.uploaded_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          {selectedResumeId === res.resume_id && (
+                            <span className="text-sky-400 text-xs font-bold">Selected</span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-slate-950/50 border border-slate-800 text-center text-xs text-slate-400">
+                      No resume uploaded yet. Please upload a resume below to continue.
+                    </div>
+                  )}
+                </div>
+
+                {/* Inline Upload Option */}
+                <div className="border-t border-slate-800/80 pt-3">
+                  <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">
+                    Or Upload a New Resume (PDF / DOCX)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    disabled={uploadingInline}
+                    onChange={handleInlineResumeUpload}
+                    className="block w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-sky-400 hover:file:bg-slate-700 cursor-pointer"
+                  />
+                  {uploadingInline && (
+                    <p className="text-[10px] text-sky-400 mt-1 animate-pulse">Uploading to Cloud Storage...</p>
+                  )}
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button
+                  onClick={() => setShowApplyModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleApply}
+                  disabled={submitting || (!selectedResumeId && candidateResumes.length === 0)}
+                  className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 disabled:opacity-50 transition-all"
+                >
+                  {submitting ? "Submitting Application..." : "Confirm & Submit Application"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
