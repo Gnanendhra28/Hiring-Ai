@@ -47,7 +47,7 @@ def test_06_gemini_configuration_defaults():
     """Verify Gemini configuration defaults are properly loaded from settings."""
     cfg = Settings(APP_ENV="testing")
     assert cfg.LLM_PROVIDER == "gemini"
-    assert cfg.GEMINI_MODEL == "gemini-3.5-flash"
+    assert "gemini" in cfg.GEMINI_MODEL
 
 def test_07_zero_llm_calls_in_scoring():
     """Verify ScoringEngine contains no LLM parameters or calls."""

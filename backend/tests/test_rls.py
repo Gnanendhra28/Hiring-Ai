@@ -33,6 +33,7 @@ async def test_postgresql_rls_crud_isolation():
         async with AsyncUnitOfWork(organization_id=org_a) as uow:
             forbidden_rec = RLSTestRecord(id=uuid.uuid4(), organization_id=org_b, title="Forbidden Insert")
             uow.session.add(forbidden_rec)
+            await uow.session.flush()
 
     # 3. SELECT: Org A queries records -> MUST RETURN Record A ONLY
     async with AsyncUnitOfWork(organization_id=org_a) as uow:

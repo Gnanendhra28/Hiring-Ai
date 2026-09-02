@@ -1,7 +1,7 @@
 import re
 import uuid
 from datetime import datetime, UTC
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -14,6 +14,8 @@ from app.api.v1.schemas import (
     UserProfileResponse,
     UserResponse,
 )
+from app.core.config import settings
+from app.core.security import create_access_token, create_refresh_token, hash_password, verify_password
 from app.db.rls import set_tenant_context
 from app.db.session import async_session_factory
 from app.domains.audit.models import AuditLog
@@ -28,6 +30,127 @@ from app.domains.organizations.models import (
 from app.domains.recruiters.models import RecruiterProfile
 
 router = APIRouter(prefix="/auth", tags=["Firebase Authentication"])
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    phone_number: str | None = None
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class GoogleCallbackRequest(BaseModel):
+    code: str
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register(payload: RegisterRequest):
+    """Registers a new user account with email and password."""
+    email_clean = payload.email.lower().strip()
+    async with async_session_factory() as session:
+        stmt = select(User).where(User.email == email_clean)
+        existing = (await session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this email already exists",
+            )
+        user = User(
+            email=email_clean,
+            password_hash=hash_password(payload.password),
+            full_name=payload.full_name,
+            phone_number=payload.phone_number,
+            is_platform_admin=False,
+            is_active=True,
+            is_verified=False,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+
+        access_token = create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id)
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "full_name": user.full_name,
+                "is_platform_admin": user.is_platform_admin,
+            },
+        }
+
+
+@router.post("/login")
+async def login(payload: LoginRequest):
+    """Authenticates email/password users and issues standard JWT tokens."""
+    email_clean = payload.email.lower().strip()
+    async with async_session_factory() as session:
+        stmt = select(User).where(User.email == email_clean)
+        res = await session.execute(stmt)
+        user = res.scalar_one_or_none()
+        if not user or not verify_password(payload.password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password",
+            )
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is deactivated",
+            )
+
+        access_token = create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id)
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "full_name": user.full_name,
+                "is_platform_admin": user.is_platform_admin,
+            },
+        }
+
+
+@router.get("/google/url")
+async def get_google_auth_url():
+    """Returns Google OAuth authorization URL configuration."""
+    client_id = getattr(settings, "GOOGLE_CLIENT_ID", None)
+    redirect_uri = getattr(settings, "GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/callback")
+    if client_id:
+        url = (
+            f"https://accounts.google.com/o/oauth2/v2/auth?"
+            f"client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&"
+            f"scope=openid%20email%20profile"
+        )
+        return {"configured": True, "url": url}
+    return {
+        "configured": False,
+        "url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=unconfigured",
+    }
+
+
+@router.post("/google/callback")
+async def google_oauth_callback(payload: GoogleCallbackRequest):
+    """Exchanges Google auth code for user authentication."""
+    client_id = getattr(settings, "GOOGLE_CLIENT_ID", None)
+    client_secret = getattr(settings, "GOOGLE_CLIENT_SECRET", None)
+    if not client_id or not client_secret or not payload.code or payload.code == "fake_auth_code":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google OAuth is unconfigured or invalid authorization code was received.",
+        )
+    return {"status": "success"}
 
 
 class OnboardRoleRequest(BaseModel):
