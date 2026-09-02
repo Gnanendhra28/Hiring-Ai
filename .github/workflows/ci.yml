@@ -18,11 +18,14 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff pytest pytest-asyncio httpx pydantic pydantic-settings sqlalchemy alembic asyncpg
+          cd backend
+          pip install -r requirements.txt
+          pip install ruff
 
       - name: Run Ruff Linter
         run: |
