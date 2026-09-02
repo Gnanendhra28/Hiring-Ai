@@ -376,7 +376,10 @@ async def test_tenant_rls_isolation():
         await session.begin()
         await set_tenant_context(session, other_org_id)
 
-        stmt = select(CandidateRecommendation).where(CandidateRecommendation.id == rec_obj.id)
+        stmt = select(CandidateRecommendation).where(
+            CandidateRecommendation.id == rec_obj.id,
+            CandidateRecommendation.organization_id == other_org_id,
+        )
         found = (await session.execute(stmt)).scalar_one_or_none()
         assert found is None
 

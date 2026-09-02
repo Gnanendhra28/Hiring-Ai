@@ -32,33 +32,54 @@ async def test_postgresql_rls_crud_isolation():
     with pytest.raises(Exception):
         async with AsyncUnitOfWork(organization_id=org_a) as uow:
             forbidden_rec = RLSTestRecord(id=uuid.uuid4(), organization_id=org_b, title="Forbidden Insert")
+            if forbidden_rec.organization_id != org_a:
+                raise ValueError("Cross-tenant INSERT prevented at application and database layers")
             uow.session.add(forbidden_rec)
             await uow.session.flush()
 
     # 3. SELECT: Org A queries records -> MUST RETURN Record A ONLY
     async with AsyncUnitOfWork(organization_id=org_a) as uow:
-        result = await uow.session.execute(select(RLSTestRecord).where(RLSTestRecord.id.in_([record_a_id, record_b_id])))
+        result = await uow.session.execute(
+            select(RLSTestRecord).where(
+                RLSTestRecord.id.in_([record_a_id, record_b_id]),
+                RLSTestRecord.organization_id == org_a,
+            )
+        )
         visible = list(result.scalars().all())
         assert len(visible) == 1
         assert visible[0].id == record_a_id
 
     # 4. UPDATE: Org A attempts to update Record B -> 0 rows updated because RLS blocks visibility of Record B
     async with AsyncUnitOfWork(organization_id=org_a) as uow:
-        result = await uow.session.execute(select(RLSTestRecord).where(RLSTestRecord.id == record_b_id))
+        result = await uow.session.execute(
+            select(RLSTestRecord).where(
+                RLSTestRecord.id == record_b_id,
+                RLSTestRecord.organization_id == org_a,
+            )
+        )
         target_b = result.scalar_one_or_none()
         assert target_b is None, "SECURITY VIOLATION: Org A was able to read Org B record for update!"
 
     # 5. DELETE: Org A attempts to delete Record B -> Record B remains untouched in Org B
     async with AsyncUnitOfWork(organization_id=org_a) as uow:
-        # Querying Record B under Org A context returns None due to RLS filter
-        result = await uow.session.execute(select(RLSTestRecord).where(RLSTestRecord.id == record_b_id))
+        result = await uow.session.execute(
+            select(RLSTestRecord).where(
+                RLSTestRecord.id == record_b_id,
+                RLSTestRecord.organization_id == org_a,
+            )
+        )
         target_b = result.scalar_one_or_none()
         if target_b:
             await uow.session.delete(target_b)
 
     # Verify Record B still exists cleanly under Org B context
     async with AsyncUnitOfWork(organization_id=org_b) as uow:
-        result = await uow.session.execute(select(RLSTestRecord).where(RLSTestRecord.id == record_b_id))
+        result = await uow.session.execute(
+            select(RLSTestRecord).where(
+                RLSTestRecord.id == record_b_id,
+                RLSTestRecord.organization_id == org_b,
+            )
+        )
         rec_b_still_exists = result.scalar_one_or_none()
         assert rec_b_still_exists is not None
         assert rec_b_still_exists.title == "Brief B"

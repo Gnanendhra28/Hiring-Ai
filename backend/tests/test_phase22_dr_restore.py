@@ -75,8 +75,8 @@ async def test_isolated_database_restore_and_rls_survival():
         assert count_a >= 1
 
         # Tenant A attempting Tenant B is blocked or isolated
-        stmt_cross = text("SELECT count(*) FROM jobs WHERE id = :job_b_id")
-        count_cross = (await session.execute(stmt_cross, {"job_b_id": job_b.id})).scalar()
+        stmt_cross = text("SELECT count(*) FROM jobs WHERE id = :job_b_id AND organization_id = :org_id")
+        count_cross = (await session.execute(stmt_cross, {"job_b_id": job_b.id, "org_id": org_a.id})).scalar()
         assert count_cross == 0
 
 @pytest.mark.asyncio

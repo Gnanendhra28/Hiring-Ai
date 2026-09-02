@@ -45,8 +45,19 @@ class AsyncUnitOfWork:
                 await self.session.close()
                 self.session = None
 
+    def _verify_tenant_isolation(self) -> None:
+        if self.session and self.organization_id is not None:
+            for obj in list(self.session.new) + list(self.session.dirty):
+                if hasattr(obj, "organization_id") and getattr(obj, "organization_id") is not None:
+                    if getattr(obj, "organization_id") != self.organization_id:
+                        raise ValueError(
+                            f"Cross-tenant isolation violation: record organization_id={getattr(obj, 'organization_id')} "
+                            f"does not match active tenant {self.organization_id}"
+                        )
+
     async def commit(self) -> None:
         if self.session and self.session.is_active:
+            self._verify_tenant_isolation()
             await self.session.commit()
 
     async def rollback(self) -> None:
